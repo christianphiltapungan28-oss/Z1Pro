@@ -1,0 +1,122 @@
+@import "tailwindcss";
+
+@custom-variant aurora (&:where([data-theme=aurora], [data-theme=aurora] *));
+
+:root {
+  --background: #ffffff;
+  --foreground: #16121a;
+  --muted: #7a7387;
+  --sidebar-bg: rgba(255, 255, 255, 0.65);
+  --sidebar-fg: #16121a;
+  --sidebar-muted: #7a7387;
+  --sidebar-border: rgba(255, 255, 255, 0.8);
+  --sidebar-inset: 18px;
+  --sidebar-radius: 20px;
+  --card: rgba(255, 255, 255, 0.55);
+  --card-border: rgba(255, 255, 255, 0.8);
+  --input: rgba(255, 255, 255, 0.75);
+  --input-border: rgba(20, 10, 30, 0.08);
+  --blob-a: #ffc9d6;
+  --blob-b: #bcd4ff;
+  --blob-opacity: 0.4;
+  --accent-a: #ffc5d1;
+  --accent-b: #ff7892;
+  --accent-solid: #ff6791;
+  --badge-bg: #ffc3cf;
+  --badge-fg: #8a2745;
+}
+
+[data-theme="aurora"] {
+  --background: #050308;
+  --foreground: #f7f2ff;
+  --muted: #c3b8db;
+  --sidebar-bg: rgba(6, 4, 12, 0.72);
+  --sidebar-fg: #ffffff;
+  --sidebar-muted: rgba(255, 255, 255, 0.82);
+  --sidebar-border: rgba(255, 255, 255, 0.14);
+  --sidebar-inset: 18px;
+  --sidebar-radius: 20px;
+  --card: rgba(255, 255, 255, 0.06);
+  --card-border: rgba(255, 255, 255, 0.16);
+  --input: rgba(255, 255, 255, 0.08);
+  --input-border: rgba(255, 255, 255, 0.16);
+  --blob-a: #ff0022;
+  --blob-b: #0021d5;
+  --blob-opacity: 0.55;
+  --sidebar-gradient-border: linear-gradient(180deg, #ff0022, #0021d5);
+}
+
+[data-theme="aurora"] .ambient-background > div {
+  animation: aurora-ambient-drift 16s ease-in-out infinite alternate;
+}
+
+[data-theme="aurora"] .ambient-background > div:nth-child(2) {
+  animation-delay: -5s;
+}
+
+[data-theme="aurora"] .ambient-background > div:nth-child(3) {
+  animation-delay: -10s;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-sidebar: var(--sidebar-bg);
+  --color-sidebar-foreground: var(--sidebar-fg);
+  --color-sidebar-muted: var(--sidebar-muted);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-card: var(--card);
+  --color-card-border: var(--card-border);
+  --color-input: var(--input);
+  --color-input-border: var(--input-border);
+  --font-display: var(--font-poppins);
+  --font-sans: var(--font-inter);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+@keyframes orb-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes orb-spin-reverse {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+@keyframes orb-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+@keyframes orb-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(0, -4%, 0) scale(1.03);
+  }
+}
+
+@keyframes aurora-ambient-drift {
+  from {
+    transform: translate3d(-4%, -3%, 0) scale(1);
+  }
+  to {
+    transform: translate3d(10%, 8%, 0) scale(1.18);
+  }
+}
+
