@@ -93,7 +93,7 @@ export function UpgradeDialog({
         onClick={onClose}
         className="fixed inset-0 bg-black/50 backdrop-blur-sm"
       />
-      <div className="relative flex w-full max-w-4xl flex-col rounded-2xl border border-card-border bg-background p-6 shadow-xl">
+      <div className="relative flex max-h-[calc(100dvh-2rem)] w-full max-w-4xl flex-col overflow-y-auto rounded-2xl border border-card-border bg-background p-6 shadow-xl">
         <div className="mb-1 flex items-center justify-between">
           <h2 className="font-display text-xl font-semibold text-foreground">
             Upgrade your plan

@@ -239,7 +239,7 @@ export function Sidebar({
         />
       )}
       <div
-        className={`fixed inset-y-0 left-0 z-40 w-72 shrink-0 -translate-x-full shadow-[0_8px_30px_rgba(0,0,0,0.15)] transition-transform duration-200 md:static md:z-auto md:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 w-72 shrink-0 -translate-x-[calc(100%+var(--sidebar-inset))] shadow-[0_8px_30px_rgba(0,0,0,0.15)] transition-transform duration-200 md:static md:z-auto md:translate-x-0 ${
           open ? "translate-x-0" : ""
         }`}
         style={{
@@ -256,25 +256,25 @@ export function Sidebar({
           }}
         >
           <div className="mb-5 flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex min-w-0 items-center gap-3">
               <ProfileAvatar
                 key={user?.image ?? "fallback"}
                 image={user?.image}
                 name={displayName}
                 authenticated={status === "authenticated"}
               />
-              <div>
+              <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-sm font-semibold text-sidebar-foreground">
+                  <span className="truncate text-sm font-semibold text-sidebar-foreground">
                     {displayName}
                   </span>
                   {status === "authenticated" && (
-                    <span className="rounded-full bg-[#ffc3cf] px-1.5 py-0.5 text-[10px] font-semibold text-[#8a2745]">
+                    <span className="shrink-0 rounded-full bg-[#ffc3cf] px-1.5 py-0.5 text-[10px] font-semibold text-[#8a2745]">
                       Free
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-sidebar-muted">
+                <p className="truncate text-xs text-sidebar-muted">
                   {status === "authenticated"
                     ? (user?.email ?? "")
                     : "Not signed in"}

@@ -20,7 +20,7 @@ export function SignInDialog({
         onClick={onClose}
         className="fixed inset-0 bg-black/50 backdrop-blur-sm"
       />
-      <div className="relative w-full max-w-sm rounded-2xl border border-card-border bg-background p-6 shadow-xl">
+      <div className="relative max-h-[calc(100dvh-2rem)] w-full max-w-sm overflow-y-auto rounded-2xl border border-card-border bg-background p-6 shadow-xl">
         <div className="mb-5 flex items-center justify-between">
           <h2 className="font-display text-lg font-semibold text-foreground">
             Sign in to Z1P.pro

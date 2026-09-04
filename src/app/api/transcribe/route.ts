@@ -1,10 +1,21 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { rateLimit } from "@/lib/rate-limit";
+
+const MAX_AUDIO_BYTES = 25 * 1024 * 1024; // OpenAI's own upload cap
 
 export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const limit = rateLimit(`transcribe:${session.user.id}`, 15, 10 * 60_000);
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: "Too many transcription requests. Try again shortly." },
+      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } }
+    );
   }
 
   const apiKey = process.env.OPENAI_API_KEY;
@@ -21,6 +32,12 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { error: "Audio file is required" },
       { status: 400 }
+    );
+  }
+  if (audio.size > MAX_AUDIO_BYTES) {
+    return NextResponse.json(
+      { error: "Audio file is too large" },
+      { status: 413 }
     );
   }
 

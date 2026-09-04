@@ -3,12 +3,22 @@ import { eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/db";
 import { payments, plans } from "@/db/schema";
+import { getAppOrigin } from "@/lib/app-url";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const limit = rateLimit(`checkout:${userId}`, 10, 60 * 60_000);
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: "Too many checkout attempts. Try again later." },
+      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } }
+    );
   }
 
   const secretKey = process.env.PAYMONGO_SECRET_KEY;
@@ -44,7 +54,7 @@ export async function POST(request: Request) {
     })
     .returning();
 
-  const origin = new URL(request.url).origin;
+  const origin = getAppOrigin(request);
   const auth64 = Buffer.from(`${secretKey}:`).toString("base64");
 
   const checkoutRes = await fetch(

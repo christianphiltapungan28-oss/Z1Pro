@@ -2,20 +2,12 @@ import { NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/db";
-import { payments, plans, subscriptions } from "@/db/schema";
-
-function addInterval(start: Date, interval: string | null) {
-  const end = new Date(start);
-  if (interval === "year") {
-    end.setFullYear(end.getFullYear() + 1);
-  } else {
-    end.setMonth(end.getMonth() + 1);
-  }
-  return end;
-}
+import { payments } from "@/db/schema";
+import { getAppOrigin } from "@/lib/app-url";
+import { fulfillPayment } from "@/lib/fulfill-payment";
 
 export async function GET(request: Request) {
-  const origin = new URL(request.url).origin;
+  const origin = getAppOrigin(request);
   const paymentId = new URL(request.url).searchParams.get("payment");
 
   const session = await auth();
@@ -43,6 +35,11 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/?checkout=error`);
   }
 
+  // This redirect is driven by the customer's browser, not a verified
+  // server-to-server call, so re-confirm the payment actually succeeded with
+  // PayMongo's API before activating anything. (The webhook handler at
+  // /api/webhooks/paymongo doesn't need this extra round trip — its HMAC
+  // signature already proves PayMongo is the one reporting success.)
   const auth64 = Buffer.from(`${secretKey}:`).toString("base64");
   const checkoutRes = await fetch(
     `https://api.paymongo.com/v1/checkout_sessions/${payment.providerPaymentId}`,
@@ -61,49 +58,10 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/?checkout=pending`);
   }
 
-  if (!payment.planId) {
+  const result = await fulfillPayment(payment.id);
+  if (!result.ok) {
     return NextResponse.redirect(`${origin}/?checkout=error`);
   }
-
-  const [plan] = await db
-    .select()
-    .from(plans)
-    .where(eq(plans.id, payment.planId))
-    .limit(1);
-
-  if (!plan) {
-    return NextResponse.redirect(`${origin}/?checkout=error`);
-  }
-
-  await db
-    .update(subscriptions)
-    .set({ status: "expired" })
-    .where(
-      and(eq(subscriptions.userId, userId), eq(subscriptions.status, "active"))
-    );
-
-  const periodStart = new Date();
-  const [subscription] = await db
-    .insert(subscriptions)
-    .values({
-      userId,
-      planId: plan.id,
-      status: "active",
-      provider: "paymongo",
-      providerSubscriptionId: payment.providerPaymentId,
-      currentPeriodStart: periodStart,
-      currentPeriodEnd: addInterval(periodStart, plan.billingInterval),
-    })
-    .returning();
-
-  await db
-    .update(payments)
-    .set({
-      status: "succeeded",
-      paidAt: new Date(),
-      subscriptionId: subscription.id,
-    })
-    .where(eq(payments.id, payment.id));
 
   return NextResponse.redirect(`${origin}/?checkout=success`);
 }

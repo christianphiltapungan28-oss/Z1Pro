@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
   BotIcon,
-  ChevronRightIcon,
   ImageIcon,
   PlusIcon,
   SendIcon,
@@ -179,9 +178,9 @@ export function ChatHome({
     <div className="flex h-full flex-col">
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
         {showLanding ? (
-          <div className="flex h-full flex-col items-center justify-center px-4 py-8 sm:px-8">
-            <div className="mb-10 text-center">
-              <h1 className="font-display text-3xl font-medium text-foreground sm:text-4xl">
+          <div className="flex h-full flex-col items-center justify-center px-4 py-10 sm:px-8 sm:py-8">
+            <div className="mb-8 text-center sm:mb-10">
+              <h1 className="font-display text-2xl font-medium text-foreground sm:text-4xl">
                 Hey, whats up!
               </h1>
               <p className="mt-2 text-sm text-muted sm:text-base">
@@ -189,12 +188,12 @@ export function ChatHome({
               </p>
             </div>
 
-            <div className="grid w-full max-w-xl grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="grid w-full max-w-xl grid-cols-2 gap-2.5 sm:gap-3">
               {suggestions.map(({ label, description, icon: Icon }) => (
                 <button
                   key={label}
                   type="button"
-                  className="group flex items-center gap-3 rounded-2xl border border-card-border bg-card px-4 py-3.5 text-left shadow-sm backdrop-blur-md transition-colors hover:bg-foreground/5 sm:flex-col sm:items-start sm:gap-2 sm:py-4"
+                  className="group flex flex-col items-start gap-2 rounded-2xl border border-card-border bg-card px-4 py-3.5 text-left shadow-sm backdrop-blur-md transition-colors hover:bg-foreground/5 sm:py-4"
                 >
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#ff6791]/12 text-[#ff6791]">
                     <Icon className="h-4.5 w-4.5" />
@@ -203,11 +202,10 @@ export function ChatHome({
                     <span className="block text-sm font-medium text-foreground">
                       {label}
                     </span>
-                    <span className="hidden text-xs text-muted sm:block">
+                    <span className="block text-xs text-muted">
                       {description}
                     </span>
                   </span>
-                  <ChevronRightIcon className="h-4 w-4 text-muted sm:hidden" />
                 </button>
               ))}
             </div>
@@ -239,7 +237,7 @@ export function ChatHome({
 
       <form
         onSubmit={handleSubmit}
-        className={`flex w-full items-center gap-3 px-4 pb-8 sm:px-8 ${
+        className={`flex w-full items-center gap-3 px-4 pb-[max(2rem,calc(env(safe-area-inset-bottom)+1rem))] sm:px-8 ${
           showLanding ? "mx-auto max-w-xl" : "mx-auto max-w-2xl"
         }`}
       >
