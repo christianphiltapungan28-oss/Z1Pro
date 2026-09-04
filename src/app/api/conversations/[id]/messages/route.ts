@@ -142,7 +142,7 @@ export async function POST(
 
   const [userMessage] = await db
     .insert(aiMessages)
-    .values({ conversationId: id, role: "user", content })
+    .values({ conversationId: id, userId, role: "user", content })
     .returning();
 
   const history = await db
@@ -187,6 +187,7 @@ export async function POST(
     .insert(aiMessages)
     .values({
       conversationId: id,
+      userId,
       role: "assistant",
       content: assistantContent,
       model,

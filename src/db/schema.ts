@@ -121,6 +121,7 @@ export const aiMessages = pgTable("ai_messages", {
   conversationId: uuid("conversation_id")
     .notNull()
     .references(() => aiConversations.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
   role: messageRole("role").notNull(),
   content: text("content").notNull(),
   model: text("model"),
