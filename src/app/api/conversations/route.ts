@@ -3,6 +3,7 @@ import { and, desc, eq, isNull } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/db";
 import { aiConversations } from "@/db/schema";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function GET() {
   const session = await auth();
@@ -34,6 +35,14 @@ export async function POST(request: Request) {
   const userId = session?.user?.id;
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const limit = await rateLimit(`conversations:create:${userId}`, 20, 10 * 60_000);
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: "Too many conversations created. Try again shortly." },
+      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } }
+    );
   }
 
   const body = await request.json().catch(() => ({}));

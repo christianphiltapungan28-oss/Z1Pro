@@ -10,7 +10,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const limit = rateLimit(`transcribe:${session.user.id}`, 15, 10 * 60_000);
+  const limit = await rateLimit(`transcribe:${session.user.id}`, 15, 10 * 60_000);
   if (!limit.ok) {
     return NextResponse.json(
       { error: "Too many transcription requests. Try again shortly." },

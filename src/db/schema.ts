@@ -60,7 +60,6 @@ export const users = pgTable("users", {
   avatarUrl: text("avatar_url"),
   locale: text("locale").notNull().default("en"),
   role: userRole("role").notNull().default("member"),
-  passwordHash: text("password_hash"),
   lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()

@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const limit = rateLimit(`checkout:${userId}`, 10, 60 * 60_000);
+  const limit = await rateLimit(`checkout:${userId}`, 10, 60 * 60_000);
   if (!limit.ok) {
     return NextResponse.json(
       { error: "Too many checkout attempts. Try again later." },

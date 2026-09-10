@@ -11,7 +11,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const limit = rateLimit(`speech:${session.user.id}`, 30, 10 * 60_000);
+  const limit = await rateLimit(`speech:${session.user.id}`, 30, 10 * 60_000);
   if (!limit.ok) {
     return NextResponse.json(
       { error: "Too many speech requests. Try again shortly." },
