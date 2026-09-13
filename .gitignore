@@ -42,4 +42,5 @@ next-env.d.ts
 
 # local dev tooling
 .dev-server.log
+_devserver.log
 start-dev.bat

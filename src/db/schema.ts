@@ -241,6 +241,7 @@ export const plans = pgTable("plans", {
   name: text("name").notNull(),
   description: text("description"),
   priceMinorUnits: integer("price_minor_units"),
+  priceUsdMinorUnits: integer("price_usd_minor_units"),
   currency: text("currency").notNull().default("PHP"),
   billingInterval: text("billing_interval"),
   features: jsonb("features").$type<Record<string, unknown>>().default({}),

@@ -53,7 +53,7 @@ export async function fulfillPayment(paymentId: string) {
       userId: payment.userId,
       planId: plan.id,
       status: "active",
-      provider: "paymongo",
+      provider: payment.provider,
       providerSubscriptionId: payment.providerPaymentId,
       currentPeriodStart: periodStart,
       currentPeriodEnd: addInterval(periodStart, plan.billingInterval),

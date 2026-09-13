@@ -3,6 +3,7 @@ import { asc, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/db";
 import { plans } from "@/db/schema";
+import { getCountryCode } from "@/lib/geo";
 import { getCurrentPlanCode } from "@/lib/plan";
 
 function planFeatures(features: Record<string, unknown>): string[] {
@@ -12,7 +13,7 @@ function planFeatures(features: Record<string, unknown>): string[] {
     : [];
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const activePlans = await db
     .select()
     .from(plans)
@@ -24,16 +25,21 @@ export async function GET() {
     ? await getCurrentPlanCode(session.user.id)
     : "free";
 
+  const country = await getCountryCode(request);
+
   return NextResponse.json({
-    plans: activePlans.map((plan) => ({
-      code: plan.code,
-      name: plan.name,
-      description: plan.description,
-      priceMinorUnits: plan.priceMinorUnits,
-      currency: plan.currency,
-      billingInterval: plan.billingInterval,
-      features: planFeatures(plan.features ?? {}),
-    })),
+    plans: activePlans.map((plan) => {
+      const useUsd = country !== "PH" && plan.priceUsdMinorUnits !== null;
+      return {
+        code: plan.code,
+        name: plan.name,
+        description: plan.description,
+        priceMinorUnits: useUsd ? plan.priceUsdMinorUnits : plan.priceMinorUnits,
+        currency: useUsd ? "USD" : plan.currency,
+        billingInterval: plan.billingInterval,
+        features: planFeatures(plan.features ?? {}),
+      };
+    }),
     currentPlanCode,
   });
 }

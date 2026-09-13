@@ -4,7 +4,9 @@ import { auth } from "@/auth";
 import { db } from "@/db";
 import { payments, plans } from "@/db/schema";
 import { getAppOrigin } from "@/lib/app-url";
+import { getCountryCode } from "@/lib/geo";
 import { rateLimit } from "@/lib/rate-limit";
+import { getStripeClient } from "@/lib/stripe";
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -21,14 +23,6 @@ export async function POST(request: Request) {
     );
   }
 
-  const secretKey = process.env.PAYMONGO_SECRET_KEY;
-  if (!secretKey) {
-    return NextResponse.json(
-      { error: "Payments are not configured" },
-      { status: 500 }
-    );
-  }
-
   const body = await request.json().catch(() => ({}));
   const planCode = typeof body?.planCode === "string" ? body.planCode : "";
 
@@ -40,6 +34,64 @@ export async function POST(request: Request) {
 
   if (!plan || !plan.isActive || plan.priceMinorUnits === null) {
     return NextResponse.json({ error: "Plan not available" }, { status: 400 });
+  }
+
+  const country = await getCountryCode(request);
+  const useStripe = country !== "PH" && plan.priceUsdMinorUnits !== null;
+
+  const origin = getAppOrigin(request);
+
+  if (useStripe) {
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+    if (!stripeSecretKey) {
+      return NextResponse.json(
+        { error: "Payments are not configured" },
+        { status: 500 }
+      );
+    }
+
+    const [payment] = await db
+      .insert(payments)
+      .values({
+        userId,
+        planId: plan.id,
+        amountMinorUnits: plan.priceUsdMinorUnits!,
+        currency: "USD",
+        status: "pending",
+        provider: "stripe",
+      })
+      .returning();
+
+    const checkoutSession = await getStripeClient().checkout.sessions.create({
+      mode: "payment",
+      line_items: [
+        {
+          price_data: {
+            currency: "usd",
+            unit_amount: plan.priceUsdMinorUnits!,
+            product_data: { name: plan.name },
+          },
+          quantity: 1,
+        },
+      ],
+      success_url: `${origin}/api/checkout/complete?payment=${payment.id}`,
+      cancel_url: `${origin}/?checkout=cancelled`,
+    });
+
+    await db
+      .update(payments)
+      .set({ providerPaymentId: checkoutSession.id })
+      .where(eq(payments.id, payment.id));
+
+    return NextResponse.json({ checkoutUrl: checkoutSession.url });
+  }
+
+  const secretKey = process.env.PAYMONGO_SECRET_KEY;
+  if (!secretKey) {
+    return NextResponse.json(
+      { error: "Payments are not configured" },
+      { status: 500 }
+    );
   }
 
   const [payment] = await db
@@ -54,7 +106,6 @@ export async function POST(request: Request) {
     })
     .returning();
 
-  const origin = getAppOrigin(request);
   const auth64 = Buffer.from(`${secretKey}:`).toString("base64");
 
   const checkoutRes = await fetch(
