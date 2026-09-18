@@ -1,38 +1,11 @@
 "use client";
 
+import { useSession } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
-import {
-  BotIcon,
-  ImageIcon,
-  PlusIcon,
-  SendIcon,
-  SettingsIcon,
-  ToolsIcon,
-} from "@/components/icons";
+import { BookIcon, PlusIcon, SendIcon } from "@/components/icons";
 import { MarkdownMessage } from "@/components/markdown-message";
-
-const suggestions = [
-  {
-    label: "Suggestions",
-    description: "Ideas tailored to what you're working on",
-    icon: BotIcon,
-  },
-  {
-    label: "Elite Tools",
-    description: "Premium tools to speed up your workflow",
-    icon: ToolsIcon,
-  },
-  {
-    label: "AI Image Generator",
-    description: "Turn a prompt into an image in seconds",
-    icon: ImageIcon,
-  },
-  {
-    label: "Assistants",
-    description: "Purpose-built assistants for any task",
-    icon: SettingsIcon,
-  },
-];
+import { Orb } from "@/components/orb";
+import type { Appearance } from "@/lib/use-appearance";
 
 type Message = {
   id: string;
@@ -41,6 +14,13 @@ type Message = {
   createdAt: string;
 };
 
+function greetingForHour(hour: number) {
+  if (hour < 5) return "Good Night";
+  if (hour < 12) return "Good Morning";
+  if (hour < 18) return "Good Afternoon";
+  return "Good Evening";
+}
+
 function MessageBubble({ message }: { message: Message }) {
   const isUser = message.role === "user";
   return (
@@ -48,7 +28,7 @@ function MessageBubble({ message }: { message: Message }) {
       <div
         className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${
           isUser
-            ? "whitespace-pre-wrap bg-[#ff6791] text-white"
+            ? "whitespace-pre-wrap bg-accent text-white"
             : "border border-card-border bg-card text-foreground"
         }`}
       >
@@ -77,17 +57,48 @@ function TypingIndicator() {
 export function ChatHome({
   conversationId,
   onConversationCreated,
+  onStartVoice,
+  onCreateJourney,
+  onJourneySaved,
+  appearance = "light",
 }: {
   conversationId: string | null;
   onConversationCreated: (id: string) => void;
+  onStartVoice: () => void;
+  onCreateJourney: (payload: {
+    title: string;
+    description?: string;
+    sourceConversationId?: string;
+  }) => Promise<unknown>;
+  onJourneySaved: () => void;
+  appearance?: Appearance;
 }) {
+  const { data: session } = useSession();
+  const firstName = (session?.user?.name ?? "there").split(/\s+/)[0];
+
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [loadedForId, setLoadedForId] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [savingJourney, setSavingJourney] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const skipNextFetchForId = useRef<string | null>(null);
+
+  async function handleSaveAsJourney() {
+    if (!conversationId || savingJourney) return;
+    const firstUserMessage = messages.find((m) => m.role === "user")?.content;
+    setSavingJourney(true);
+    try {
+      const created = await onCreateJourney({
+        title: (firstUserMessage ?? "New Journey").slice(0, 60),
+        sourceConversationId: conversationId,
+      });
+      if (created) onJourneySaved();
+    } finally {
+      setSavingJourney(false);
+    }
+  }
 
   useEffect(() => {
     if (!conversationId) return;
@@ -173,41 +184,40 @@ export function ChatHome({
   const visibleMessages = messagesLoaded ? messages : [];
   const loadingMessages = conversationId !== null && !messagesLoaded;
   const showLanding = !conversationId;
+  const hasReply = visibleMessages.some((m) => m.role === "assistant");
 
   return (
     <div className="flex h-full flex-col">
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
         {showLanding ? (
-          <div className="flex h-full flex-col items-center justify-center px-4 py-10 sm:px-8 sm:py-8">
-            <div className="mb-8 text-center sm:mb-10">
-              <h1 className="font-display text-2xl font-medium text-foreground sm:text-4xl">
-                Hey, whats up!
+          <div className="flex h-full flex-col px-4 py-10 sm:px-8">
+            <div className="mb-8">
+              <p className="text-sm text-muted">Your Workspace</p>
+              <h1 className="mt-1 font-display text-3xl font-bold text-foreground sm:text-5xl">
+                {greetingForHour(new Date().getHours())},{" "}
+                <span className="text-accent-strong">{firstName}</span>
               </h1>
-              <p className="mt-2 text-sm text-muted sm:text-base">
-                What are you up to? You can ask me anything
+              <p className="mt-1 text-base text-muted sm:text-lg">
+                What would you like to do?
               </p>
             </div>
 
-            <div className="grid w-full max-w-xl grid-cols-2 gap-2.5 sm:gap-3">
-              {suggestions.map(({ label, description, icon: Icon }) => (
-                <button
-                  key={label}
-                  type="button"
-                  className="group flex flex-col items-start gap-2 rounded-2xl border border-card-border bg-card px-4 py-3.5 text-left shadow-sm backdrop-blur-md transition-colors hover:bg-foreground/5 sm:py-4"
-                >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#ff6791]/12 text-[#ff6791]">
-                    <Icon className="h-4.5 w-4.5" />
+            <div className="flex flex-1 flex-col items-center justify-center">
+              <button
+                type="button"
+                onClick={onStartVoice}
+                className="flex flex-col items-center gap-5"
+              >
+                <Orb size={140} appearance={appearance} />
+                <span className="text-center">
+                  <span className="block font-display text-xl font-medium text-foreground sm:text-2xl">
+                    Speak with Z1p
                   </span>
-                  <span className="flex-1">
-                    <span className="block text-sm font-medium text-foreground">
-                      {label}
-                    </span>
-                    <span className="block text-xs text-muted">
-                      {description}
-                    </span>
+                  <span className="block text-sm text-muted sm:text-base">
+                    Ask anything or describe a task
                   </span>
-                </button>
-              ))}
+                </span>
+              </button>
             </div>
           </div>
         ) : (
@@ -235,13 +245,27 @@ export function ChatHome({
         </p>
       )}
 
+      {hasReply && (
+        <div className="mx-auto mb-3 w-full max-w-2xl px-4 sm:px-8">
+          <button
+            type="button"
+            onClick={handleSaveAsJourney}
+            disabled={savingJourney}
+            className="flex items-center gap-2 rounded-full bg-accent px-4 py-2 text-sm font-medium text-white shadow-sm transition-opacity hover:opacity-90 disabled:opacity-60"
+          >
+            <BookIcon className="h-4 w-4" />
+            {savingJourney ? "Saving…" : "Save as Journey"}
+          </button>
+        </div>
+      )}
+
       <form
         onSubmit={handleSubmit}
         className={`flex w-full items-center gap-3 px-4 pb-[max(2rem,calc(env(safe-area-inset-bottom)+1rem))] sm:px-8 ${
           showLanding ? "mx-auto max-w-xl" : "mx-auto max-w-2xl"
         }`}
       >
-        <div className="flex flex-1 items-center gap-2 rounded-full border border-input-border bg-input px-4 py-3 backdrop-blur-md">
+        <div className="flex flex-1 items-center gap-2 rounded-full border border-input-border bg-input px-4 py-3">
           <PlusIcon className="h-4.5 w-4.5 shrink-0 text-muted" />
           <input
             value={message}
@@ -254,7 +278,7 @@ export function ChatHome({
           type="submit"
           disabled={sending || !message.trim()}
           aria-label="Send"
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#ff6791] text-white shadow-sm transition-opacity hover:opacity-90 disabled:opacity-50"
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-accent text-white shadow-sm transition-opacity hover:opacity-90 disabled:opacity-50"
         >
           <SendIcon className="h-5 w-5" />
         </button>

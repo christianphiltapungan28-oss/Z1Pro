@@ -11,7 +11,7 @@ type ChartSpec = {
 };
 
 const CHART_COLORS = [
-  "#ff6791",
+  "#ff1da5",
   "#7b6bff",
   "#34c98a",
   "#ffb020",

@@ -45,10 +45,10 @@ function SoftOrb({ size }: { size: number }) {
   return (
     <div className="relative shrink-0" style={{ width: size, height: size }}>
       <div
-        className="absolute inset-[-25%] rounded-full opacity-60 blur-2xl"
+        className="absolute inset-[-25%] rounded-full opacity-70 blur-2xl"
         style={{
           background:
-            "conic-gradient(from 45deg, #ffd3e0, #cfe0ff, #e7d6ff, #ffd3e0)",
+            "conic-gradient(from 45deg, #ff1da5, #7b6bff, #ffb15e, #ff1da5)",
           animation: "orb-drift 6s ease-in-out infinite",
         }}
       />
@@ -56,36 +56,11 @@ function SoftOrb({ size }: { size: number }) {
         className="absolute inset-0 rounded-full"
         style={{
           background:
-            "radial-gradient(circle at 38% 32%, #ffffff 0%, #f3ecff 30%, #dcebff 60%, #f6d9e6 100%)",
+            "radial-gradient(circle at 38% 30%, #ffb15e 0%, #ff1da5 42%, #c81fb0 68%, #5a3fd6 100%)",
           boxShadow:
-            "0 8px 30px rgba(150,140,220,0.25), inset 0 0 20px rgba(255,255,255,0.6)",
+            "0 8px 30px rgba(255,29,165,0.35), inset 0 0 24px rgba(255,255,255,0.35)",
         }}
-      >
-        <svg
-          className="absolute inset-0 h-full w-full opacity-70"
-          viewBox="0 0 100 100"
-          style={{ animation: "orb-spin 22s linear infinite" }}
-        >
-          <path
-            d="M20 45c10-20 35-25 45-10s-5 30-20 28-25-8-25-18Z"
-            fill="none"
-            stroke="#b9c9ff"
-            strokeWidth="2"
-          />
-          <path
-            d="M30 60c15 12 40 8 45-8"
-            fill="none"
-            stroke="#f3b8cf"
-            strokeWidth="2"
-          />
-          <path
-            d="M35 30c8-6 20-4 24 4"
-            fill="none"
-            stroke="#c9b8f3"
-            strokeWidth="1.5"
-          />
-        </svg>
-      </div>
+      />
     </div>
   );
 }

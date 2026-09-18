@@ -2,22 +2,30 @@
 
 import { signOut, useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
+import type { Journey } from "@/types/journey";
 import {
+  BookIcon,
+  ChatSparkIcon,
   CloseIcon,
-  HelpIcon,
-  HistoryIcon,
+  HomeIcon,
   LogoutIcon,
   PinIcon,
-  PlusIcon,
   SettingsIcon,
-  ToolsIcon,
+  SparkleIcon,
+  StacksIcon,
   TrashIcon,
 } from "@/components/icons";
 
-const navItems = [
-  { label: "History", icon: HistoryIcon, requiresAuth: true },
-  { label: "Tools", icon: ToolsIcon, requiresAuth: false },
-  { label: "Help", icon: HelpIcon, requiresAuth: false },
+type View = "home" | "journeys";
+
+const navItems: {
+  label: string;
+  icon: typeof HomeIcon;
+  view: View;
+  requiresAuth: boolean;
+}[] = [
+  { label: "Home", icon: HomeIcon, view: "home", requiresAuth: false },
+  { label: "Journeys", icon: StacksIcon, view: "journeys", requiresAuth: true },
 ];
 
 type Conversation = {
@@ -76,7 +84,7 @@ function ProfileAvatar({
   }
 
   return (
-    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#ffc5d1] to-[#7b6bff] font-display text-sm font-semibold text-white">
+    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-accent to-accent-strong font-display text-sm font-semibold text-white">
       {authenticated ? initials(name) : "?"}
     </div>
   );
@@ -97,8 +105,8 @@ function ChatRow({
 }) {
   return (
     <div
-      className={`group flex items-center gap-1 rounded-lg px-1.5 py-1.5 text-sidebar-foreground/90 transition-colors hover:bg-sidebar-foreground/5 ${
-        active ? "bg-sidebar-foreground/10" : ""
+      className={`group flex items-center gap-1 rounded-lg px-1.5 py-1.5 text-sidebar-fg/90 transition-colors hover:bg-sidebar-fg/5 ${
+        active ? "bg-sidebar-fg/10" : ""
       }`}
     >
       <button
@@ -120,8 +128,8 @@ function ChatRow({
         aria-pressed={conversation.pinned}
         className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors ${
           conversation.pinned
-            ? "text-[#ff6791]"
-            : "opacity-0 group-hover:opacity-100 hover:text-sidebar-foreground"
+            ? "text-accent"
+            : "opacity-0 group-hover:opacity-100 hover:text-sidebar-fg"
         }`}
       >
         <PinIcon className="h-3.5 w-3.5" />
@@ -130,7 +138,7 @@ function ChatRow({
         type="button"
         onClick={onDelete}
         aria-label="Delete chat"
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full opacity-0 transition-colors hover:text-sidebar-foreground group-hover:opacity-100"
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full opacity-0 transition-colors hover:text-sidebar-fg group-hover:opacity-100"
       >
         <TrashIcon className="h-3.5 w-3.5" />
       </button>
@@ -141,26 +149,32 @@ function ChatRow({
 export function Sidebar({
   open,
   onClose,
+  view,
+  onChangeView,
   onOpenAppearance,
   onRequireAuth,
   onOpenUpgrade,
   activeConversationId,
   onSelectConversation,
+  journeys,
 }: {
   open: boolean;
   onClose: () => void;
+  view: View;
+  onChangeView: (view: View) => void;
   onOpenAppearance: () => void;
   onRequireAuth: () => void;
   onOpenUpgrade: () => void;
   activeConversationId: string | null;
   onSelectConversation: (id: string | null) => void;
+  journeys: Journey[];
 }) {
   const { data: session, status } = useSession();
   const user = session?.user;
   const displayName = user?.name ?? "Guest";
   const authenticated = status === "authenticated";
 
-  const [historyOpen, setHistoryOpen] = useState(false);
+  const [conversationsOpen, setConversationsOpen] = useState(false);
   const [pinned, setPinned] = useState<Conversation[]>([]);
   const [recent, setRecent] = useState<Conversation[]>([]);
   const [loadingChats, setLoadingChats] = useState(true);
@@ -194,7 +208,8 @@ export function Sidebar({
     if (!res.ok) return;
     const conversation: Conversation = await res.json();
     setRecent((prev) => [conversation, ...prev]);
-    setHistoryOpen(true);
+    setConversationsOpen(true);
+    onChangeView("home");
     onSelectConversation(conversation.id);
   }
 
@@ -235,173 +250,218 @@ export function Sidebar({
           type="button"
           aria-label="Close menu"
           onClick={onClose}
-          className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm md:hidden"
+          className="fixed inset-0 z-30 bg-black/40 md:hidden"
         />
       )}
-      <div
-        className={`fixed inset-y-0 left-0 z-40 w-72 shrink-0 -translate-x-[calc(100%+var(--sidebar-inset))] shadow-[0_8px_30px_rgba(0,0,0,0.15)] transition-transform duration-200 md:static md:z-auto md:translate-x-0 ${
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 flex w-[267px] -translate-x-full flex-col border-r border-sidebar-border bg-sidebar text-sidebar-fg transition-transform duration-200 md:static md:z-auto md:h-full md:translate-x-0 ${
           open ? "translate-x-0" : ""
         }`}
-        style={{
-          margin: "var(--sidebar-inset)",
-          borderRadius: "var(--sidebar-radius)",
-          padding: "1.5px",
-          background: "var(--sidebar-gradient-border, var(--sidebar-border))",
-        }}
       >
-        <aside
-          className="flex h-full flex-col overflow-y-auto bg-sidebar p-4 text-sidebar-foreground shadow-[0_8px_32px_rgba(0,0,0,0.35)] ring-1 ring-sidebar-border backdrop-blur-2xl backdrop-saturate-150"
-          style={{
-            borderRadius: "calc(var(--sidebar-radius) - 1.5px)",
-          }}
-        >
-          <div className="mb-5 flex items-center justify-between">
-            <div className="flex min-w-0 items-center gap-3">
-              <ProfileAvatar
-                key={user?.image ?? "fallback"}
-                image={user?.image}
-                name={displayName}
-                authenticated={status === "authenticated"}
-              />
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <span className="truncate text-sm font-semibold text-sidebar-foreground">
-                    {displayName}
-                  </span>
-                  {status === "authenticated" && (
-                    <span className="shrink-0 rounded-full bg-[#ffc3cf] px-1.5 py-0.5 text-[10px] font-semibold text-[#8a2745]">
-                      Free
-                    </span>
-                  )}
-                </div>
-                <p className="truncate text-xs text-sidebar-muted">
-                  {status === "authenticated"
-                    ? (user?.email ?? "")
-                    : "Not signed in"}
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Close menu"
-              className="flex h-8 w-8 items-center justify-center rounded-full text-sidebar-muted hover:text-sidebar-foreground md:hidden"
-            >
-              <CloseIcon className="h-5 w-5" />
-            </button>
-          </div>
-
+        <div className="relative flex h-[94px] shrink-0 items-center justify-center border-b border-sidebar-border">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-mark.svg" alt="Z1P" className="h-9 w-auto" />
           <button
             type="button"
-            onClick={authenticated ? onOpenUpgrade : onRequireAuth}
-            className="mb-3 w-full rounded-full bg-gradient-to-r from-[#ffc5d1] to-[#ff7892] py-2.5 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
+            onClick={onClose}
+            aria-label="Close menu"
+            className="absolute right-3 flex h-8 w-8 items-center justify-center rounded-full text-sidebar-muted hover:text-sidebar-fg md:hidden"
           >
-            Upgrade to Ultra
+            <CloseIcon className="h-5 w-5" />
           </button>
+        </div>
 
+        <div className="flex flex-1 flex-col gap-6 overflow-y-auto border-b border-sidebar-border p-5">
           <button
             type="button"
             onClick={handleNewChat}
-            className="mb-5 flex w-full items-center gap-2 rounded-xl bg-[#ff6791]/10 px-3.5 py-2.5 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-[#ff6791]/15"
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-accent px-4 text-base font-medium text-white shadow-sm transition-opacity hover:opacity-90"
           >
-            <PlusIcon className="h-4 w-4 text-[#ff6791]" />
-            New Chat
+            + New
           </button>
 
-          <nav className="flex flex-1 flex-col gap-1 overflow-y-auto">
-            {navItems.map(({ label, icon: Icon, requiresAuth }) => {
-              const isHistory = label === "History";
-              return (
-                <button
-                  key={label}
-                  type="button"
-                  onClick={
-                    requiresAuth && !authenticated
-                      ? onRequireAuth
-                      : isHistory
-                        ? () => setHistoryOpen((open) => !open)
-                        : undefined
-                  }
-                  className="flex items-center gap-3 rounded-lg px-2.5 py-2.5 text-sm text-sidebar-foreground/90 transition-colors hover:bg-sidebar-foreground/5 hover:text-sidebar-foreground"
-                >
-                  <Icon className="h-4.5 w-4.5" />
-                  {label}
-                </button>
-              );
-            })}
-
-            {authenticated && historyOpen && (
-              <div className="ml-1 flex flex-col gap-3 border-l border-sidebar-foreground/15 py-1 pl-3">
-                {loadingChats && pinned.length === 0 && recent.length === 0 && (
-                  <p className="text-xs text-sidebar-muted">Loading chats…</p>
-                )}
-                {!loadingChats &&
-                  pinned.length === 0 &&
-                  recent.length === 0 && (
-                    <p className="text-xs text-sidebar-muted">
-                      No chats yet
-                    </p>
-                  )}
-
-                {pinned.length > 0 && (
-                  <div className="flex flex-col gap-0.5">
-                    <span className="px-1 text-[11px] font-semibold uppercase tracking-wide text-sidebar-muted">
-                      Pinned
-                    </span>
-                    {pinned.map((conversation) => (
-                      <ChatRow
-                        key={conversation.id}
-                        conversation={conversation}
-                        active={conversation.id === activeConversationId}
-                        onSelect={() => onSelectConversation(conversation.id)}
-                        onTogglePin={() => togglePinned(conversation)}
-                        onDelete={() => deleteConversation(conversation)}
-                      />
-                    ))}
-                  </div>
-                )}
-
-                {recent.length > 0 && (
-                  <div className="flex flex-col gap-0.5">
-                    <span className="px-1 text-[11px] font-semibold uppercase tracking-wide text-sidebar-muted">
-                      Recent
-                    </span>
-                    {recent.map((conversation) => (
-                      <ChatRow
-                        key={conversation.id}
-                        conversation={conversation}
-                        active={conversation.id === activeConversationId}
-                        onSelect={() => onSelectConversation(conversation.id)}
-                        onTogglePin={() => togglePinned(conversation)}
-                        onDelete={() => deleteConversation(conversation)}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+          <nav className="flex flex-col gap-0.5">
+            {navItems.map(({ label, icon: Icon, view: itemView, requiresAuth }) => (
+              <button
+                key={label}
+                type="button"
+                onClick={
+                  requiresAuth && !authenticated
+                    ? onRequireAuth
+                    : () => onChangeView(itemView)
+                }
+                className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2.5 text-left text-sm text-sidebar-fg transition-colors hover:bg-accent-soft/60 ${
+                  view === itemView ? "bg-accent-soft" : ""
+                }`}
+              >
+                <Icon className="h-4.5 w-4.5" />
+                {label}
+              </button>
+            ))}
             <button
               type="button"
-              onClick={onOpenAppearance}
-              className="flex items-center gap-3 rounded-lg px-2.5 py-2.5 text-sm text-sidebar-foreground/90 transition-colors hover:bg-sidebar-foreground/5 hover:text-sidebar-foreground"
+              onClick={
+                authenticated
+                  ? () => setConversationsOpen((v) => !v)
+                  : onRequireAuth
+              }
+              className="flex items-center gap-2.5 rounded-lg px-2.5 py-2.5 text-left text-sm text-sidebar-fg transition-colors hover:bg-accent-soft/60"
             >
-              <SettingsIcon className="h-4.5 w-4.5" />
-              Settings
+              <ChatSparkIcon className="h-4.5 w-4.5" />
+              Conversations
             </button>
           </nav>
 
+          {authenticated && conversationsOpen && (
+            <div className="-mt-3 flex flex-col gap-3 border-l border-sidebar-fg/15 py-1 pl-3">
+              {loadingChats && pinned.length === 0 && recent.length === 0 && (
+                <p className="text-xs text-sidebar-muted">Loading chats…</p>
+              )}
+              {!loadingChats && pinned.length === 0 && recent.length === 0 && (
+                <p className="text-xs text-sidebar-muted">No chats yet</p>
+              )}
+
+              {pinned.length > 0 && (
+                <div className="flex flex-col gap-0.5">
+                  <span className="px-1 text-[11px] font-semibold uppercase tracking-wide text-sidebar-muted">
+                    Pinned
+                  </span>
+                  {pinned.map((conversation) => (
+                    <ChatRow
+                      key={conversation.id}
+                      conversation={conversation}
+                      active={conversation.id === activeConversationId}
+                      onSelect={() => {
+                        onChangeView("home");
+                        onSelectConversation(conversation.id);
+                      }}
+                      onTogglePin={() => togglePinned(conversation)}
+                      onDelete={() => deleteConversation(conversation)}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {recent.length > 0 && (
+                <div className="flex flex-col gap-0.5">
+                  <span className="px-1 text-[11px] font-semibold uppercase tracking-wide text-sidebar-muted">
+                    Recent
+                  </span>
+                  {recent.map((conversation) => (
+                    <ChatRow
+                      key={conversation.id}
+                      conversation={conversation}
+                      active={conversation.id === activeConversationId}
+                      onSelect={() => {
+                        onChangeView("home");
+                        onSelectConversation(conversation.id);
+                      }}
+                      onTogglePin={() => togglePinned(conversation)}
+                      onDelete={() => deleteConversation(conversation)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {journeys.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => onChangeView("journeys")}
+              className="mt-auto flex flex-col gap-2 rounded-[10px] border border-sidebar-border p-2.5 text-left"
+            >
+              <span className="flex items-center gap-2">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-input-border text-accent">
+                  <BookIcon className="h-4 w-4" />
+                </span>
+                <span className="min-w-0 truncate text-sm font-medium text-sidebar-fg">
+                  {journeys[0].title}
+                </span>
+              </span>
+              <span className="h-1.5 w-full overflow-hidden rounded-full bg-sidebar-fg/10">
+                <span
+                  className="block h-full rounded-full bg-accent"
+                  style={{ width: `${journeys[0].progress}%` }}
+                />
+              </span>
+            </button>
+          ) : (
+            <div className="mt-auto flex flex-col gap-0.5 border border-sidebar-border rounded-[10px] p-2.5 text-center">
+              <p className="text-sm font-medium text-sidebar-fg">
+                You don&rsquo;t have
+                <br />
+                any journeys Yet
+              </p>
+              <button
+                type="button"
+                onClick={authenticated ? () => onChangeView("journeys") : onRequireAuth}
+                className="mt-1 border-t border-sidebar-border pt-2 text-sm font-medium text-accent hover:underline"
+              >
+                Create Journey
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-0.5 p-5">
+          <button
+            type="button"
+            className="flex items-center gap-2.5 rounded-lg px-2.5 py-2.5 text-left text-sm text-sidebar-fg transition-colors hover:bg-sidebar-fg/5"
+          >
+            <SparkleIcon className="h-4.5 w-4.5" />
+            AI Assisted Guide
+          </button>
+          <button
+            type="button"
+            onClick={onOpenAppearance}
+            className="flex items-center gap-2.5 rounded-lg px-2.5 py-2.5 text-left text-sm text-sidebar-fg transition-colors hover:bg-sidebar-fg/5"
+          >
+            <SettingsIcon className="h-4.5 w-4.5" />
+            Settings
+          </button>
+        </div>
+
+        <div className="flex items-center justify-between gap-3 border-t border-sidebar-border p-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <ProfileAvatar
+              key={user?.image ?? "fallback"}
+              image={user?.image}
+              name={displayName}
+              authenticated={status === "authenticated"}
+            />
+            <div className="min-w-0">
+              <button
+                type="button"
+                onClick={authenticated ? onOpenUpgrade : onRequireAuth}
+                className="flex items-center gap-1.5"
+              >
+                <span className="truncate text-sm font-semibold text-sidebar-fg">
+                  {displayName}
+                </span>
+                {status === "authenticated" && (
+                  <span className="shrink-0 rounded-full bg-badge-bg px-1.5 py-0.5 text-[10px] font-semibold text-badge-fg">
+                    Free
+                  </span>
+                )}
+              </button>
+              <p className="truncate text-xs text-sidebar-muted">
+                Personal Profile
+              </p>
+            </div>
+          </div>
           <button
             type="button"
             onClick={
               status === "authenticated" ? () => signOut() : onRequireAuth
             }
-            className="flex items-center gap-2 rounded-lg px-2.5 py-2.5 text-sm text-sidebar-muted transition-colors hover:bg-sidebar-foreground/5 hover:text-sidebar-foreground"
+            aria-label={status === "authenticated" ? "Log out" : "Sign in"}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sidebar-muted hover:text-sidebar-fg"
           >
             <LogoutIcon className="h-4.5 w-4.5" />
-            {status === "authenticated" ? "Log out" : "Sign in"}
           </button>
-        </aside>
-      </div>
+        </div>
+      </aside>
     </>
   );
 }

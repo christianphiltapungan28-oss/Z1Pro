@@ -39,13 +39,13 @@ export function MarkdownMessage({ content }: { content: string }) {
               href={href}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[#ff6791] underline underline-offset-2"
+              className="text-accent underline underline-offset-2"
             >
               {children}
             </a>
           ),
           blockquote: ({ children }) => (
-            <blockquote className="my-1 border-l-2 border-[#ff6791]/50 pl-3 text-foreground/80">
+            <blockquote className="my-1 border-l-2 border-accent/50 pl-3 text-foreground/80">
               {children}
             </blockquote>
           ),

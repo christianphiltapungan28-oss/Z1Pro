@@ -17,10 +17,10 @@ const OPTIONS: {
   {
     id: "light",
     name: "Daylight",
-    description: "Soft pastel gradients on white",
+    description: "Clean white with a pop of pink",
     bg: "#ffffff",
-    blobA: "#ffc9d6",
-    blobB: "#bcd4ff",
+    blobA: "#ff1da5",
+    blobB: "#ffb15e",
     panel: "#ffffff",
     ink: "#16121a",
   },
@@ -114,8 +114,8 @@ export function AppearanceDialog({
                 aria-pressed={selected}
                 className={`flex items-center gap-3 rounded-xl border p-2.5 text-left transition-colors ${
                   selected
-                    ? "border-[#ff6791]"
-                    : "border-card-border hover:border-[#ff6791]/50"
+                    ? "border-accent"
+                    : "border-card-border hover:border-accent/50"
                 }`}
               >
                 <div className="w-24 shrink-0">
@@ -128,7 +128,7 @@ export function AppearanceDialog({
                   <p className="text-xs text-muted">{option.description}</p>
                 </div>
                 {selected && (
-                  <CheckCircleIcon className="h-5 w-5 shrink-0 text-[#ff6791]" />
+                  <CheckCircleIcon className="h-5 w-5 shrink-0 text-accent" />
                 )}
               </button>
             );

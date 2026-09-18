@@ -144,9 +144,7 @@ export function UpgradeDialog({
                 <div
                   key={plan.code}
                   className={`flex flex-col rounded-2xl border p-5 ${
-                    isCurrent
-                      ? "border-[#ff6791]"
-                      : "border-card-border bg-card"
+                    isCurrent ? "border-accent" : "border-card-border bg-card"
                   }`}
                 >
                   <p className="font-display text-base font-semibold text-foreground">
@@ -168,7 +166,7 @@ export function UpgradeDialog({
                           key={feature}
                           className="flex items-start gap-2 text-sm text-foreground/80"
                         >
-                          <CheckIcon className="mt-0.5 h-4 w-4 shrink-0 text-[#ff6791]" />
+                          <CheckIcon className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
                           {feature}
                         </li>
                       ))}
@@ -183,7 +181,7 @@ export function UpgradeDialog({
                     disabled={!canCheckout || checkingOut !== null}
                     className={`mt-5 w-full rounded-full py-2.5 text-sm font-semibold transition-opacity ${
                       canCheckout
-                        ? "bg-gradient-to-r from-[#ffc5d1] to-[#ff7892] text-white hover:opacity-90 disabled:opacity-60"
+                        ? "bg-gradient-to-r from-accent to-accent-strong text-white hover:opacity-90 disabled:opacity-60"
                         : "cursor-default bg-foreground/10 text-muted"
                     }`}
                   >

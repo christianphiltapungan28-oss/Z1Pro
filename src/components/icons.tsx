@@ -218,6 +218,74 @@ export function SendIcon({ className }: IconProps) {
   );
 }
 
+export function HomeIcon({ className }: IconProps) {
+  return (
+    <svg className={className} {...base}>
+      <path d="M4 11.5 12 4l8 7.5" />
+      <path d="M6 10v9a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-9" />
+      <path d="M10 20v-6h4v6" />
+    </svg>
+  );
+}
+
+export function StacksIcon({ className }: IconProps) {
+  return (
+    <svg className={className} {...base}>
+      <path d="M12 3.5 3.5 8 12 12.5 20.5 8 12 3.5Z" />
+      <path d="M3.5 12 12 16.5 20.5 12" />
+      <path d="M3.5 16 12 20.5 20.5 16" />
+    </svg>
+  );
+}
+
+export function ChatSparkIcon({ className }: IconProps) {
+  return (
+    <svg className={className} {...base}>
+      <path d="M4 6a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H9l-4 4v-4a2 2 0 0 1-2-2Z" strokeLinejoin="round" />
+      <path d="M17.5 3.5 18 5l1.5.5L18 6l-.5 1.5L17 6l-1.5-.5L17 5l.5-1.5Z" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+export function SparkleIcon({ className }: IconProps) {
+  return (
+    <svg className={className} {...base}>
+      <path d="M12 3v4M12 17v4M3 12h4M17 12h4" />
+      <path d="M6.5 6.5 9 9M17.5 6.5 15 9M6.5 17.5 9 15M17.5 17.5 15 15" />
+    </svg>
+  );
+}
+
+export function SearchIcon({ className }: IconProps) {
+  return (
+    <svg className={className} {...base}>
+      <circle cx="10.5" cy="10.5" r="6.5" />
+      <path d="M19.5 19.5 15.3 15.3" />
+    </svg>
+  );
+}
+
+export function CalendarIcon({ className }: IconProps) {
+  return (
+    <svg className={className} {...base}>
+      <rect x="3.5" y="5" width="17" height="15" rx="2.5" />
+      <path d="M3.5 9.5h17" />
+      <path d="M8 3v4M16 3v4" />
+      <path d="M12 13v2.5l1.8 1.2" />
+    </svg>
+  );
+}
+
+export function BookIcon({ className }: IconProps) {
+  return (
+    <svg className={className} {...base}>
+      <path d="M12 6.5c-1.5-1.2-3.8-1.8-6.5-1.8V17c2.7 0 5 .6 6.5 1.8" />
+      <path d="M12 6.5c1.5-1.2 3.8-1.8 6.5-1.8V17c-2.7 0-5 .6-6.5 1.8" />
+      <path d="M12 6.5v12.3" />
+    </svg>
+  );
+}
+
 export function BotIcon({ className }: IconProps) {
   return (
     <svg className={className} {...base}>

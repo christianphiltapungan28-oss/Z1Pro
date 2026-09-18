@@ -131,6 +131,27 @@ export const aiMessages = pgTable("ai_messages", {
     .defaultNow(),
 });
 
+export const journeys = pgTable("journeys", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  description: text("description"),
+  progress: smallint("progress").notNull().default(0),
+  sourceConversationId: uuid("source_conversation_id").references(
+    () => aiConversations.id,
+    { onDelete: "set null" }
+  ),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 export const aiUsageDaily = pgTable(
   "ai_usage_daily",
   {

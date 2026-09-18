@@ -254,8 +254,8 @@ export function VoiceMode({
         aria-label={phase === "recording" ? "Stop recording" : "Start speaking"}
         className={`mt-10 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-md transition-transform disabled:opacity-60 ${
           phase === "recording"
-            ? "scale-105 animate-pulse bg-[#ff6791]"
-            : "bg-[#ff6791]/70"
+            ? "scale-105 animate-pulse bg-accent"
+            : "bg-accent/70"
         }`}
       >
         <MicIcon className="h-6 w-6" />

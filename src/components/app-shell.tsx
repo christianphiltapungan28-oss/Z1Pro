@@ -1,16 +1,21 @@
 "use client";
 
+import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { AmbientBackground } from "@/components/ambient-background";
 import { AppearanceDialog } from "@/components/appearance-dialog";
 import { ChatHome } from "@/components/chat-home";
 import { CloseIcon } from "@/components/icons";
+import { Journeys } from "@/components/journeys";
 import { Sidebar } from "@/components/sidebar";
 import { SignInDialog } from "@/components/sign-in-dialog";
 import { Topbar } from "@/components/topbar";
 import { UpgradeDialog } from "@/components/upgrade-dialog";
 import { VoiceMode } from "@/components/voice-mode";
 import { useAppearance } from "@/lib/use-appearance";
+import type { Journey } from "@/types/journey";
+
+type View = "home" | "journeys";
 
 const CHECKOUT_MESSAGES: Record<string, string> = {
   success: "You're upgraded! Your new plan is now active.",
@@ -32,7 +37,7 @@ function CheckoutBanner({
     <div
       className={`mx-4 mt-2 flex items-center justify-between gap-3 rounded-xl px-4 py-2.5 text-sm sm:mx-6 ${
         isSuccess
-          ? "bg-[#ff6791]/12 text-foreground"
+          ? "bg-accent/12 text-foreground"
           : "bg-foreground/8 text-foreground"
       }`}
     >
@@ -51,6 +56,7 @@ function CheckoutBanner({
 
 export function AppShell() {
   const [voiceMode, setVoiceMode] = useState(false);
+  const [view, setView] = useState<View>("home");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [appearanceOpen, setAppearanceOpen] = useState(false);
   const [signInOpen, setSignInOpen] = useState(false);
@@ -59,7 +65,50 @@ export function AppShell() {
     string | null
   >(null);
   const [checkoutStatus, setCheckoutStatus] = useState<string | null>(null);
+  const [journeys, setJourneys] = useState<Journey[]>([]);
+  const [journeysLoading, setJourneysLoading] = useState(true);
   const { appearance, setAppearance } = useAppearance();
+  const { status: sessionStatus } = useSession();
+  const authenticated = sessionStatus === "authenticated";
+
+  useEffect(() => {
+    if (!authenticated) return;
+    let ignore = false;
+    fetch("/api/journeys")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (ignore || !data) return;
+        setJourneys(data.journeys ?? []);
+      })
+      .finally(() => {
+        if (!ignore) setJourneysLoading(false);
+      });
+    return () => {
+      ignore = true;
+    };
+  }, [authenticated]);
+
+  async function createJourney(payload: {
+    title: string;
+    description?: string;
+    sourceConversationId?: string;
+  }) {
+    const res = await fetch("/api/journeys", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) return null;
+    const journey: Journey = await res.json();
+    setJourneys((prev) => [journey, ...prev]);
+    return journey;
+  }
+
+  function openJourney(journey: Journey) {
+    setActiveConversationId(journey.sourceConversationId);
+    setVoiceMode(false);
+    setView("home");
+  }
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -85,6 +134,12 @@ export function AppShell() {
         <Sidebar
           open={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
+          view={view}
+          onChangeView={(next) => {
+            setView(next);
+            setVoiceMode(false);
+            setSidebarOpen(false);
+          }}
           onOpenAppearance={() => setAppearanceOpen(true)}
           onRequireAuth={() => setSignInOpen(true)}
           onOpenUpgrade={() => setUpgradeOpen(true)}
@@ -93,15 +148,17 @@ export function AppShell() {
             setActiveConversationId(id);
             setSidebarOpen(false);
           }}
+          journeys={journeys}
         />
 
         <div className="flex min-w-0 flex-1 flex-col">
           <Topbar
-            voiceMode={voiceMode}
-            onVoiceModeChange={setVoiceMode}
             onMenuClick={() => setSidebarOpen(true)}
-            appearance={appearance}
-            onOpenAppearance={() => setAppearanceOpen(true)}
+            searchPlaceholder={
+              view === "journeys"
+                ? "Search Your Journeys....."
+                : "Ask anything"
+            }
           />
           {checkoutStatus && (
             <CheckoutBanner
@@ -110,7 +167,17 @@ export function AppShell() {
             />
           )}
           <main className="min-h-0 flex-1">
-            {voiceMode ? (
+            {view === "journeys" ? (
+              <Journeys
+                journeys={journeys}
+                loading={journeysLoading}
+                onStartJourney={() => {
+                  setView("home");
+                  setVoiceMode(true);
+                }}
+                onOpenJourney={openJourney}
+              />
+            ) : voiceMode ? (
               <VoiceMode
                 appearance={appearance}
                 conversationId={activeConversationId}
@@ -120,6 +187,10 @@ export function AppShell() {
               <ChatHome
                 conversationId={activeConversationId}
                 onConversationCreated={setActiveConversationId}
+                onStartVoice={() => setVoiceMode(true)}
+                onCreateJourney={createJourney}
+                onJourneySaved={() => setView("journeys")}
+                appearance={appearance}
               />
             )}
           </main>
