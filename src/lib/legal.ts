@@ -12,12 +12,12 @@ export const LEGAL = {
   // TODO: DTI business name or SEC registration number. The Internet
   // Transactions Act (RA 11967) requires online merchants to display it.
   businessRegistration: "[DTI/SEC registration no.]",
-  // TODO: a monitored inbox for privacy and support requests.
-  contactEmail: "[support email]",
+  // Temporary: switch to an address on the company's own domain
+  // (e.g. support@z1p.pro) once email is set up there.
+  contactEmail: "zpronathanwrightflowsmart@gmail.com",
   // TODO: name of the designated Data Protection Officer (can be the owner).
   dpoName: "[Data Protection Officer name]",
-  // TODO: can be the same inbox as contactEmail.
-  dpoEmail: "[privacy email]",
+  dpoEmail: "zpronathanwrightflowsmart@gmail.com",
   governingLaw: "the Republic of the Philippines",
   lastUpdated: "September 24, 2026",
 } as const;
