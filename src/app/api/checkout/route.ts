@@ -6,7 +6,7 @@ import { payments, plans } from "@/db/schema";
 import { getAppOrigin } from "@/lib/app-url";
 import { getCountryCode } from "@/lib/geo";
 import { rateLimit } from "@/lib/rate-limit";
-import { getStripeClient } from "@/lib/stripe";
+import { getStripeClient, STRIPE_ENABLED } from "@/lib/stripe";
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -37,7 +37,8 @@ export async function POST(request: Request) {
   }
 
   const country = await getCountryCode(request);
-  const useStripe = country !== "PH" && plan.priceUsdMinorUnits !== null;
+  const useStripe =
+    STRIPE_ENABLED && country !== "PH" && plan.priceUsdMinorUnits !== null;
 
   const origin = getAppOrigin(request);
 

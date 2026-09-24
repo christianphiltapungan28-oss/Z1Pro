@@ -16,3 +16,10 @@ export function getStripeClient(): Stripe {
   }
   return cached;
 }
+
+/**
+ * Stripe is switched off for now — every checkout goes through PayMongo and
+ * prices are shown in the plan's own currency, whatever the visitor's country.
+ * Flip back to true once live Stripe keys and a live webhook are set up.
+ */
+export const STRIPE_ENABLED = false;
