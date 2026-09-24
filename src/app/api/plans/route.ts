@@ -26,7 +26,8 @@ export async function GET(request: Request) {
     ? await getCurrentPlanCode(session.user.id)
     : "free";
 
-  const country = await getCountryCode(request);
+  // Skip the IP-based country lookup (sent to ipwho.is) while Stripe is off.
+  const country = STRIPE_ENABLED ? await getCountryCode(request) : "PH";
 
   return NextResponse.json({
     plans: activePlans.map((plan) => {

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import type { Journey } from "@/types/journey";
@@ -124,12 +125,12 @@ function ChatRow({
       <button
         type="button"
         onClick={onTogglePin}
-        aria-label={conversation.pinned ? "Unpin chat" : "Pin chat"}
+        aria-label={`${conversation.pinned ? "Unpin" : "Pin"} chat: ${conversation.title || "New chat"}`}
         aria-pressed={conversation.pinned}
         className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors ${
           conversation.pinned
             ? "text-accent"
-            : "opacity-0 group-hover:opacity-100 hover:text-sidebar-fg"
+            : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-sidebar-fg [@media(hover:none)]:opacity-100"
         }`}
       >
         <PinIcon className="h-3.5 w-3.5" />
@@ -137,8 +138,8 @@ function ChatRow({
       <button
         type="button"
         onClick={onDelete}
-        aria-label="Delete chat"
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full opacity-0 transition-colors hover:text-sidebar-fg group-hover:opacity-100"
+        aria-label={`Delete chat: ${conversation.title || "New chat"}`}
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full opacity-0 transition-colors hover:text-sidebar-fg group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
       >
         <TrashIcon className="h-3.5 w-3.5" />
       </button>
@@ -280,11 +281,12 @@ export function Sidebar({
             + New
           </button>
 
-          <nav className="flex flex-col gap-0.5">
+          <nav aria-label="Main" className="flex flex-col gap-0.5">
             {navItems.map(({ label, icon: Icon, view: itemView, requiresAuth }) => (
               <button
                 key={label}
                 type="button"
+                aria-current={view === itemView ? "page" : undefined}
                 onClick={
                   requiresAuth && !authenticated
                     ? onRequireAuth
@@ -300,6 +302,7 @@ export function Sidebar({
             ))}
             <button
               type="button"
+              aria-expanded={authenticated ? conversationsOpen : undefined}
               onClick={
                 authenticated
                   ? () => setConversationsOpen((v) => !v)
@@ -420,6 +423,23 @@ export function Sidebar({
             <SettingsIcon className="h-4.5 w-4.5" />
             Settings
           </button>
+          <nav
+            aria-label="Legal"
+            className="mt-2 flex flex-wrap gap-x-3 gap-y-1 px-2.5 text-[11px] text-sidebar-muted"
+          >
+            <Link href="/terms" className="hover:text-sidebar-fg hover:underline">
+              Terms
+            </Link>
+            <Link href="/privacy" className="hover:text-sidebar-fg hover:underline">
+              Privacy
+            </Link>
+            <Link href="/cookies" className="hover:text-sidebar-fg hover:underline">
+              Cookies
+            </Link>
+            <Link href="/refunds" className="hover:text-sidebar-fg hover:underline">
+              Refunds
+            </Link>
+          </nav>
         </div>
 
         <div className="flex items-center justify-between gap-3 border-t border-sidebar-border p-4">

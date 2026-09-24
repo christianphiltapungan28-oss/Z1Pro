@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { CheckIcon, CloseIcon } from "@/components/icons";
+import { useDialog } from "@/lib/use-dialog";
 
 type Plan = {
   code: string;
@@ -37,13 +39,7 @@ export function UpgradeDialog({
   const [checkingOut, setCheckingOut] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    if (open) document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, [open, onClose]);
+  const panelRef = useDialog(open, onClose);
 
   useEffect(() => {
     if (!open) return;
@@ -93,9 +89,19 @@ export function UpgradeDialog({
         onClick={onClose}
         className="fixed inset-0 bg-black/50 backdrop-blur-sm"
       />
-      <div className="relative flex max-h-[calc(100dvh-2rem)] w-full max-w-4xl flex-col overflow-y-auto rounded-2xl border border-card-border bg-background p-6 shadow-xl">
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="upgrade-dialog-title"
+        tabIndex={-1}
+        className="relative flex max-h-[calc(100dvh-2rem)] w-full max-w-4xl flex-col overflow-y-auto rounded-2xl border border-card-border bg-background p-6 shadow-xl outline-none"
+      >
         <div className="mb-1 flex items-center justify-between">
-          <h2 className="font-display text-xl font-semibold text-foreground">
+          <h2
+            id="upgrade-dialog-title"
+            className="font-display text-xl font-semibold text-foreground"
+          >
             Upgrade your plan
           </h2>
           <button
@@ -118,7 +124,9 @@ export function UpgradeDialog({
         )}
 
         {error && (
-          <p className="mb-4 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-500">
+          <p
+            role="alert"
+            className="mb-4 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-500">
             {error}
           </p>
         )}
@@ -191,6 +199,26 @@ export function UpgradeDialog({
               );
             })}
           </div>
+        )}
+
+        {!loading && (
+          <p className="mt-5 text-center text-xs leading-relaxed text-muted">
+            Each payment covers one billing period and{" "}
+            <strong className="font-semibold text-foreground/80">
+              does not renew automatically
+            </strong>
+            . By continuing to checkout you agree to our{" "}
+            <Link href="/terms" target="_blank" className="underline">
+              Terms and Conditions
+            </Link>{" "}
+            and{" "}
+            <Link href="/refunds" target="_blank" className="underline">
+              Refund Policy
+            </Link>
+            . If you are under 18, you confirm your parent or guardian has
+            approved this purchase. Payment is handled on our payment
+            provider&rsquo;s secure page.
+          </p>
         )}
       </div>
     </div>

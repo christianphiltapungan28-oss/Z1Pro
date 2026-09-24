@@ -2,7 +2,10 @@ type IconProps = {
   className?: string;
 };
 
+// Icons are decorative: every button using one carries its own text or
+// aria-label, so screen readers should skip the SVG itself.
 const base = {
+  "aria-hidden": true,
   fill: "none",
   stroke: "currentColor",
   strokeWidth: 1.8,
@@ -13,7 +16,7 @@ const base = {
 
 export function LogoIcon({ className }: IconProps) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none">
+    <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path
         d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"
         fill="url(#logo-grad)"
@@ -176,7 +179,7 @@ export function PaletteIcon({ className }: IconProps) {
 
 export function CheckCircleIcon({ className }: IconProps) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none">
+    <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <circle cx="12" cy="12" r="10" fill="currentColor" />
       <path
         d="M7.5 12.5l3 3 6-6.5"

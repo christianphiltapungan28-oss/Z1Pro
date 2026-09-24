@@ -8,6 +8,20 @@ export function MarkdownMessage({ content }: { content: string }) {
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
+          // Never auto-load images from AI replies: any URL the model emits
+          // would be fetched from the viewer's browser, leaking their IP to
+          // an arbitrary third party. Show a link they can choose to open.
+          img: ({ src, alt }) =>
+            typeof src === "string" ? (
+              <a
+                href={src}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-accent underline underline-offset-2"
+              >
+                {alt || "Image"} (opens image)
+              </a>
+            ) : null,
           p: ({ children }) => <p className="my-1">{children}</p>,
           h1: ({ children }) => (
             <h1 className="mt-3 mb-1 font-display text-lg font-semibold text-foreground">

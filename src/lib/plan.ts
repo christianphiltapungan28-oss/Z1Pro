@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, gt } from "drizzle-orm";
 import { db } from "@/db";
 import { plans, subscriptions } from "@/db/schema";
 
@@ -41,7 +41,12 @@ export async function getCurrentPlanCode(userId: string): Promise<string> {
     .from(subscriptions)
     .innerJoin(plans, eq(subscriptions.planId, plans.id))
     .where(
-      and(eq(subscriptions.userId, userId), eq(subscriptions.status, "active"))
+      and(
+        eq(subscriptions.userId, userId),
+        eq(subscriptions.status, "active"),
+        // A paid period that has run out falls back to free; plans don't renew.
+        gt(subscriptions.currentPeriodEnd, new Date())
+      )
     )
     .orderBy(desc(subscriptions.currentPeriodStart))
     .limit(1);

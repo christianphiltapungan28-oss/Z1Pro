@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
 import { CheckCircleIcon, CloseIcon } from "@/components/icons";
 import type { Appearance } from "@/lib/use-appearance";
+import { useDialog } from "@/lib/use-dialog";
 
 const OPTIONS: {
   id: Appearance;
@@ -69,14 +69,7 @@ export function AppearanceDialog({
   appearance: Appearance;
   onChange: (value: Appearance) => void;
 }) {
-  useEffect(() => {
-    if (!open) return;
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, [open, onClose]);
+  const panelRef = useDialog(open, onClose);
 
   if (!open) return null;
 
@@ -88,9 +81,19 @@ export function AppearanceDialog({
         onClick={onClose}
         className="fixed inset-0 bg-black/50 backdrop-blur-sm"
       />
-      <div className="relative max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-2xl border border-card-border bg-background p-5 shadow-xl">
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="appearance-dialog-title"
+        tabIndex={-1}
+        className="relative max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-2xl border border-card-border bg-background p-5 shadow-xl outline-none"
+      >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-display text-lg font-semibold text-foreground">
+          <h2
+            id="appearance-dialog-title"
+            className="font-display text-lg font-semibold text-foreground"
+          >
             Appearance
           </h2>
           <button

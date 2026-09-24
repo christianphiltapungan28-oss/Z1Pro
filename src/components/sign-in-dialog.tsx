@@ -1,7 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { signIn } from "next-auth/react";
+import { useState } from "react";
 import { CloseIcon } from "@/components/icons";
+import { useDialog } from "@/lib/use-dialog";
 
 export function SignInDialog({
   open,
@@ -10,6 +13,9 @@ export function SignInDialog({
   open: boolean;
   onClose: () => void;
 }) {
+  const panelRef = useDialog(open, onClose);
+  const [agreed, setAgreed] = useState(false);
+
   if (!open) return null;
 
   return (
@@ -20,9 +26,19 @@ export function SignInDialog({
         onClick={onClose}
         className="fixed inset-0 bg-black/50 backdrop-blur-sm"
       />
-      <div className="relative max-h-[calc(100dvh-2rem)] w-full max-w-sm overflow-y-auto rounded-2xl border border-card-border bg-background p-6 shadow-xl">
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="sign-in-dialog-title"
+        tabIndex={-1}
+        className="relative max-h-[calc(100dvh-2rem)] w-full max-w-sm overflow-y-auto rounded-2xl border border-card-border bg-background p-6 shadow-xl outline-none"
+      >
         <div className="mb-5 flex items-center justify-between">
-          <h2 className="font-display text-lg font-semibold text-foreground">
+          <h2
+            id="sign-in-dialog-title"
+            className="font-display text-lg font-semibold text-foreground"
+          >
             Sign in to Z1P.pro
           </h2>
           <button
@@ -39,13 +55,38 @@ export function SignInDialog({
           Sign in to save your history and upgrade to Ultra.
         </p>
 
+        {/* Consent is captured before sign-in because the account is created
+            by the OAuth callback — there is no later step to ask at. */}
+        <label className="mb-4 flex items-start gap-2.5 text-xs leading-relaxed text-foreground/80">
+          <input
+            type="checkbox"
+            checked={agreed}
+            onChange={(e) => setAgreed(e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--accent-strong)]"
+          />
+          <span>
+            I agree to the{" "}
+            <Link href="/terms" target="_blank" className="text-accent-strong underline">
+              Terms and Conditions
+            </Link>{" "}
+            and{" "}
+            <Link href="/privacy" target="_blank" className="text-accent-strong underline">
+              Privacy Policy
+            </Link>
+            , including messages and voice recordings being processed by our AI
+            provider (OpenAI) outside the Philippines. I am 18 or older, or I am 15
+            to 17 and my parent or guardian has also read and agreed to them.
+          </span>
+        </label>
+
         <div className="flex flex-col gap-2.5">
           <button
             type="button"
             onClick={() => signIn("google")}
-            className="flex items-center justify-center gap-2.5 rounded-full border border-card-border bg-card px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-foreground/5"
+            disabled={!agreed}
+            className="flex items-center justify-center gap-2.5 rounded-full border border-card-border bg-card px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-foreground/5 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <svg className="h-4.5 w-4.5" viewBox="0 0 24 24">
+            <svg className="h-4.5 w-4.5" viewBox="0 0 24 24" aria-hidden="true">
               <path
                 fill="#4285F4"
                 d="M23.5 12.3c0-.8-.1-1.6-.2-2.4H12v4.5h6.5c-.3 1.5-1.1 2.7-2.4 3.6v3h3.9c2.3-2.1 3.5-5.2 3.5-8.7Z"
@@ -69,9 +110,10 @@ export function SignInDialog({
           <button
             type="button"
             onClick={() => signIn("facebook")}
-            className="flex items-center justify-center gap-2.5 rounded-full bg-[#1877F2] px-4 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
+            disabled={!agreed}
+            className="flex items-center justify-center gap-2.5 rounded-full bg-[#1877F2] px-4 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <svg className="h-4.5 w-4.5" viewBox="0 0 24 24" fill="white">
+            <svg className="h-4.5 w-4.5" viewBox="0 0 24 24" fill="white" aria-hidden="true">
               <path d="M24 12.07C24 5.68 18.63.4 12 .4S0 5.68 0 12.07c0 5.77 4.39 10.56 10.13 11.44v-8.1H7.08v-3.34h3.05V9.41c0-3.01 1.79-4.67 4.53-4.67 1.31 0 2.68.24 2.68.24v2.95h-1.51c-1.49 0-1.96.93-1.96 1.88v2.26h3.33l-.53 3.34h-2.8v8.1C19.61 22.63 24 17.84 24 12.07Z" />
             </svg>
             Continue with Facebook

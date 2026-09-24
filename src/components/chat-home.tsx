@@ -45,10 +45,14 @@ function MessageBubble({ message }: { message: Message }) {
 function TypingIndicator() {
   return (
     <div className="flex justify-start">
-      <div className="flex items-center gap-1 rounded-2xl border border-card-border bg-card px-4 py-3">
-        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted [animation-delay:-0.2s]" />
-        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted [animation-delay:-0.1s]" />
-        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted" />
+      <div
+        role="status"
+        className="flex items-center gap-1 rounded-2xl border border-card-border bg-card px-4 py-3"
+      >
+        <span className="sr-only">Z1P is typing…</span>
+        <span aria-hidden="true" className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted [animation-delay:-0.2s]" />
+        <span aria-hidden="true" className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted [animation-delay:-0.1s]" />
+        <span aria-hidden="true" className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted" />
       </div>
     </div>
   );
@@ -221,7 +225,11 @@ export function ChatHome({
             </div>
           </div>
         ) : (
-          <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 px-4 py-6 sm:px-8">
+          <div
+            role="log"
+            aria-label="Conversation"
+            className="mx-auto flex w-full max-w-2xl flex-col gap-4 px-4 py-6 sm:px-8"
+          >
             {loadingMessages && (
               <p className="text-center text-sm text-muted">
                 Loading chat…
@@ -237,6 +245,7 @@ export function ChatHome({
 
       {error && (
         <p
+          role="alert"
           className={`mx-auto mb-2 w-full px-4 text-center text-xs text-red-500 sm:px-8 ${
             showLanding ? "max-w-xl" : "max-w-2xl"
           }`}
@@ -265,10 +274,11 @@ export function ChatHome({
           showLanding ? "mx-auto max-w-xl" : "mx-auto max-w-2xl"
         }`}
       >
-        <div className="flex flex-1 items-center gap-2 rounded-full border border-input-border bg-input px-4 py-3">
+        <div className="flex flex-1 items-center gap-2 rounded-full border border-input-border bg-input px-4 py-3 focus-within:ring-2 focus-within:ring-accent-strong">
           <PlusIcon className="h-4.5 w-4.5 shrink-0 text-muted" />
           <input
             value={message}
+            aria-label="Message Z1P"
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Ask anything"
             className="w-full bg-transparent text-sm text-foreground placeholder:text-muted focus:outline-none"
@@ -283,6 +293,9 @@ export function ChatHome({
           <SendIcon className="h-5 w-5" />
         </button>
       </form>
+      <p className="-mt-5 mb-3 px-4 text-center text-[11px] text-muted sm:-mt-6">
+        Z1P can make mistakes. Check important information.
+      </p>
     </div>
   );
 }

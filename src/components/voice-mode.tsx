@@ -241,7 +241,10 @@ export function VoiceMode({
       )}
 
       {error && (
-        <p className="mt-4 max-w-md text-center text-xs text-red-500">
+        <p
+          role="alert"
+          className="mt-4 max-w-md text-center text-xs text-red-500"
+        >
           {error}
         </p>
       )}
@@ -261,7 +264,15 @@ export function VoiceMode({
         <MicIcon className="h-6 w-6" />
       </button>
 
-      <p className="mt-3 text-xs text-muted">{statusText}</p>
+      <p aria-live="polite" className="mt-3 text-xs text-muted">
+        {statusText}
+      </p>
+
+      <p className="mt-6 max-w-sm text-center text-[11px] leading-relaxed text-muted">
+        Your recording is sent to OpenAI to be transcribed; we don&rsquo;t keep
+        the audio, only the text in your chat. Z1P can make mistakes, so check
+        important information.
+      </p>
     </div>
   );
 }

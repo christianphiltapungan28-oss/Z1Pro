@@ -41,6 +41,7 @@ export function Topbar({
         <SearchIcon className="h-4.5 w-4.5 shrink-0 text-muted" />
         <input
           type="text"
+          aria-label="Search"
           placeholder={searchPlaceholder}
           className="w-full bg-transparent text-sm text-foreground placeholder:text-muted focus:outline-none"
         />

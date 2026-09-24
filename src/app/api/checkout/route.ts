@@ -36,9 +36,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Plan not available" }, { status: 400 });
   }
 
-  const country = await getCountryCode(request);
+  // Only look up the visitor's country (which sends their IP to ipwho.is)
+  // when it can actually change the provider.
   const useStripe =
-    STRIPE_ENABLED && country !== "PH" && plan.priceUsdMinorUnits !== null;
+    STRIPE_ENABLED &&
+    plan.priceUsdMinorUnits !== null &&
+    (await getCountryCode(request)) !== "PH";
 
   const origin = getAppOrigin(request);
 
