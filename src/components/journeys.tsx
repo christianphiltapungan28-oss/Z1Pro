@@ -4,6 +4,66 @@ import { BookIcon, ChevronRightIcon, PlusIcon } from "@/components/icons";
 import { Orb } from "@/components/orb";
 import type { Journey } from "@/types/journey";
 
+// The empty-state illustration is made of separate vector layers from the
+// Figma design, each placed by its inset (top, right, bottom, left) within
+// the 309×299 artwork frame, listed back to front.
+const EMPTY_ILLUSTRATION_LAYERS: [file: string, inset: string][] = [
+  ["vector-0", "9.22% 18.12% 9.25% 18.09%"],
+  ["vector-1", "9.22% 38.34% 72.32% 39.19%"],
+  ["vector-2", "67.85% 18.12% 9.25% 18.09%"],
+  ["vector-3", "9.22% 38.54% 72.32% 39.39%"],
+  ["vector-4", "27.57% 41.54% 63.53% 40.88%"],
+  ["vector-5", "45.33% 32.47% 51.49% 63.32%"],
+  ["vector-7", "45.33% 63.35% 51.49% 32.44%"],
+  ["vector-8", "58.67% 49.94% 39.1% 42.4%"],
+  ["vector-9", "43.07% 52.15% 53.98% 42.05%"],
+  ["vector-10", "43.07% 42.08% 53.98% 52.12%"],
+  ["vector-11", "48.38% 54.68% 48.73% 40%"],
+  ["vector-12", "48.38% 40.03% 48.73% 54.65%"],
+  ["vector-13", "46.54% 49.34% 47.89% 48.46%"],
+  ["vector-14", "52.55% 43.76% 44.22% 51.43%"],
+];
+
+function JourneysEmptyState({ onCreate }: { onCreate: () => void }) {
+  return (
+    <div className="flex h-full flex-col items-center justify-center overflow-y-auto px-4 py-8">
+      <div className="flex w-full max-w-[309px] flex-col items-center">
+        <div aria-hidden="true" className="relative h-[299px] w-[309px] shrink-0 overflow-hidden">
+          {EMPTY_ILLUSTRATION_LAYERS.map(([file, inset]) => (
+            <div key={file} className="absolute" style={{ inset }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={`/journeys-empty/${file}.svg`}
+                alt=""
+                className="absolute inset-0 block size-full max-w-none"
+              />
+            </div>
+          ))}
+        </div>
+        <p className="text-center text-xl text-foreground sm:whitespace-nowrap">
+          No Journeys Here yet, Create one
+        </p>
+      </div>
+
+      <button
+        type="button"
+        onClick={onCreate}
+        className="mt-[72px] flex h-11 w-[225px] shrink-0 items-center justify-center gap-2.5 rounded-[30px] bg-accent-muted p-2.5 text-xl font-medium text-white transition-opacity hover:opacity-90"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/journeys-empty/sparkle.svg"
+          alt=""
+          width={24}
+          height={24}
+          className="size-6 shrink-0"
+        />
+        Create Journey
+      </button>
+    </div>
+  );
+}
+
 export function Journeys({
   journeys,
   loading,
@@ -17,6 +77,10 @@ export function Journeys({
 }) {
   const activeJourneys = journeys.filter((j) => j.progress < 100);
   const unfinished = activeJourneys[0];
+
+  if (!loading && journeys.length === 0) {
+    return <JourneysEmptyState onCreate={onStartJourney} />;
+  }
 
   return (
     <div className="h-full overflow-y-auto px-4 py-8 sm:px-8">
@@ -119,12 +183,6 @@ export function Journeys({
             </span>
           </button>
         </div>
-
-        {!loading && journeys.length === 0 && (
-          <p className="text-sm text-muted">
-            No journeys yet — start one above and it&rsquo;ll show up here.
-          </p>
-        )}
 
         {journeys.length > 0 && (
           <div className="flex flex-col gap-4 rounded-[10px] border border-card-border/60 px-5 py-6">
