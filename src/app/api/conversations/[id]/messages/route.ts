@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/db";
 import { aiConversations, aiMessages, aiUsageDaily } from "@/db/schema";
@@ -10,14 +10,22 @@ import {
   getModelForPlan,
   getModelLabelForPlan,
 } from "@/lib/plan";
+import { openaiFetch } from "@/lib/openai";
 import { rateLimit } from "@/lib/rate-limit";
+import { isOverDailyBudget, recordUsage, sendAlert } from "@/lib/usage-guard";
 
+// Keep this prompt ABOVE 1,024 tokens (it's ~1,070 now). OpenAI only caches
+// prompts past that size, and a cached system prompt is billed at a tenth of
+// the normal input price on every message. Trimming it below the threshold
+// silently roughly doubles the input cost of each chat reply.
 function systemPrompt(modelLabel: string) {
   return `You are Z1P, a friendly and helpful AI assistant running on Z1P.pro. You are powered by the ${modelLabel} model. If asked what model, AI, or version you are, identify yourself as Z1P, powered by ${modelLabel} — do not say you are ChatGPT or name any other underlying model.
 
 Speak in a JARVIS-like voice: composed, articulate, quietly confident, with a touch of dry, understated wit. You're a highly capable aide who respects the user's intelligence, not a hype machine — skip filler like "Great question!", excessive exclamation points, or over-the-top enthusiasm. Light, dry humor is welcome when it fits naturally, but never at the expense of clarity, warmth, or the user's dignity, and never so much that it undercuts the coaching goal below.
 
-Your main goal is character development, not instant answers. You are not a lookup tool — you are a teacher, adviser, coach, and friend who helps the user think. When someone brings you a decision, dilemma, habit, goal, or personal-growth question, do not dump a full framework or plan right away: ask 1-3 clarifying questions first, then stop and wait for the user's reply before offering options or a plan. Only skip straight to a full framework or plan when the user explicitly asks you to just give them the answer/plan, or once they've answered enough of your questions. Give direct answers immediately for simple factual questions — no need to interrogate those. Be honest and challenge the user when it serves their growth — don't just tell them what they want to hear.
+Your main goal is character development, not instant answers. You are not a lookup tool — you are a teacher, adviser, coach, and friend who helps the user think. When someone brings you a decision, dilemma, habit, goal, or personal-growth question, do not dump a full framework or plan right away: ask 1-3 clarifying questions first, then stop and wait for the user's reply before offering options or a plan. Only skip straight to a full framework or plan when the user explicitly asks you to just give them the answer/plan, or once they've answered enough of your questions. Give direct answers immediately for simple factual questions — no need to interrogate those. Be honest and challenge the user when it serves their growth — don't just tell them what they want to hear. Keep every answer as short as the question allows: no restating the question, no preamble, no recap at the end.
+
+Coaching habits: when the user shares progress on a goal, acknowledge it specifically before moving on. Prefer one or two concrete next steps the user can take today over general advice, and fit any plan to the time, money and constraints they've told you about. Use what they've already said earlier in the conversation instead of asking for it again. Reply in the same language and register the user writes in, including Filipino, Tagalog or Taglish.
 
 Z1P is built for people aged 15 and up; users aged 15 to 17 use it with a parent or guardian's consent. If the user tells you, or it otherwise becomes clear from what they say, that they are under 18, keep things age-appropriate and steer clear of mature or sensitive territory — romantic/sexual content, self-harm, substance use, violence, explicit content, and complex financial/legal/medical advice. On those topics, gently redirect and suggest they talk with a parent, guardian, or another trusted adult instead. If they indicate they are under 15, kindly explain that Z1P is meant for people 15 and older and encourage them to ask a parent or guardian for help instead. Don't assume anyone is a minor without a clear signal from them.
 
@@ -78,6 +86,52 @@ export async function GET(
   return NextResponse.json({ messages });
 }
 
+// Only the most recent turns are sent to the model. Resending an entire long
+// conversation on every message makes each reply cost more than the last.
+const HISTORY_MAX_MESSAGES = 20;
+const HISTORY_MAX_CHARS = 24_000;
+
+// Hard ceilings on reply length (reasoning tokens count towards these, so
+// they're generous); the prompt asks for much shorter answers anyway.
+const MAX_COMPLETION_TOKENS = { text: 4_000, voice: 1_500 } as const;
+
+// Voice replies are read aloud by text-to-speech, which bills per character,
+// so ask for short spoken answers with nothing that can't be spoken.
+const VOICE_INSTRUCTIONS =
+  "This reply will be spoken aloud. Answer in 1 to 3 short sentences of plain conversational text: no Markdown, lists, code, tables, emoji or chart blocks.";
+
+// "Unlimited" plans still get a fair-use ceiling so a leaked account or a
+// runaway script can't run up an unbounded bill.
+const FAIR_USE_DAILY_MESSAGES = 300;
+
+function trimHistory<T extends { content: string }>(newestFirst: T[]) {
+  const kept: T[] = [];
+  let chars = 0;
+  for (const message of newestFirst) {
+    // Always keep the newest message (the one being answered).
+    if (kept.length > 0 && chars + message.content.length > HISTORY_MAX_CHARS) {
+      break;
+    }
+    kept.push(message);
+    chars += message.content.length;
+  }
+  return kept.reverse();
+}
+
+async function adjustDailyCount(userId: string, usageDate: string, delta: number) {
+  const [row] = await db
+    .insert(aiUsageDaily)
+    .values({ userId, usageDate, messageCount: Math.max(delta, 0) })
+    .onConflictDoUpdate({
+      target: [aiUsageDaily.userId, aiUsageDaily.usageDate],
+      set: {
+        messageCount: sql`greatest(${aiUsageDaily.messageCount} + ${delta}, 0)`,
+      },
+    })
+    .returning({ messageCount: aiUsageDaily.messageCount });
+  return row.messageCount;
+}
+
 export async function POST(
   request: Request,
   ctx: RouteContext<"/api/conversations/[id]/messages">
@@ -88,7 +142,7 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const limit = await rateLimit(`messages:${userId}`, 30, 5 * 60_000);
+  const limit = await rateLimit(`messages:${userId}`, 20, 5 * 60_000);
   if (!limit.ok) {
     return NextResponse.json(
       { error: "Too many messages sent. Try again shortly." },
@@ -105,6 +159,7 @@ export async function POST(
   const body = await request.json().catch(() => ({}));
   const content =
     typeof body?.content === "string" ? body.content.trim() : "";
+  const mode: "text" | "voice" = body?.mode === "voice" ? "voice" : "text";
   if (!content) {
     return NextResponse.json(
       { error: "Message content is required" },
@@ -118,11 +173,17 @@ export async function POST(
     );
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
+  if (!process.env.OPENAI_API_KEY) {
     return NextResponse.json(
       { error: "AI is not configured" },
       { status: 500 }
+    );
+  }
+
+  if (await isOverDailyBudget("chatTokens")) {
+    return NextResponse.json(
+      { error: "The assistant is temporarily unavailable. Please try again later." },
+      { status: 503 }
     );
   }
 
@@ -131,34 +192,26 @@ export async function POST(
   const planCode = currentOrg
     ? await getCurrentPlanCode(currentOrg.orgId)
     : "free";
-  const dailyLimit = getDailyMessageLimit(planCode);
+  const planDailyLimit = getDailyMessageLimit(planCode);
+  const dailyLimit = planDailyLimit ?? FAIR_USE_DAILY_MESSAGES;
   const model = getModelForPlan(planCode);
   const modelLabel = getModelLabelForPlan(planCode);
-  let priorMessageCount = 0;
 
-  if (dailyLimit !== null) {
-    const [usageRow] = await db
-      .select({ messageCount: aiUsageDaily.messageCount })
-      .from(aiUsageDaily)
-      .where(
-        and(
-          eq(aiUsageDaily.userId, userId),
-          eq(aiUsageDaily.usageDate, usageDate)
-        )
-      )
-      .limit(1);
-    priorMessageCount = usageRow?.messageCount ?? 0;
-
-    if (priorMessageCount >= dailyLimit) {
-      return NextResponse.json(
-        {
-          error: "Daily message limit reached",
-          planCode,
-          dailyLimit,
-        },
-        { status: 429 }
+  // Reserve today's message slot atomically before calling OpenAI, so
+  // parallel requests can't all slip past the limit at once.
+  const messagesUsedToday = await adjustDailyCount(userId, usageDate, 1);
+  if (messagesUsedToday > dailyLimit) {
+    await adjustDailyCount(userId, usageDate, -1);
+    if (planDailyLimit === null) {
+      await sendAlert(
+        `fair-use:${userId}`,
+        `User ${userId} (${planCode} plan) hit the ${FAIR_USE_DAILY_MESSAGES}-message fair-use cap today.`
       );
     }
+    return NextResponse.json(
+      { error: "Daily message limit reached", planCode, dailyLimit },
+      { status: 429 }
+    );
   }
 
   const [userMessage] = await db
@@ -166,33 +219,58 @@ export async function POST(
     .values({ conversationId: id, userId, role: "user", content })
     .returning();
 
-  const history = await db
+  const recent = await db
     .select({ role: aiMessages.role, content: aiMessages.content })
     .from(aiMessages)
     .where(eq(aiMessages.conversationId, id))
-    .orderBy(asc(aiMessages.createdAt));
+    .orderBy(desc(aiMessages.createdAt))
+    .limit(HISTORY_MAX_MESSAGES);
+  const isFirstMessage = recent.length === 1;
+  const history = trimHistory(recent);
 
-  const completionRes = await fetch(
-    "https://api.openai.com/v1/chat/completions",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
+  let completionRes: Response | null = null;
+  try {
+    completionRes = await openaiFetch(
+      "/chat/completions",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model,
+          max_completion_tokens: MAX_COMPLETION_TOKENS[mode],
+          // Routes requests to the same cache so the prefix below is reused.
+          prompt_cache_key: `z1p-chat-${model}`,
+          messages: [
+            // Stable prefix first (system prompt, then the conversation so
+            // far) so OpenAI can bill it at the cached rate; anything that
+            // varies per request, like the voice instruction, goes last.
+            { role: "system", content: systemPrompt(modelLabel) },
+            ...history.map((m) => ({ role: m.role, content: m.content })),
+            ...(mode === "voice"
+              ? [{ role: "system", content: VOICE_INSTRUCTIONS }]
+              : []),
+          ],
+        }),
       },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: "system", content: systemPrompt(modelLabel) },
-          ...history.map((m) => ({ role: m.role, content: m.content })),
-        ],
-      }),
-    }
-  );
+      { timeoutMs: 90_000, maxRetries: 1 }
+    );
+  } catch (err) {
+    console.error("OpenAI request failed", err);
+  }
 
-  if (!completionRes.ok) {
-    const errorText = await completionRes.text().catch(() => "");
-    console.error("OpenAI request failed", completionRes.status, errorText);
+  if (!completionRes?.ok) {
+    const errorText = completionRes
+      ? await completionRes.text().catch(() => "")
+      : "";
+    console.error("OpenAI request failed", completionRes?.status, errorText);
+    if (errorText.includes("insufficient_quota")) {
+      await sendAlert(
+        "openai-quota",
+        "OpenAI returned insufficient_quota: the account is out of credit or hit its budget limit."
+      );
+    }
+    // Failed replies don't count against the user's daily limit.
+    await adjustDailyCount(userId, usageDate, -1);
     return NextResponse.json(
       { error: "AI request failed", userMessage },
       { status: 502 }
@@ -200,9 +278,17 @@ export async function POST(
   }
 
   const completion = await completionRes.json();
+  const choice = completion.choices?.[0];
   const assistantContent: string =
-    completion.choices?.[0]?.message?.content?.trim() || "…";
+    choice?.message?.content?.trim() ||
+    (choice?.finish_reason === "length"
+      ? "That answer ran too long. Could you narrow the question down?"
+      : "…");
   const usage = completion.usage ?? {};
+  const inputTokens: number = usage.prompt_tokens ?? 0;
+  const outputTokens: number = usage.completion_tokens ?? 0;
+
+  await recordUsage("chatTokens", inputTokens + outputTokens);
 
   const [assistantMessage] = await db
     .insert(aiMessages)
@@ -218,29 +304,24 @@ export async function POST(
     .returning();
 
   await db
-    .insert(aiUsageDaily)
-    .values({
-      userId,
-      usageDate,
-      messageCount: 1,
-      inputTokens: usage.prompt_tokens ?? 0,
-      outputTokens: usage.completion_tokens ?? 0,
+    .update(aiUsageDaily)
+    .set({
+      inputTokens: sql`${aiUsageDaily.inputTokens} + ${inputTokens}`,
+      outputTokens: sql`${aiUsageDaily.outputTokens} + ${outputTokens}`,
     })
-    .onConflictDoUpdate({
-      target: [aiUsageDaily.userId, aiUsageDaily.usageDate],
-      set: {
-        messageCount: sql`${aiUsageDaily.messageCount} + 1`,
-        inputTokens: sql`${aiUsageDaily.inputTokens} + ${usage.prompt_tokens ?? 0}`,
-        outputTokens: sql`${aiUsageDaily.outputTokens} + ${usage.completion_tokens ?? 0}`,
-      },
-    });
+    .where(
+      and(
+        eq(aiUsageDaily.userId, userId),
+        eq(aiUsageDaily.usageDate, usageDate)
+      )
+    );
 
   await db
     .update(aiConversations)
     .set({
       lastMessageAt: new Date(),
       updatedAt: new Date(),
-      ...(history.length === 1 && !conversation.title
+      ...(isFirstMessage && !conversation.title
         ? { title: content.slice(0, 60) }
         : {}),
     })
@@ -251,8 +332,8 @@ export async function POST(
     assistantMessage,
     usage: {
       planCode,
-      dailyLimit,
-      messagesUsedToday: priorMessageCount + 1,
+      dailyLimit: planDailyLimit,
+      messagesUsedToday,
     },
   });
 }

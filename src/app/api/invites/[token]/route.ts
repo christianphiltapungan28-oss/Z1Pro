@@ -4,19 +4,33 @@ import { eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/db";
 import { organizationInvites, organizations } from "@/db/schema";
+import { clientIp, rateLimit } from "@/lib/rate-limit";
 
 function hashToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
 
 export async function GET(
-  _request: Request,
+  request: Request,
   ctx: RouteContext<"/api/invites/[token]">
 ) {
+  // Works without signing in, so limit by IP to stop bots from hammering
+  // the database with guessed tokens.
+  const limit = await rateLimit(`invites:lookup:${clientIp(request)}`, 30, 10 * 60_000);
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: "Too many requests. Try again shortly." },
+      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } }
+    );
+  }
+
   const session = await auth();
   const email = session?.user?.email ?? null;
 
   const { token } = await ctx.params;
+  if (token.length > 100) {
+    return NextResponse.json({ error: "Invite not found" }, { status: 404 });
+  }
 
   const [invite] = await db
     .select({

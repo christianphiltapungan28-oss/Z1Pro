@@ -12,6 +12,10 @@ const HEADLINE: Record<Appearance, string> = {
 
 type VoicePhase = "idle" | "recording" | "processing" | "speaking";
 
+// Transcription bills per minute of audio, so a forgotten open mic stops
+// itself instead of recording (and uploading) indefinitely.
+const MAX_RECORDING_MS = 60_000;
+
 function pickRecorderMimeType() {
   const candidates = [
     "audio/webm;codecs=opus",
@@ -45,11 +49,13 @@ export function VoiceMode({
   const [error, setError] = useState<string | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const stopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     return () => {
+      if (stopTimerRef.current) clearTimeout(stopTimerRef.current);
       mediaRecorderRef.current?.stream.getTracks().forEach((t) => t.stop());
       audioRef.current?.pause();
     };
@@ -111,7 +117,7 @@ export function VoiceMode({
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content: spoken }),
+          body: JSON.stringify({ content: spoken, mode: "voice" }),
         }
       );
       if (!messageRes.ok) {
@@ -128,12 +134,15 @@ export function VoiceMode({
         setPhase("idle");
         return;
       }
-      const messageData: { assistantMessage?: { content?: string } } =
+      const messageData: {
+        assistantMessage?: { id?: string; content?: string };
+      } =
         await messageRes.json();
       const replyText = messageData.assistantMessage?.content ?? "";
       setReply(replyText);
 
-      if (!replyText) {
+      const replyId = messageData.assistantMessage?.id;
+      if (!replyText || !replyId) {
         setPhase("idle");
         return;
       }
@@ -141,7 +150,7 @@ export function VoiceMode({
       const speechRes = await fetch("/api/speech", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: replyText }),
+        body: JSON.stringify({ messageId: replyId }),
       });
       if (!speechRes.ok) {
         setPhase("idle");
@@ -190,11 +199,16 @@ export function VoiceMode({
         if (e.data.size > 0) chunksRef.current.push(e.data);
       };
       recorder.onstop = () => {
+        if (stopTimerRef.current) clearTimeout(stopTimerRef.current);
+        stopTimerRef.current = null;
         stream.getTracks().forEach((t) => t.stop());
         handleRecordingComplete(recorder.mimeType || mimeType);
       };
       mediaRecorderRef.current = recorder;
       recorder.start();
+      stopTimerRef.current = setTimeout(() => {
+        if (recorder.state === "recording") recorder.stop();
+      }, MAX_RECORDING_MS);
       setPhase("recording");
     } catch {
       setError(

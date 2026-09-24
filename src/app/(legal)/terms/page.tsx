@@ -125,7 +125,9 @@ export default function TermsPage() {
         <li>
           The free plan includes a daily message limit. Paid plans raise or
           remove that limit and may use more capable AI models, as described on
-          the plan page when you buy.
+          the plan page when you buy. To prevent abuse, every plan, including
+          ones without a daily limit, has a fair-use ceiling of 300 messages
+          and 150 voice replies per person per day, and short-term rate limits.
         </li>
         <li>
           Prices are shown before you pay, in Philippine pesos unless stated

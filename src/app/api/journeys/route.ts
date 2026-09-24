@@ -37,13 +37,16 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json().catch(() => ({}));
-  const title = typeof body?.title === "string" ? body.title.trim() : "";
+  const title =
+    typeof body?.title === "string" ? body.title.trim().slice(0, 200) : "";
   if (!title) {
     return NextResponse.json({ error: "Title is required" }, { status: 400 });
   }
 
   const description =
-    typeof body?.description === "string" ? body.description.trim() : null;
+    typeof body?.description === "string"
+      ? body.description.trim().slice(0, 2000)
+      : null;
 
   let sourceConversationId: string | null = null;
   if (typeof body?.sourceConversationId === "string") {

@@ -16,10 +16,12 @@ export const PLAN_LIMITS: Record<
     model: "gpt-5.6-terra",
     modelLabel: "GPT 5.6 Terra",
   },
+  // Pro's perk is no daily limit (up to the fair-use cap), not a pricier
+  // model: it shares Premium's model to keep per-message cost down.
   pro: {
     dailyMessageLimit: null,
-    model: "gpt-5.6-sol",
-    modelLabel: "GPT 5.6 Sol",
+    model: "gpt-5.6-terra",
+    modelLabel: "GPT 5.6 Terra",
   },
 };
 

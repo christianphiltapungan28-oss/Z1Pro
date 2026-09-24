@@ -33,10 +33,10 @@ export async function PATCH(
   const update: Partial<typeof journeys.$inferInsert> = { updatedAt: new Date() };
 
   if (typeof body?.title === "string" && body.title.trim()) {
-    update.title = body.title.trim();
+    update.title = body.title.trim().slice(0, 200);
   }
   if (typeof body?.description === "string") {
-    update.description = body.description.trim() || null;
+    update.description = body.description.trim().slice(0, 2000) || null;
   }
   if (typeof body?.progress === "number") {
     const progress = Math.max(0, Math.min(100, Math.round(body.progress)));

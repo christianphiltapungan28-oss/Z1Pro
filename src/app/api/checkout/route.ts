@@ -139,10 +139,13 @@ export async function POST(request: Request) {
 
   const auth64 = Buffer.from(`${secretKey}:`).toString("base64");
 
+  // A timeout or network error becomes null and is handled like a failed
+  // response below, so the payment row isn't left stuck as "pending".
   const checkoutRes = await fetch(
     "https://api.paymongo.com/v1/checkout_sessions",
     {
       method: "POST",
+      signal: AbortSignal.timeout(15_000),
       headers: {
         "Content-Type": "application/json",
         Authorization: `Basic ${auth64}`,
@@ -169,11 +172,16 @@ export async function POST(request: Request) {
         },
       }),
     }
-  );
+  ).catch((err) => {
+    console.error("PayMongo checkout session request failed", err);
+    return null;
+  });
 
-  if (!checkoutRes.ok) {
-    const errorText = await checkoutRes.text().catch(() => "");
-    console.error("PayMongo checkout session failed", checkoutRes.status, errorText);
+  if (!checkoutRes?.ok) {
+    const errorText = checkoutRes
+      ? await checkoutRes.text().catch(() => "")
+      : "";
+    console.error("PayMongo checkout session failed", checkoutRes?.status, errorText);
     await db
       .update(payments)
       .set({ status: "failed", failureReason: "checkout_session_create_failed" })

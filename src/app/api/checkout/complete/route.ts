@@ -5,6 +5,7 @@ import { db } from "@/db";
 import { organizationMembers, payments } from "@/db/schema";
 import { getAppOrigin } from "@/lib/app-url";
 import { fulfillPayment } from "@/lib/fulfill-payment";
+import { rateLimit } from "@/lib/rate-limit";
 import { getStripeClient } from "@/lib/stripe";
 
 export async function GET(request: Request) {
@@ -13,8 +14,15 @@ export async function GET(request: Request) {
 
   const session = await auth();
   const userId = session?.user?.id;
-  if (!userId || !paymentId) {
+  if (!userId || !paymentId || !/^[0-9a-f-]{36}$/i.test(paymentId)) {
     return NextResponse.redirect(`${origin}/?checkout=error`);
+  }
+
+  // Each hit re-checks the payment with PayMongo or Stripe, so cap how often
+  // one user can trigger that (a normal checkout needs one or two).
+  const limit = await rateLimit(`checkout:complete:${userId}`, 20, 10 * 60_000);
+  if (!limit.ok) {
+    return NextResponse.redirect(`${origin}/?checkout=pending`);
   }
 
   const [payment] = await db
@@ -76,7 +84,10 @@ export async function GET(request: Request) {
     const auth64 = Buffer.from(`${secretKey}:`).toString("base64");
     const checkoutRes = await fetch(
       `https://api.paymongo.com/v1/checkout_sessions/${payment.providerPaymentId}`,
-      { headers: { Authorization: `Basic ${auth64}` } }
+      {
+        headers: { Authorization: `Basic ${auth64}` },
+        signal: AbortSignal.timeout(15_000),
+      }
     );
 
     if (!checkoutRes.ok) {

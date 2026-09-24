@@ -48,7 +48,7 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
   const title =
     typeof body?.title === "string" && body.title.trim()
-      ? body.title.trim()
+      ? body.title.trim().slice(0, 200)
       : "New chat";
 
   const [conversation] = await db

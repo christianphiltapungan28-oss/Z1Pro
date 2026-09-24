@@ -22,7 +22,7 @@ export async function PATCH(
   };
   if (typeof body.pinned === "boolean") updates.pinned = body.pinned;
   if (typeof body.title === "string" && body.title.trim())
-    updates.title = body.title.trim();
+    updates.title = body.title.trim().slice(0, 200);
 
   const [conversation] = await db
     .update(aiConversations)

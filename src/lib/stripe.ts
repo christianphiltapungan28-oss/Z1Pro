@@ -12,7 +12,12 @@ let cached: Stripe | null = null;
  */
 export function getStripeClient(): Stripe {
   if (!cached) {
-    cached = new Stripe(process.env.STRIPE_SECRET_KEY!);
+    // Stripe's SDK retries with idempotency keys, so a retry never charges
+    // twice; cap it at one retry and fail fast rather than hanging.
+    cached = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+      maxNetworkRetries: 1,
+      timeout: 20_000,
+    });
   }
   return cached;
 }
