@@ -14,9 +14,14 @@ function formatToday(date: Date) {
 export function Topbar({
   onMenuClick,
   searchPlaceholder = "Search Your Journeys.....",
+  title,
+  subtitle,
 }: {
   onMenuClick: () => void;
   searchPlaceholder?: string;
+  /** Pages like Conversations show a heading here instead of search. */
+  title?: string;
+  subtitle?: string;
 }) {
   const [today, setToday] = useState<string | null>(null);
 
@@ -36,6 +41,14 @@ export function Topbar({
         <MenuIcon className="h-5 w-5" />
       </button>
 
+      {title ? (
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <h1 className="truncate text-[22px] font-bold text-foreground">{title}</h1>
+          {subtitle && (
+            <p className="truncate text-sm text-tertiary">{subtitle}</p>
+          )}
+        </div>
+      ) : (
       <div className="flex w-full max-w-[408px] items-center gap-2.5 rounded-[10px] border border-input-border p-2.5 focus-within:ring-2 focus-within:ring-accent-strong">
         <span className="flex h-6 w-6 shrink-0 items-center justify-center text-search-placeholder">
           <AssetIcon name="search" width={20.207} height={20.207} />
@@ -47,6 +60,7 @@ export function Topbar({
           className="w-full min-w-0 bg-transparent text-lg text-foreground placeholder:text-search-placeholder focus:outline-none"
         />
       </div>
+      )}
 
       <div className="ml-auto hidden items-center gap-[7px] text-base text-foreground lg:flex">
         <span className="whitespace-nowrap">{today}</span>

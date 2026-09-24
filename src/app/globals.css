@@ -32,6 +32,13 @@
   --text-secondary: #5e5e5e;
   --search-placeholder: #535353;
   --track: #d9d9d9;
+  --surface: #f9fafc;
+  --text-tertiary: #8e8e93;
+  --text-label: #535353;
+  --success: #10b981;
+  --success-bg: #ecfdf5;
+  --success-fg: #065f46;
+  --dot-inactive: #d1d5db;
 }
 
 [data-theme="aurora"] {
@@ -54,6 +61,13 @@
   --text-secondary: #c3b8db;
   --search-placeholder: #c3b8db;
   --track: rgba(255, 255, 255, 0.16);
+  --surface: rgba(255, 255, 255, 0.05);
+  --text-tertiary: #a9a0bd;
+  --text-label: #c3b8db;
+  --success: #10b981;
+  --success-bg: rgba(16, 185, 129, 0.12);
+  --success-fg: #a7f3d0;
+  --dot-inactive: rgba(255, 255, 255, 0.24);
 }
 
 [data-theme="aurora"] .ambient-background > div {
@@ -90,6 +104,13 @@
   --color-secondary: var(--text-secondary);
   --color-search-placeholder: var(--search-placeholder);
   --color-track: var(--track);
+  --color-surface: var(--surface);
+  --color-tertiary: var(--text-tertiary);
+  --color-label: var(--text-label);
+  --color-success: var(--success);
+  --color-success-bg: var(--success-bg);
+  --color-success-fg: var(--success-fg);
+  --color-dot-inactive: var(--dot-inactive);
   --font-display: var(--font-google-sans-flex);
   --font-logo: var(--font-parkinsans);
   --font-sans: var(--font-google-sans-flex);

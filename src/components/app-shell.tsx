@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { AmbientBackground } from "@/components/ambient-background";
 import { AppearanceDialog } from "@/components/appearance-dialog";
 import { ChatHome } from "@/components/chat-home";
+import { ConversationView } from "@/components/conversation-view";
+import { ConversationsList } from "@/components/conversations-list";
 import { CloseIcon } from "@/components/icons";
 import { Journeys } from "@/components/journeys";
 import { OrganizationDialog } from "@/components/organization-dialog";
@@ -16,7 +18,7 @@ import { VoiceMode } from "@/components/voice-mode";
 import { useAppearance } from "@/lib/use-appearance";
 import type { Journey } from "@/types/journey";
 
-type View = "home" | "journeys";
+export type View = "home" | "journeys" | "conversations" | "conversation";
 
 const CHECKOUT_MESSAGES: Record<string, string> = {
   success: "You're upgraded! Your new plan is now active.",
@@ -66,6 +68,8 @@ export function AppShell() {
   const [activeConversationId, setActiveConversationId] = useState<
     string | null
   >(null);
+  // A message typed on Home, handed to the conversation view to send.
+  const [pendingMessage, setPendingMessage] = useState<string | null>(null);
   const [checkoutStatus, setCheckoutStatus] = useState<string | null>(null);
   const [journeys, setJourneys] = useState<Journey[]>([]);
   const [journeysLoading, setJourneysLoading] = useState(true);
@@ -106,10 +110,27 @@ export function AppShell() {
     return journey;
   }
 
-  function openJourney(journey: Journey) {
-    setActiveConversationId(journey.sourceConversationId);
+  function changeView(next: View) {
+    setView(next);
     setVoiceMode(false);
-    setView("home");
+    setSidebarOpen(false);
+    if (next === "home") setActiveConversationId(null);
+  }
+
+  function openConversation(id: string, firstMessage: string | null = null) {
+    setActiveConversationId(id);
+    setPendingMessage(firstMessage);
+    setVoiceMode(false);
+    setSidebarOpen(false);
+    setView("conversation");
+  }
+
+  function openJourney(journey: Journey) {
+    if (journey.sourceConversationId) {
+      openConversation(journey.sourceConversationId);
+    } else {
+      changeView("home");
+    }
   }
 
   useEffect(() => {
@@ -128,6 +149,9 @@ export function AppShell() {
     );
   }, []);
 
+  // The conversation page draws its own header (back arrow, title, menu).
+  const showTopbar = view !== "conversation" || voiceMode;
+
   return (
     <div className="relative flex h-dvh overflow-hidden bg-background">
       <AmbientBackground />
@@ -137,32 +161,27 @@ export function AppShell() {
           open={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
           view={view}
-          onChangeView={(next) => {
-            setView(next);
-            setVoiceMode(false);
-            setSidebarOpen(false);
-          }}
+          onChangeView={changeView}
+          onNewChat={() => changeView("home")}
           onOpenAppearance={() => setAppearanceOpen(true)}
           onRequireAuth={() => setSignInOpen(true)}
           onOpenUpgrade={() => setUpgradeOpen(true)}
           onOpenOrganization={() => setOrganizationOpen(true)}
-          activeConversationId={activeConversationId}
-          onSelectConversation={(id) => {
-            setActiveConversationId(id);
-            setSidebarOpen(false);
-          }}
+          onOpenJourney={openJourney}
           journeys={journeys}
         />
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <Topbar
-            onMenuClick={() => setSidebarOpen(true)}
-            searchPlaceholder={
-              view === "journeys"
-                ? "Search Your Journeys....."
-                : "Ask anything"
-            }
-          />
+          {showTopbar &&
+            (view === "conversations" ? (
+              <Topbar
+                onMenuClick={() => setSidebarOpen(true)}
+                title="Conversations"
+                subtitle="Access and manage your ongoing chats and conversions with Z1"
+              />
+            ) : (
+              <Topbar onMenuClick={() => setSidebarOpen(true)} />
+            ))}
           {checkoutStatus && (
             <CheckoutBanner
               status={checkoutStatus}
@@ -175,10 +194,15 @@ export function AppShell() {
                 journeys={journeys}
                 loading={journeysLoading}
                 onStartJourney={() => {
-                  setView("home");
+                  changeView("home");
                   setVoiceMode(true);
                 }}
                 onOpenJourney={openJourney}
+              />
+            ) : view === "conversations" ? (
+              <ConversationsList
+                onOpen={(id) => openConversation(id)}
+                onNewChat={() => changeView("home")}
               />
             ) : voiceMode ? (
               <VoiceMode
@@ -186,13 +210,24 @@ export function AppShell() {
                 conversationId={activeConversationId}
                 onConversationCreated={setActiveConversationId}
               />
+            ) : view === "conversation" && activeConversationId ? (
+              <ConversationView
+                key={activeConversationId}
+                conversationId={activeConversationId}
+                initialMessage={pendingMessage}
+                onInitialMessageSent={() => setPendingMessage(null)}
+                onBack={() => changeView("conversations")}
+                onStartVoice={() => setVoiceMode(true)}
+                onDeleted={() => changeView("conversations")}
+                onCreateJourney={createJourney}
+                onViewJourneys={() => changeView("journeys")}
+              />
             ) : (
               <ChatHome
-                conversationId={activeConversationId}
-                onConversationCreated={setActiveConversationId}
+                authenticated={authenticated}
+                onRequireAuth={() => setSignInOpen(true)}
+                onOpenConversation={openConversation}
                 onStartVoice={() => setVoiceMode(true)}
-                onCreateJourney={createJourney}
-                onJourneySaved={() => setView("journeys")}
                 appearance={appearance}
               />
             )}

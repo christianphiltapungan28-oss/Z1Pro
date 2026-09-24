@@ -3,16 +3,15 @@
 import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
+import type { View } from "@/components/app-shell";
 import type { Journey } from "@/types/journey";
 import { AssetIcon } from "@/components/asset-icon";
 import {
   ChevronRightIcon,
   CloseIcon,
   HomeIcon,
-  PinIcon,
   SettingsIcon,
   StacksIcon,
-  TrashIcon,
   UsersIcon,
 } from "@/components/icons";
 
@@ -23,7 +22,6 @@ type OrgSummary = {
   isDefault: boolean;
 };
 
-type View = "home" | "journeys";
 
 const navItems: {
   label: string;
@@ -34,26 +32,6 @@ const navItems: {
   { label: "Home", icon: HomeIcon, view: "home", requiresAuth: false },
   { label: "Journeys", icon: StacksIcon, view: "journeys", requiresAuth: true },
 ];
-
-type Conversation = {
-  id: string;
-  title: string | null;
-  pinned: boolean;
-  lastMessageAt: string | null;
-  createdAt: string;
-};
-
-function formatRelativeTime(iso: string) {
-  const diffMs = Date.now() - new Date(iso).getTime();
-  const minutes = Math.round(diffMs / 60000);
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.round(hours / 24);
-  if (days < 7) return `${days}d ago`;
-  return new Date(iso).toLocaleDateString();
-}
 
 function initials(name: string) {
   return (
@@ -97,62 +75,6 @@ function ProfileAvatar({
   );
 }
 
-function ChatRow({
-  conversation,
-  active,
-  onSelect,
-  onTogglePin,
-  onDelete,
-}: {
-  conversation: Conversation;
-  active: boolean;
-  onSelect: () => void;
-  onTogglePin: () => void;
-  onDelete: () => void;
-}) {
-  return (
-    <div
-      className={`group flex items-center gap-1 rounded-lg px-1.5 py-1.5 text-sidebar-fg/90 transition-colors hover:bg-sidebar-fg/5 ${
-        active ? "bg-sidebar-fg/10" : ""
-      }`}
-    >
-      <button
-        type="button"
-        onClick={onSelect}
-        className="min-w-0 flex-1 text-left"
-      >
-        <p className="truncate text-sm">{conversation.title || "New chat"}</p>
-        <p className="text-[11px] text-sidebar-muted">
-          {formatRelativeTime(
-            conversation.lastMessageAt ?? conversation.createdAt
-          )}
-        </p>
-      </button>
-      <button
-        type="button"
-        onClick={onTogglePin}
-        aria-label={`${conversation.pinned ? "Unpin" : "Pin"} chat: ${conversation.title || "New chat"}`}
-        aria-pressed={conversation.pinned}
-        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors ${
-          conversation.pinned
-            ? "text-accent"
-            : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-sidebar-fg [@media(hover:none)]:opacity-100"
-        }`}
-      >
-        <PinIcon className="h-3.5 w-3.5" />
-      </button>
-      <button
-        type="button"
-        onClick={onDelete}
-        aria-label={`Delete chat: ${conversation.title || "New chat"}`}
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full opacity-0 transition-colors hover:text-sidebar-fg group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
-      >
-        <TrashIcon className="h-3.5 w-3.5" />
-      </button>
-    </div>
-  );
-}
-
 export function Sidebar({
   open,
   onClose,
@@ -162,8 +84,8 @@ export function Sidebar({
   onRequireAuth,
   onOpenUpgrade,
   onOpenOrganization,
-  activeConversationId,
-  onSelectConversation,
+  onNewChat,
+  onOpenJourney,
   journeys,
 }: {
   open: boolean;
@@ -174,8 +96,8 @@ export function Sidebar({
   onRequireAuth: () => void;
   onOpenUpgrade: () => void;
   onOpenOrganization: () => void;
-  activeConversationId: string | null;
-  onSelectConversation: (id: string | null) => void;
+  onNewChat: () => void;
+  onOpenJourney: (journey: Journey) => void;
   journeys: Journey[];
 }) {
   const { data: session, status, update: updateSession } = useSession();
@@ -183,11 +105,6 @@ export function Sidebar({
   const displayName = user?.name ?? "Guest";
   const authenticated = status === "authenticated";
   const currentOrgName = session?.user?.currentOrgName;
-
-  const [conversationsOpen, setConversationsOpen] = useState(false);
-  const [pinned, setPinned] = useState<Conversation[]>([]);
-  const [recent, setRecent] = useState<Conversation[]>([]);
-  const [loadingChats, setLoadingChats] = useState(true);
 
   const [orgMenuOpen, setOrgMenuOpen] = useState(false);
   const [orgs, setOrgs] = useState<OrgSummary[]>([]);
@@ -229,70 +146,6 @@ export function Sidebar({
       }
     } finally {
       setSwitchingOrgId(null);
-    }
-  }
-
-  useEffect(() => {
-    if (!authenticated) return;
-
-    let ignore = false;
-    fetch("/api/conversations")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (ignore || !data) return;
-        setPinned(data.pinned ?? []);
-        setRecent(data.recent ?? []);
-      })
-      .finally(() => {
-        if (!ignore) setLoadingChats(false);
-      });
-
-    return () => {
-      ignore = true;
-    };
-  }, [authenticated]);
-
-  async function handleNewChat() {
-    if (!authenticated) {
-      onRequireAuth();
-      return;
-    }
-    const res = await fetch("/api/conversations", { method: "POST" });
-    if (!res.ok) return;
-    const conversation: Conversation = await res.json();
-    setRecent((prev) => [conversation, ...prev]);
-    setConversationsOpen(true);
-    onChangeView("home");
-    onSelectConversation(conversation.id);
-  }
-
-  async function togglePinned(conversation: Conversation) {
-    const nextPinned = !conversation.pinned;
-    const res = await fetch(`/api/conversations/${conversation.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ pinned: nextPinned }),
-    });
-    if (!res.ok) return;
-    const updated: Conversation = await res.json();
-    setPinned((prev) => prev.filter((c) => c.id !== conversation.id));
-    setRecent((prev) => prev.filter((c) => c.id !== conversation.id));
-    if (updated.pinned) {
-      setPinned((prev) => [updated, ...prev]);
-    } else {
-      setRecent((prev) => [updated, ...prev]);
-    }
-  }
-
-  async function deleteConversation(conversation: Conversation) {
-    const res = await fetch(`/api/conversations/${conversation.id}`, {
-      method: "DELETE",
-    });
-    if (!res.ok) return;
-    setPinned((prev) => prev.filter((c) => c.id !== conversation.id));
-    setRecent((prev) => prev.filter((c) => c.id !== conversation.id));
-    if (activeConversationId === conversation.id) {
-      onSelectConversation(null);
     }
   }
 
@@ -343,7 +196,7 @@ export function Sidebar({
         <div className="flex flex-1 flex-col overflow-y-auto px-[21px] pt-[34px] pb-4">
           <button
             type="button"
-            onClick={handleNewChat}
+            onClick={onNewChat}
             className="flex h-11 w-full shrink-0 items-center rounded-[15px] bg-accent py-2.5 pl-[22px] pr-2.5 text-xl font-medium text-white transition-opacity hover:opacity-90"
           >
             + New
@@ -368,13 +221,11 @@ export function Sidebar({
             ))}
             <button
               type="button"
-              aria-expanded={authenticated ? conversationsOpen : undefined}
-              onClick={
-                authenticated
-                  ? () => setConversationsOpen((v) => !v)
-                  : onRequireAuth
+              aria-current={
+                view === "conversations" || view === "conversation" ? "page" : undefined
               }
-              className={navItemClass(false)}
+              onClick={authenticated ? () => onChangeView("conversations") : onRequireAuth}
+              className={navItemClass(view === "conversations" || view === "conversation")}
             >
               <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center">
                 <AssetIcon name="conversations" width={16.0005} height={16.0005} />
@@ -391,59 +242,6 @@ export function Sidebar({
             </button>
           </nav>
 
-          {authenticated && conversationsOpen && (
-            <div className="mt-2 flex flex-col gap-3 border-l border-sidebar-fg/15 py-1 pl-3">
-              {loadingChats && pinned.length === 0 && recent.length === 0 && (
-                <p className="text-xs text-sidebar-muted">Loading chats…</p>
-              )}
-              {!loadingChats && pinned.length === 0 && recent.length === 0 && (
-                <p className="text-xs text-sidebar-muted">No chats yet</p>
-              )}
-
-              {pinned.length > 0 && (
-                <div className="flex flex-col gap-0.5">
-                  <span className="px-1 text-[11px] font-semibold uppercase tracking-wide text-sidebar-muted">
-                    Pinned
-                  </span>
-                  {pinned.map((conversation) => (
-                    <ChatRow
-                      key={conversation.id}
-                      conversation={conversation}
-                      active={conversation.id === activeConversationId}
-                      onSelect={() => {
-                        onChangeView("home");
-                        onSelectConversation(conversation.id);
-                      }}
-                      onTogglePin={() => togglePinned(conversation)}
-                      onDelete={() => deleteConversation(conversation)}
-                    />
-                  ))}
-                </div>
-              )}
-
-              {recent.length > 0 && (
-                <div className="flex flex-col gap-0.5">
-                  <span className="px-1 text-[11px] font-semibold uppercase tracking-wide text-sidebar-muted">
-                    Chats
-                  </span>
-                  {recent.map((conversation) => (
-                    <ChatRow
-                      key={conversation.id}
-                      conversation={conversation}
-                      active={conversation.id === activeConversationId}
-                      onSelect={() => {
-                        onChangeView("home");
-                        onSelectConversation(conversation.id);
-                      }}
-                      onTogglePin={() => togglePinned(conversation)}
-                      onDelete={() => deleteConversation(conversation)}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
           <p className="mt-6 py-2.5 pr-2.5 pl-2.5 text-base font-medium text-sidebar-fg">
             Recent
           </p>
@@ -454,7 +252,7 @@ export function Sidebar({
                 <button
                   key={journey.id}
                   type="button"
-                  onClick={() => onChangeView("journeys")}
+                  onClick={() => onOpenJourney(journey)}
                   className="flex items-center gap-2.5 rounded-[10px] p-2.5 text-left text-base text-sidebar-recent transition-colors hover:bg-sidebar-fg/5"
                 >
                   <span className="flex h-6 w-6 shrink-0 items-start justify-center pt-[0.5px]">

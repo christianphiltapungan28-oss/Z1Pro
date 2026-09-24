@@ -5,16 +5,20 @@ import { AuthSessionProvider } from "@/components/providers/session-provider";
 import "./globals.css";
 
 // Google Sans Flex is the design's typeface for all UI text; Parkinsans is
-// only used for the Z1P wordmark.
+// only used for the Z1P wordmark. Next has no fallback-metric data for
+// either font, so the size-adjusted fallback is turned off rather than
+// warning on every build.
 const googleSansFlex = Google_Sans_Flex({
   variable: "--font-google-sans-flex",
   subsets: ["latin"],
+  adjustFontFallback: false,
 });
 
 const parkinsans = Parkinsans({
   variable: "--font-parkinsans",
   subsets: ["latin"],
   weight: ["800"],
+  adjustFontFallback: false,
 });
 
 export const metadata: Metadata = {
