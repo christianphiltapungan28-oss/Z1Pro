@@ -30,6 +30,7 @@ export async function fulfillPayment(paymentId: string) {
     return { ok: true as const, reason: "already_succeeded" as const };
   }
   if (!payment.planId) return { ok: false as const, reason: "no_plan" as const };
+  if (!payment.orgId) return { ok: false as const, reason: "no_org" as const };
 
   const [plan] = await db
     .select()
@@ -43,7 +44,7 @@ export async function fulfillPayment(paymentId: string) {
     .update(subscriptions)
     .set({ status: "expired" })
     .where(
-      and(eq(subscriptions.userId, payment.userId), eq(subscriptions.status, "active"))
+      and(eq(subscriptions.orgId, payment.orgId), eq(subscriptions.status, "active"))
     );
 
   const periodStart = new Date();
@@ -51,6 +52,7 @@ export async function fulfillPayment(paymentId: string) {
     .insert(subscriptions)
     .values({
       userId: payment.userId,
+      orgId: payment.orgId,
       planId: plan.id,
       status: "active",
       provider: payment.provider,

@@ -3,6 +3,7 @@ import { and, asc, eq, sql } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/db";
 import { aiConversations, aiMessages, aiUsageDaily } from "@/db/schema";
+import { getCurrentOrg } from "@/lib/current-org";
 import {
   getCurrentPlanCode,
   getDailyMessageLimit,
@@ -126,7 +127,10 @@ export async function POST(
   }
 
   const usageDate = todayUtc();
-  const planCode = await getCurrentPlanCode(userId);
+  const currentOrg = await getCurrentOrg();
+  const planCode = currentOrg
+    ? await getCurrentPlanCode(currentOrg.orgId)
+    : "free";
   const dailyLimit = getDailyMessageLimit(planCode);
   const model = getModelForPlan(planCode);
   const modelLabel = getModelLabelForPlan(planCode);

@@ -7,6 +7,7 @@ import { AppearanceDialog } from "@/components/appearance-dialog";
 import { ChatHome } from "@/components/chat-home";
 import { CloseIcon } from "@/components/icons";
 import { Journeys } from "@/components/journeys";
+import { OrganizationDialog } from "@/components/organization-dialog";
 import { Sidebar } from "@/components/sidebar";
 import { SignInDialog } from "@/components/sign-in-dialog";
 import { Topbar } from "@/components/topbar";
@@ -61,6 +62,7 @@ export function AppShell() {
   const [appearanceOpen, setAppearanceOpen] = useState(false);
   const [signInOpen, setSignInOpen] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [organizationOpen, setOrganizationOpen] = useState(false);
   const [activeConversationId, setActiveConversationId] = useState<
     string | null
   >(null);
@@ -143,6 +145,7 @@ export function AppShell() {
           onOpenAppearance={() => setAppearanceOpen(true)}
           onRequireAuth={() => setSignInOpen(true)}
           onOpenUpgrade={() => setUpgradeOpen(true)}
+          onOpenOrganization={() => setOrganizationOpen(true)}
           activeConversationId={activeConversationId}
           onSelectConversation={(id) => {
             setActiveConversationId(id);
@@ -207,6 +210,11 @@ export function AppShell() {
       <SignInDialog open={signInOpen} onClose={() => setSignInOpen(false)} />
 
       <UpgradeDialog open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
+
+      <OrganizationDialog
+        open={organizationOpen}
+        onClose={() => setOrganizationOpen(false)}
+      />
     </div>
   );
 }

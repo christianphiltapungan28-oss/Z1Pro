@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import { CheckIcon, CloseIcon } from "@/components/icons";
 import { useDialog } from "@/lib/use-dialog";
 
@@ -33,6 +34,9 @@ export function UpgradeDialog({
   open: boolean;
   onClose: () => void;
 }) {
+  const { data: session } = useSession();
+  const canManageBilling = session?.user?.currentOrgRole !== "member";
+
   const [plans, setPlans] = useState<Plan[]>([]);
   const [currentPlanCode, setCurrentPlanCode] = useState("free");
   const [loading, setLoading] = useState(true);
@@ -117,6 +121,12 @@ export function UpgradeDialog({
           Pick the plan that fits how you use Z1P.pro.
         </p>
 
+        {!canManageBilling && (
+          <p className="mb-4 rounded-lg bg-foreground/5 px-3 py-2 text-sm text-muted">
+            Only org owners or admins can change the plan.
+          </p>
+        )}
+
         {loading && (
           <p className="py-10 text-center text-sm text-muted">
             Loading plans…
@@ -138,7 +148,7 @@ export function UpgradeDialog({
               const isFreePlan = plan.priceMinorUnits === 0;
               const price = formatPrice(plan);
               const canCheckout =
-                !isCurrent && !isFreePlan && price !== null;
+                !isCurrent && !isFreePlan && price !== null && canManageBilling;
               const label = isCurrent
                 ? "Current plan"
                 : price === null
@@ -201,7 +211,7 @@ export function UpgradeDialog({
           </div>
         )}
 
-        {!loading && (
+        {!loading && canManageBilling && (
           <p className="mt-5 text-center text-xs leading-relaxed text-muted">
             Each payment covers one billing period and{" "}
             <strong className="font-semibold text-foreground/80">

@@ -7,6 +7,7 @@ import type { Journey } from "@/types/journey";
 import {
   BookIcon,
   ChatSparkIcon,
+  ChevronRightIcon,
   CloseIcon,
   HomeIcon,
   LogoutIcon,
@@ -15,7 +16,15 @@ import {
   SparkleIcon,
   StacksIcon,
   TrashIcon,
+  UsersIcon,
 } from "@/components/icons";
+
+type OrgSummary = {
+  id: string;
+  name: string;
+  role: "owner" | "admin" | "member";
+  isDefault: boolean;
+};
 
 type View = "home" | "journeys";
 
@@ -155,6 +164,7 @@ export function Sidebar({
   onOpenAppearance,
   onRequireAuth,
   onOpenUpgrade,
+  onOpenOrganization,
   activeConversationId,
   onSelectConversation,
   journeys,
@@ -166,19 +176,64 @@ export function Sidebar({
   onOpenAppearance: () => void;
   onRequireAuth: () => void;
   onOpenUpgrade: () => void;
+  onOpenOrganization: () => void;
   activeConversationId: string | null;
   onSelectConversation: (id: string | null) => void;
   journeys: Journey[];
 }) {
-  const { data: session, status } = useSession();
+  const { data: session, status, update: updateSession } = useSession();
   const user = session?.user;
   const displayName = user?.name ?? "Guest";
   const authenticated = status === "authenticated";
+  const currentOrgName = session?.user?.currentOrgName;
 
   const [conversationsOpen, setConversationsOpen] = useState(false);
   const [pinned, setPinned] = useState<Conversation[]>([]);
   const [recent, setRecent] = useState<Conversation[]>([]);
   const [loadingChats, setLoadingChats] = useState(true);
+
+  const [orgMenuOpen, setOrgMenuOpen] = useState(false);
+  const [orgs, setOrgs] = useState<OrgSummary[]>([]);
+  const [loadingOrgs, setLoadingOrgs] = useState(true);
+  const [switchingOrgId, setSwitchingOrgId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!orgMenuOpen) return;
+    let ignore = false;
+    fetch("/api/orgs")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (ignore || !data) return;
+        setOrgs(data.organizations ?? []);
+      })
+      .finally(() => {
+        if (!ignore) setLoadingOrgs(false);
+      });
+    return () => {
+      ignore = true;
+    };
+  }, [orgMenuOpen]);
+
+  async function handleSwitchOrg(orgId: string) {
+    if (orgId === session?.user?.currentOrgId) {
+      setOrgMenuOpen(false);
+      return;
+    }
+    setSwitchingOrgId(orgId);
+    try {
+      const res = await fetch("/api/orgs/switch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orgId }),
+      });
+      if (res.ok) {
+        await updateSession();
+        setOrgMenuOpen(false);
+      }
+    } finally {
+      setSwitchingOrgId(null);
+    }
+  }
 
   useEffect(() => {
     if (!authenticated) return;
@@ -313,6 +368,14 @@ export function Sidebar({
               <ChatSparkIcon className="h-4.5 w-4.5" />
               Conversations
             </button>
+            <button
+              type="button"
+              onClick={authenticated ? onOpenOrganization : onRequireAuth}
+              className="flex items-center gap-2.5 rounded-lg px-2.5 py-2.5 text-left text-sm text-sidebar-fg transition-colors hover:bg-accent-soft/60"
+            >
+              <UsersIcon className="h-4.5 w-4.5" />
+              Organization
+            </button>
           </nav>
 
           {authenticated && conversationsOpen && (
@@ -442,44 +505,101 @@ export function Sidebar({
           </nav>
         </div>
 
-        <div className="flex items-center justify-between gap-3 border-t border-sidebar-border p-4">
-          <div className="flex min-w-0 items-center gap-3">
-            <ProfileAvatar
-              key={user?.image ?? "fallback"}
-              image={user?.image}
-              name={displayName}
-              authenticated={status === "authenticated"}
-            />
-            <div className="min-w-0">
+        <div className="relative border-t border-sidebar-border p-4">
+          {authenticated && orgMenuOpen && (
+            <>
               <button
                 type="button"
-                onClick={authenticated ? onOpenUpgrade : onRequireAuth}
-                className="flex items-center gap-1.5"
-              >
-                <span className="truncate text-sm font-semibold text-sidebar-fg">
-                  {displayName}
-                </span>
-                {status === "authenticated" && (
-                  <span className="shrink-0 rounded-full bg-badge-bg px-1.5 py-0.5 text-[10px] font-semibold text-badge-fg">
-                    Free
-                  </span>
+                aria-label="Close organization menu"
+                onClick={() => setOrgMenuOpen(false)}
+                className="fixed inset-0 z-40"
+              />
+              <div className="absolute bottom-full left-4 right-4 z-50 mb-2 flex flex-col gap-0.5 rounded-xl border border-sidebar-border bg-sidebar p-1.5 shadow-lg">
+                {loadingOrgs && (
+                  <p className="px-2 py-1.5 text-xs text-sidebar-muted">
+                    Loading…
+                  </p>
                 )}
-              </button>
-              <p className="truncate text-xs text-sidebar-muted">
-                Personal Profile
-              </p>
+                {!loadingOrgs &&
+                  orgs.map((org) => (
+                    <button
+                      key={org.id}
+                      type="button"
+                      onClick={() => handleSwitchOrg(org.id)}
+                      disabled={switchingOrgId !== null}
+                      className={`flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-left text-sm text-sidebar-fg transition-colors hover:bg-sidebar-fg/5 ${
+                        org.isDefault ? "bg-sidebar-fg/5" : ""
+                      }`}
+                    >
+                      <span className="truncate">{org.name}</span>
+                      {switchingOrgId === org.id && (
+                        <span className="shrink-0 text-xs text-sidebar-muted">
+                          …
+                        </span>
+                      )}
+                    </button>
+                  ))}
+              </div>
+            </>
+          )}
+
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <ProfileAvatar
+                key={user?.image ?? "fallback"}
+                image={user?.image}
+                name={displayName}
+                authenticated={status === "authenticated"}
+              />
+              <div className="min-w-0">
+                <button
+                  type="button"
+                  onClick={authenticated ? onOpenUpgrade : onRequireAuth}
+                  className="flex items-center gap-1.5"
+                >
+                  <span className="truncate text-sm font-semibold text-sidebar-fg">
+                    {displayName}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  aria-expanded={authenticated ? orgMenuOpen : undefined}
+                  aria-label={
+                    authenticated
+                      ? `Switch organization (current: ${currentOrgName ?? "loading"})`
+                      : undefined
+                  }
+                  onClick={
+                    authenticated
+                      ? () => setOrgMenuOpen((v) => !v)
+                      : onRequireAuth
+                  }
+                  className="flex min-w-0 items-center gap-1 text-xs text-sidebar-muted hover:text-sidebar-fg"
+                >
+                  <span className="truncate">
+                    {authenticated ? currentOrgName ?? "…" : "Sign in"}
+                  </span>
+                  {authenticated && (
+                    <ChevronRightIcon
+                      className={`h-3 w-3 shrink-0 transition-transform ${
+                        orgMenuOpen ? "-rotate-90" : "rotate-90"
+                      }`}
+                    />
+                  )}
+                </button>
+              </div>
             </div>
+            <button
+              type="button"
+              onClick={
+                status === "authenticated" ? () => signOut() : onRequireAuth
+              }
+              aria-label={status === "authenticated" ? "Log out" : "Sign in"}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sidebar-muted hover:text-sidebar-fg"
+            >
+              <LogoutIcon className="h-4.5 w-4.5" />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={
-              status === "authenticated" ? () => signOut() : onRequireAuth
-            }
-            aria-label={status === "authenticated" ? "Log out" : "Sign in"}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sidebar-muted hover:text-sidebar-fg"
-          >
-            <LogoutIcon className="h-4.5 w-4.5" />
-          </button>
         </div>
       </aside>
     </>

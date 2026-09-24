@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { asc, eq } from "drizzle-orm";
-import { auth } from "@/auth";
 import { db } from "@/db";
 import { plans } from "@/db/schema";
+import { getCurrentOrg } from "@/lib/current-org";
 import { getCountryCode } from "@/lib/geo";
 import { getCurrentPlanCode } from "@/lib/plan";
 import { STRIPE_ENABLED } from "@/lib/stripe";
@@ -21,9 +21,9 @@ export async function GET(request: Request) {
     .where(eq(plans.isActive, true))
     .orderBy(asc(plans.sortOrder));
 
-  const session = await auth();
-  const currentPlanCode = session?.user?.id
-    ? await getCurrentPlanCode(session.user.id)
+  const currentOrg = await getCurrentOrg();
+  const currentPlanCode = currentOrg
+    ? await getCurrentPlanCode(currentOrg.orgId)
     : "free";
 
   // Skip the IP-based country lookup (sent to ipwho.is) while Stripe is off.

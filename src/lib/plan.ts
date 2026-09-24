@@ -35,14 +35,14 @@ export function getModelLabelForPlan(planCode: string): string {
   return PLAN_LIMITS[planCode]?.modelLabel ?? PLAN_LIMITS.free.modelLabel;
 }
 
-export async function getCurrentPlanCode(userId: string): Promise<string> {
+export async function getCurrentPlanCode(orgId: string): Promise<string> {
   const [activeSubscription] = await db
     .select({ code: plans.code })
     .from(subscriptions)
     .innerJoin(plans, eq(subscriptions.planId, plans.id))
     .where(
       and(
-        eq(subscriptions.userId, userId),
+        eq(subscriptions.orgId, orgId),
         eq(subscriptions.status, "active"),
         // A paid period that has run out falls back to free; plans don't renew.
         gt(subscriptions.currentPeriodEnd, new Date())

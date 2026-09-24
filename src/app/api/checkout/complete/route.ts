@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/db";
-import { payments } from "@/db/schema";
+import { organizationMembers, payments } from "@/db/schema";
 import { getAppOrigin } from "@/lib/app-url";
 import { fulfillPayment } from "@/lib/fulfill-payment";
 import { getStripeClient } from "@/lib/stripe";
@@ -20,10 +20,28 @@ export async function GET(request: Request) {
   const [payment] = await db
     .select()
     .from(payments)
-    .where(and(eq(payments.id, paymentId), eq(payments.userId, userId)))
+    .where(eq(payments.id, paymentId))
     .limit(1);
 
-  if (!payment || !payment.providerPaymentId) {
+  if (!payment || !payment.providerPaymentId || !payment.orgId) {
+    return NextResponse.redirect(`${origin}/?checkout=error`);
+  }
+
+  // The payment may not belong to the caller's *current* default org (they
+  // may have started checkout for an org they've since switched away from),
+  // so check membership in the payment's org directly rather than via
+  // getCurrentOrg().
+  const [membership] = await db
+    .select({ userId: organizationMembers.userId })
+    .from(organizationMembers)
+    .where(
+      and(
+        eq(organizationMembers.organizationId, payment.orgId),
+        eq(organizationMembers.userId, userId)
+      )
+    )
+    .limit(1);
+  if (!membership) {
     return NextResponse.redirect(`${origin}/?checkout=error`);
   }
 

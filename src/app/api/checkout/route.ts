@@ -1,21 +1,27 @@
 import { NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
-import { auth } from "@/auth";
+import { and, eq, gt } from "drizzle-orm";
 import { db } from "@/db";
-import { payments, plans } from "@/db/schema";
+import { payments, plans, subscriptions } from "@/db/schema";
 import { getAppOrigin } from "@/lib/app-url";
+import { getCurrentOrg } from "@/lib/current-org";
 import { getCountryCode } from "@/lib/geo";
 import { rateLimit } from "@/lib/rate-limit";
 import { getStripeClient, STRIPE_ENABLED } from "@/lib/stripe";
 
 export async function POST(request: Request) {
-  const session = await auth();
-  const userId = session?.user?.id;
-  if (!userId) {
+  const currentOrg = await getCurrentOrg();
+  if (!currentOrg) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  if (currentOrg.role === "member") {
+    return NextResponse.json(
+      { error: "Only org owners or admins can manage billing" },
+      { status: 403 }
+    );
+  }
+  const { userId, orgId } = currentOrg;
 
-  const limit = await rateLimit(`checkout:${userId}`, 10, 60 * 60_000);
+  const limit = await rateLimit(`checkout:${orgId}`, 10, 60 * 60_000);
   if (!limit.ok) {
     return NextResponse.json(
       { error: "Too many checkout attempts. Try again later." },
@@ -34,6 +40,25 @@ export async function POST(request: Request) {
 
   if (!plan || !plan.isActive || plan.priceMinorUnits === null) {
     return NextResponse.json({ error: "Plan not available" }, { status: 400 });
+  }
+
+  const [existingActive] = await db
+    .select({ id: subscriptions.id })
+    .from(subscriptions)
+    .where(
+      and(
+        eq(subscriptions.orgId, orgId),
+        eq(subscriptions.planId, plan.id),
+        eq(subscriptions.status, "active"),
+        gt(subscriptions.currentPeriodEnd, new Date())
+      )
+    )
+    .limit(1);
+  if (existingActive) {
+    return NextResponse.json(
+      { error: "Already on this plan" },
+      { status: 400 }
+    );
   }
 
   // Only look up the visitor's country (which sends their IP to ipwho.is)
@@ -58,6 +83,7 @@ export async function POST(request: Request) {
       .insert(payments)
       .values({
         userId,
+        orgId,
         planId: plan.id,
         amountMinorUnits: plan.priceUsdMinorUnits!,
         currency: "USD",
@@ -102,6 +128,7 @@ export async function POST(request: Request) {
     .insert(payments)
     .values({
       userId,
+      orgId,
       planId: plan.id,
       amountMinorUnits: plan.priceMinorUnits,
       currency: plan.currency,

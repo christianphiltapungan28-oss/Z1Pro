@@ -1,6 +1,7 @@
 import {
   pgTable,
   pgEnum,
+  type AnyPgColumn,
   uuid,
   text,
   boolean,
@@ -51,6 +52,11 @@ export const paymentStatus = pgEnum("payment_status", [
   "failed",
   "refunded",
 ]);
+export const organizationRole = pgEnum("organization_role", [
+  "owner",
+  "admin",
+  "member",
+]);
 
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -60,6 +66,10 @@ export const users = pgTable("users", {
   avatarUrl: text("avatar_url"),
   locale: text("locale").notNull().default("en"),
   role: userRole("role").notNull().default("member"),
+  defaultOrgId: uuid("default_org_id").references(
+    (): AnyPgColumn => organizations.id,
+    { onDelete: "set null" }
+  ),
   lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
@@ -92,6 +102,56 @@ export const sessions = pgTable("sessions", {
   userAgent: text("user_agent"),
   ipAddress: text("ip_address"),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const organizations = pgTable("organizations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const organizationMembers = pgTable(
+  "organization_members",
+  {
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    role: organizationRole("role").notNull().default("member"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.organizationId, t.userId] })]
+);
+
+export const organizationInvites = pgTable("organization_invites", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id")
+    .notNull()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  tokenHash: text("token_hash").notNull().unique(),
+  role: organizationRole("role").notNull().default("member"),
+  email: text("email"),
+  createdByUserId: uuid("created_by_user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  acceptedByUserId: uuid("accepted_by_user_id").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  acceptedAt: timestamp("accepted_at", { withTimezone: true }),
   revokedAt: timestamp("revoked_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
@@ -281,6 +341,9 @@ export const subscriptions = pgTable("subscriptions", {
   userId: uuid("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
+  orgId: uuid("org_id").references(() => organizations.id, {
+    onDelete: "cascade",
+  }),
   planId: uuid("plan_id")
     .notNull()
     .references(() => plans.id, { onDelete: "restrict" }),
@@ -307,6 +370,9 @@ export const payments = pgTable("payments", {
   userId: uuid("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
+  orgId: uuid("org_id").references(() => organizations.id, {
+    onDelete: "cascade",
+  }),
   subscriptionId: uuid("subscription_id").references(() => subscriptions.id, {
     onDelete: "set null",
   }),
