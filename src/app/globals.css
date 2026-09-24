@@ -26,6 +26,12 @@
   --accent-solid: #ff1da5;
   --badge-bg: #ffc2e4;
   --badge-fg: #8a2745;
+  --logo: #f342ac;
+  --divider: #e5e7eb;
+  --sidebar-recent: #575555;
+  --text-secondary: #5e5e5e;
+  --search-placeholder: #535353;
+  --track: #d9d9d9;
 }
 
 [data-theme="aurora"] {
@@ -43,6 +49,11 @@
   --blob-a: #ff0022;
   --blob-b: #0021d5;
   --blob-opacity: 0.55;
+  --divider: rgba(255, 255, 255, 0.12);
+  --sidebar-recent: rgba(255, 255, 255, 0.72);
+  --text-secondary: #c3b8db;
+  --search-placeholder: #c3b8db;
+  --track: rgba(255, 255, 255, 0.16);
 }
 
 [data-theme="aurora"] .ambient-background > div {
@@ -73,8 +84,15 @@
   --color-accent-strong: var(--accent-strong);
   --color-accent-soft: var(--accent-soft);
   --color-accent-muted: var(--accent-muted);
-  --font-display: var(--font-poppins);
-  --font-sans: var(--font-inter);
+  --color-logo: var(--logo);
+  --color-divider: var(--divider);
+  --color-sidebar-recent: var(--sidebar-recent);
+  --color-secondary: var(--text-secondary);
+  --color-search-placeholder: var(--search-placeholder);
+  --color-track: var(--track);
+  --font-display: var(--font-google-sans-flex);
+  --font-logo: var(--font-parkinsans);
+  --font-sans: var(--font-google-sans-flex);
 }
 
 body {
@@ -130,13 +148,13 @@ body {
   line-height: 1.7;
 }
 .legal-prose h1 {
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-google-sans-flex), sans-serif;
   font-size: 1.875rem;
   font-weight: 700;
   line-height: 1.2;
 }
 .legal-prose h2 {
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-google-sans-flex), sans-serif;
   font-size: 1.25rem;
   font-weight: 600;
   margin-top: 2.25rem;

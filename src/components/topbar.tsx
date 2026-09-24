@@ -1,15 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CalendarIcon, MenuIcon, SearchIcon } from "@/components/icons";
+import { AssetIcon } from "@/components/asset-icon";
+import { MenuIcon } from "@/components/icons";
 
+// Matches the design's "Monday, September 7 2026" (no comma before the year).
 function formatToday(date: Date) {
-  return date.toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
+  const weekday = date.toLocaleDateString("en-US", { weekday: "long" });
+  const month = date.toLocaleDateString("en-US", { month: "long" });
+  return `${weekday}, ${month} ${date.getDate()} ${date.getFullYear()}`;
 }
 
 export function Topbar({
@@ -27,7 +26,7 @@ export function Topbar({
   }, []);
 
   return (
-    <header className="flex items-center gap-4 border-b border-card-border px-4 py-3 sm:pl-6 sm:pr-4">
+    <header className="flex h-[94px] shrink-0 items-center gap-4 border-b border-divider px-4 sm:pl-[51px] sm:pr-[42px]">
       <button
         type="button"
         onClick={onMenuClick}
@@ -37,19 +36,23 @@ export function Topbar({
         <MenuIcon className="h-5 w-5" />
       </button>
 
-      <div className="flex max-w-md flex-1 items-center gap-2 rounded-[10px] border border-input-border px-3 py-2.5">
-        <SearchIcon className="h-4.5 w-4.5 shrink-0 text-muted" />
+      <div className="flex w-full max-w-[408px] items-center gap-2.5 rounded-[10px] border border-input-border p-2.5 focus-within:ring-2 focus-within:ring-accent-strong">
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center text-search-placeholder">
+          <AssetIcon name="search" width={20.207} height={20.207} />
+        </span>
         <input
           type="text"
           aria-label="Search"
           placeholder={searchPlaceholder}
-          className="w-full bg-transparent text-sm text-foreground placeholder:text-muted focus:outline-none"
+          className="w-full min-w-0 bg-transparent text-lg text-foreground placeholder:text-search-placeholder focus:outline-none"
         />
       </div>
 
-      <div className="ml-auto hidden items-center gap-2 text-sm text-foreground sm:flex">
-        <span>{today}</span>
-        <CalendarIcon className="h-5 w-5 shrink-0 text-foreground/70" />
+      <div className="ml-auto hidden items-center gap-[7px] text-base text-foreground lg:flex">
+        <span className="whitespace-nowrap">{today}</span>
+        <span className="flex h-[27px] w-[27px] shrink-0 items-center justify-center">
+          <AssetIcon name="calendar-clock" width={22.5} height={22.5} />
+        </span>
       </div>
     </header>
   );

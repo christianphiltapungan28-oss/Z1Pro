@@ -4,16 +4,13 @@ import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import type { Journey } from "@/types/journey";
+import { AssetIcon } from "@/components/asset-icon";
 import {
-  BookIcon,
-  ChatSparkIcon,
   ChevronRightIcon,
   CloseIcon,
   HomeIcon,
-  LogoutIcon,
   PinIcon,
   SettingsIcon,
-  SparkleIcon,
   StacksIcon,
   TrashIcon,
   UsersIcon,
@@ -88,13 +85,13 @@ function ProfileAvatar({
         src={image}
         alt=""
         onError={() => setImageFailed(true)}
-        className="h-10 w-10 shrink-0 rounded-full object-cover"
+        className="h-[49px] w-[49px] shrink-0 rounded-full object-cover"
       />
     );
   }
 
   return (
-    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-accent to-accent-strong font-display text-sm font-semibold text-white">
+    <div className="flex h-[49px] w-[49px] shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-accent to-accent-strong font-display text-sm font-semibold text-white">
       {authenticated ? initials(name) : "?"}
     </div>
   );
@@ -299,6 +296,11 @@ export function Sidebar({
     }
   }
 
+  const navItemClass = (active: boolean) =>
+    `flex w-full items-center gap-2.5 rounded-[10px] p-2.5 text-left text-lg text-sidebar-fg transition-colors hover:bg-accent-soft/60 ${
+      active ? "bg-accent-soft" : ""
+    }`;
+
   return (
     <>
       {open && (
@@ -310,13 +312,24 @@ export function Sidebar({
         />
       )}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-[267px] -translate-x-full flex-col border-r border-sidebar-border bg-sidebar text-sidebar-fg transition-transform duration-200 md:static md:z-auto md:h-full md:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 flex w-[267px] -translate-x-full flex-col border-r border-divider bg-sidebar text-sidebar-fg transition-transform duration-200 md:static md:z-auto md:h-full md:translate-x-0 ${
           open ? "translate-x-0" : ""
         }`}
       >
-        <div className="relative flex h-[94px] shrink-0 items-center justify-center border-b border-sidebar-border">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo-mark.svg" alt="Z1P" className="h-9 w-auto" />
+        <div className="relative flex h-[94px] shrink-0 items-center justify-center border-b border-divider p-2.5">
+          <div role="img" aria-label="Z1P" className="grid place-items-start leading-none">
+            <span className="col-start-1 row-start-1 ml-[32.88px] font-logo text-[45px] font-extrabold leading-normal text-logo">
+              Z1P
+            </span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/ui/logo-mark.svg"
+              alt=""
+              width={31.9209}
+              height={31.9209}
+              className="col-start-1 row-start-1 mt-[15.32px]"
+            />
+          </div>
           <button
             type="button"
             onClick={onClose}
@@ -327,16 +340,16 @@ export function Sidebar({
           </button>
         </div>
 
-        <div className="flex flex-1 flex-col gap-6 overflow-y-auto border-b border-sidebar-border p-5">
+        <div className="flex flex-1 flex-col overflow-y-auto px-[21px] pt-[34px] pb-4">
           <button
             type="button"
             onClick={handleNewChat}
-            className="flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-accent px-4 text-base font-medium text-white shadow-sm transition-opacity hover:opacity-90"
+            className="flex h-11 w-full shrink-0 items-center rounded-[15px] bg-accent py-2.5 pl-[22px] pr-2.5 text-xl font-medium text-white transition-opacity hover:opacity-90"
           >
             + New
           </button>
 
-          <nav aria-label="Main" className="flex flex-col gap-0.5">
+          <nav aria-label="Main" className="mt-6 flex flex-col gap-0.5">
             {navItems.map(({ label, icon: Icon, view: itemView, requiresAuth }) => (
               <button
                 key={label}
@@ -347,11 +360,9 @@ export function Sidebar({
                     ? onRequireAuth
                     : () => onChangeView(itemView)
                 }
-                className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2.5 text-left text-sm text-sidebar-fg transition-colors hover:bg-accent-soft/60 ${
-                  view === itemView ? "bg-accent-soft" : ""
-                }`}
+                className={navItemClass(view === itemView)}
               >
-                <Icon className="h-4.5 w-4.5" />
+                <Icon className="h-[18px] w-[18px] shrink-0" />
                 {label}
               </button>
             ))}
@@ -363,23 +374,25 @@ export function Sidebar({
                   ? () => setConversationsOpen((v) => !v)
                   : onRequireAuth
               }
-              className="flex items-center gap-2.5 rounded-lg px-2.5 py-2.5 text-left text-sm text-sidebar-fg transition-colors hover:bg-accent-soft/60"
+              className={navItemClass(false)}
             >
-              <ChatSparkIcon className="h-4.5 w-4.5" />
+              <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center">
+                <AssetIcon name="conversations" width={16.0005} height={16.0005} />
+              </span>
               Conversations
             </button>
             <button
               type="button"
               onClick={authenticated ? onOpenOrganization : onRequireAuth}
-              className="flex items-center gap-2.5 rounded-lg px-2.5 py-2.5 text-left text-sm text-sidebar-fg transition-colors hover:bg-accent-soft/60"
+              className={navItemClass(false)}
             >
-              <UsersIcon className="h-4.5 w-4.5" />
+              <UsersIcon className="h-[18px] w-[18px] shrink-0" />
               Organization
             </button>
           </nav>
 
           {authenticated && conversationsOpen && (
-            <div className="-mt-3 flex flex-col gap-3 border-l border-sidebar-fg/15 py-1 pl-3">
+            <div className="mt-2 flex flex-col gap-3 border-l border-sidebar-fg/15 py-1 pl-3">
               {loadingChats && pinned.length === 0 && recent.length === 0 && (
                 <p className="text-xs text-sidebar-muted">Loading chats…</p>
               )}
@@ -411,7 +424,7 @@ export function Sidebar({
               {recent.length > 0 && (
                 <div className="flex flex-col gap-0.5">
                   <span className="px-1 text-[11px] font-semibold uppercase tracking-wide text-sidebar-muted">
-                    Recent
+                    Chats
                   </span>
                   {recent.map((conversation) => (
                     <ChatRow
@@ -431,30 +444,29 @@ export function Sidebar({
             </div>
           )}
 
+          <p className="mt-6 py-2.5 pr-2.5 pl-2.5 text-base font-medium text-sidebar-fg">
+            Recent
+          </p>
+
           {journeys.length > 0 ? (
-            <button
-              type="button"
-              onClick={() => onChangeView("journeys")}
-              className="mt-auto flex flex-col gap-2 rounded-[10px] border border-sidebar-border p-2.5 text-left"
-            >
-              <span className="flex items-center gap-2">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-input-border text-accent">
-                  <BookIcon className="h-4 w-4" />
-                </span>
-                <span className="min-w-0 truncate text-sm font-medium text-sidebar-fg">
-                  {journeys[0].title}
-                </span>
-              </span>
-              <span className="h-1.5 w-full overflow-hidden rounded-full bg-sidebar-fg/10">
-                <span
-                  className="block h-full rounded-full bg-accent"
-                  style={{ width: `${journeys[0].progress}%` }}
-                />
-              </span>
-            </button>
+            <div className="flex flex-col">
+              {journeys.slice(0, 4).map((journey) => (
+                <button
+                  key={journey.id}
+                  type="button"
+                  onClick={() => onChangeView("journeys")}
+                  className="flex items-center gap-2.5 rounded-[10px] p-2.5 text-left text-base text-sidebar-recent transition-colors hover:bg-sidebar-fg/5"
+                >
+                  <span className="flex h-6 w-6 shrink-0 items-start justify-center pt-[0.5px]">
+                    <AssetIcon name="journey-book-muted" width={22} height={19.4717} />
+                  </span>
+                  <span className="min-w-0 truncate">{journey.title}</span>
+                </button>
+              ))}
+            </div>
           ) : (
-            <div className="mt-auto flex flex-col gap-0.5 border border-sidebar-border rounded-[10px] p-2.5 text-center">
-              <p className="text-sm font-medium text-sidebar-fg">
+            <div className="flex h-[200px] shrink-0 flex-col items-center justify-center gap-2.5 rounded-[10px] border border-sidebar-border p-2.5 text-center">
+              <p className="whitespace-nowrap text-xl font-medium text-sidebar-fg">
                 You don&rsquo;t have
                 <br />
                 any journeys Yet
@@ -462,50 +474,50 @@ export function Sidebar({
               <button
                 type="button"
                 onClick={authenticated ? () => onChangeView("journeys") : onRequireAuth}
-                className="mt-1 border-t border-sidebar-border pt-2 text-sm font-medium text-accent hover:underline"
+                className="w-[123px] border-b border-accent pb-0.5 text-base font-medium text-accent"
               >
                 Create Journey
               </button>
             </div>
           )}
+
+          <div className="mt-auto flex flex-col gap-0.5 pt-3">
+            <button
+              type="button"
+              className={navItemClass(false)}
+            >
+              <AssetIcon name="ai-guide" width={18} height={18} />
+              AI Assisted Guide
+            </button>
+            <button
+              type="button"
+              onClick={onOpenAppearance}
+              className={navItemClass(false)}
+            >
+              <SettingsIcon className="h-[18px] w-[18px] shrink-0" />
+              Settings
+            </button>
+            <nav
+              aria-label="Legal"
+              className="mt-1 flex flex-wrap gap-x-3 gap-y-1 px-2.5 text-[11px] text-sidebar-muted"
+            >
+              <Link href="/terms" className="hover:text-sidebar-fg hover:underline">
+                Terms
+              </Link>
+              <Link href="/privacy" className="hover:text-sidebar-fg hover:underline">
+                Privacy
+              </Link>
+              <Link href="/cookies" className="hover:text-sidebar-fg hover:underline">
+                Cookies
+              </Link>
+              <Link href="/refunds" className="hover:text-sidebar-fg hover:underline">
+                Refunds
+              </Link>
+            </nav>
+          </div>
         </div>
 
-        <div className="flex flex-col gap-0.5 p-5">
-          <button
-            type="button"
-            className="flex items-center gap-2.5 rounded-lg px-2.5 py-2.5 text-left text-sm text-sidebar-fg transition-colors hover:bg-sidebar-fg/5"
-          >
-            <SparkleIcon className="h-4.5 w-4.5" />
-            AI Assisted Guide
-          </button>
-          <button
-            type="button"
-            onClick={onOpenAppearance}
-            className="flex items-center gap-2.5 rounded-lg px-2.5 py-2.5 text-left text-sm text-sidebar-fg transition-colors hover:bg-sidebar-fg/5"
-          >
-            <SettingsIcon className="h-4.5 w-4.5" />
-            Settings
-          </button>
-          <nav
-            aria-label="Legal"
-            className="mt-2 flex flex-wrap gap-x-3 gap-y-1 px-2.5 text-[11px] text-sidebar-muted"
-          >
-            <Link href="/terms" className="hover:text-sidebar-fg hover:underline">
-              Terms
-            </Link>
-            <Link href="/privacy" className="hover:text-sidebar-fg hover:underline">
-              Privacy
-            </Link>
-            <Link href="/cookies" className="hover:text-sidebar-fg hover:underline">
-              Cookies
-            </Link>
-            <Link href="/refunds" className="hover:text-sidebar-fg hover:underline">
-              Refunds
-            </Link>
-          </nav>
-        </div>
-
-        <div className="relative border-t border-sidebar-border p-4">
+        <div className="relative flex h-[89px] shrink-0 items-center justify-center border-t border-divider p-2.5">
           {authenticated && orgMenuOpen && (
             <>
               <button
@@ -543,7 +555,7 @@ export function Sidebar({
             </>
           )}
 
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex w-full items-center justify-center gap-[21px]">
             <div className="flex min-w-0 items-center gap-3">
               <ProfileAvatar
                 key={user?.image ?? "fallback"}
@@ -551,15 +563,13 @@ export function Sidebar({
                 name={displayName}
                 authenticated={status === "authenticated"}
               />
-              <div className="min-w-0">
+              <div className="flex w-[117px] min-w-0 flex-col">
                 <button
                   type="button"
                   onClick={authenticated ? onOpenUpgrade : onRequireAuth}
-                  className="flex items-center gap-1.5"
+                  className="-mb-0.5 truncate text-left text-lg text-sidebar-fg"
                 >
-                  <span className="truncate text-sm font-semibold text-sidebar-fg">
-                    {displayName}
-                  </span>
+                  {displayName}
                 </button>
                 <button
                   type="button"
@@ -574,7 +584,7 @@ export function Sidebar({
                       ? () => setOrgMenuOpen((v) => !v)
                       : onRequireAuth
                   }
-                  className="flex min-w-0 items-center gap-1 text-xs text-sidebar-muted hover:text-sidebar-fg"
+                  className="flex min-w-0 items-center gap-1 text-left text-sm text-sidebar-fg hover:text-accent"
                 >
                   <span className="truncate">
                     {authenticated ? currentOrgName ?? "…" : "Sign in"}
@@ -595,9 +605,9 @@ export function Sidebar({
                 status === "authenticated" ? () => signOut() : onRequireAuth
               }
               aria-label={status === "authenticated" ? "Log out" : "Sign in"}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sidebar-muted hover:text-sidebar-fg"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sidebar-fg hover:text-accent"
             >
-              <LogoutIcon className="h-4.5 w-4.5" />
+              <AssetIcon name="logout" width={18} height={17.25} />
             </button>
           </div>
         </div>

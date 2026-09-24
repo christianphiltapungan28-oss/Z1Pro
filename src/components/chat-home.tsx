@@ -2,6 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
+import { DesignOrb } from "@/components/design-orb";
 import { BookIcon, PlusIcon, SendIcon } from "@/components/icons";
 import { MarkdownMessage } from "@/components/markdown-message";
 import { Orb } from "@/components/orb";
@@ -194,30 +195,36 @@ export function ChatHome({
     <div className="flex h-full flex-col">
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
         {showLanding ? (
-          <div className="flex h-full flex-col px-4 py-10 sm:px-8">
-            <div className="mb-8">
-              <p className="text-sm text-muted">Your Workspace</p>
-              <h1 className="mt-1 font-display text-3xl font-bold text-foreground sm:text-5xl">
-                {greetingForHour(new Date().getHours())},{" "}
-                <span className="text-accent-strong">{firstName}</span>
-              </h1>
-              <p className="mt-1 text-base text-muted sm:text-lg">
-                What would you like to do?
-              </p>
+          <div className="flex h-full flex-col px-4 pt-10 pb-6 sm:pl-[47px] sm:pr-8 sm:pt-[53px]">
+            <div className="flex max-w-[712px] flex-col gap-6">
+              <p className="text-lg text-foreground">Your Workspace</p>
+              <div>
+                <h1 className="font-display text-4xl font-bold text-foreground sm:text-5xl">
+                  {greetingForHour(new Date().getHours())},{" "}
+                  <span className="text-accent-strong">{firstName}</span>
+                </h1>
+                <p className="text-xl text-foreground sm:text-2xl">
+                  What would you like to do?
+                </p>
+              </div>
             </div>
 
             <div className="flex flex-1 flex-col items-center justify-center">
               <button
                 type="button"
                 onClick={onStartVoice}
-                className="flex flex-col items-center gap-5"
+                className="flex w-[248px] flex-col items-center gap-[22px]"
               >
-                <Orb size={140} appearance={appearance} />
-                <span className="text-center">
-                  <span className="block font-display text-xl font-medium text-foreground sm:text-2xl">
+                {appearance === "light" ? (
+                  <DesignOrb width={241} />
+                ) : (
+                  <Orb size={140} appearance={appearance} />
+                )}
+                <span className="w-full text-center text-foreground">
+                  <span className="-mb-px block text-2xl font-medium">
                     Speak with Z1p
                   </span>
-                  <span className="block text-sm text-muted sm:text-base">
+                  <span className="block whitespace-nowrap text-lg">
                     Ask anything or describe a task
                   </span>
                 </span>

@@ -1,18 +1,20 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Poppins } from "next/font/google";
+import { Google_Sans_Flex, Parkinsans } from "next/font/google";
 import { headers } from "next/headers";
 import { AuthSessionProvider } from "@/components/providers/session-provider";
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-inter",
+// Google Sans Flex is the design's typeface for all UI text; Parkinsans is
+// only used for the Z1P wordmark.
+const googleSansFlex = Google_Sans_Flex({
+  variable: "--font-google-sans-flex",
   subsets: ["latin"],
 });
 
-const poppins = Poppins({
-  variable: "--font-poppins",
+const parkinsans = Parkinsans({
+  variable: "--font-parkinsans",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["800"],
 });
 
 export const metadata: Metadata = {
@@ -36,7 +38,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       data-theme="light"
       suppressHydrationWarning
-      className={`${inter.variable} ${poppins.variable} h-full antialiased`}
+      className={`${googleSansFlex.variable} ${parkinsans.variable} h-full antialiased`}
     >
       <head>
         <script nonce={nonce} dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
