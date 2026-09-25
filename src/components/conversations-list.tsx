@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { AssetIcon } from "@/components/asset-icon";
 import { formatRelativeTime } from "@/lib/relative-time";
+import { useMediaQuery } from "@/lib/use-media-query";
 
 type ConversationItem = {
   id: string;
@@ -35,6 +36,7 @@ export function ConversationsList({
   const [page, setPage] = useState(1);
   const [data, setData] = useState<Page | null>(null);
   const [error, setError] = useState(false);
+  const phone = useMediaQuery("(max-width: 767px)");
 
   // Wait for typing to pause before searching, so each keystroke isn't a
   // request.
@@ -76,30 +78,41 @@ export function ConversationsList({
   );
 
   return (
-    <div className="flex h-full flex-col gap-6 overflow-y-auto p-4 sm:p-10">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <label className="flex w-full max-w-[500px] items-center gap-2.5 rounded-[10px] border border-divider bg-background px-4 py-2.5 text-label focus-within:ring-2 focus-within:ring-accent-strong">
-          <AssetIcon name="search-small" width={16} height={16} />
+    <div className="flex h-full flex-col gap-4 overflow-y-auto pb-4 md:gap-6 md:p-10">
+      {/* Phones: page heading (the desktop top bar carries it on larger screens). */}
+      <div className="flex flex-col py-2.5 pr-2.5 pl-6 pt-6 md:hidden">
+        <h1 className="-mb-[3px] text-[26px] font-medium text-foreground">Conversations</h1>
+        <p className="text-[11px] font-medium text-tertiary">Manage your ongoing chats with Z1P</p>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 px-[11px] md:px-0">
+        <label className="flex h-12 w-full items-center gap-2.5 rounded-[10px] border border-divider bg-background px-3.5 text-label focus-within:ring-2 focus-within:ring-accent-strong md:h-auto md:max-w-[500px] md:px-4 md:py-2.5">
+          <span className="text-secondary md:hidden">
+            <AssetIcon name="search" width={20} height={20} />
+          </span>
+          <span className="hidden md:inline-flex">
+            <AssetIcon name="search-small" width={16} height={16} />
+          </span>
           <input
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             aria-label="Search past conversations"
-            placeholder="Search past conversations..."
-            className="w-full min-w-0 bg-transparent text-sm text-foreground placeholder:text-tertiary focus:outline-none"
+            placeholder={phone ? "Search Past Conversations" : "Search past conversations..."}
+            className="w-full min-w-0 bg-transparent text-[15px] text-foreground placeholder:text-secondary focus:outline-none md:text-sm md:placeholder:text-tertiary"
           />
         </label>
         <button
           type="button"
           onClick={onNewChat}
-          className="shrink-0 rounded-[10px] bg-accent px-6 py-3 text-[15px] font-semibold text-white transition-opacity hover:opacity-90"
+          className="hidden shrink-0 rounded-[10px] bg-accent px-6 py-3 text-[15px] font-semibold text-white transition-opacity hover:opacity-90 md:block"
         >
           + New Chat
         </button>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-divider bg-background">
-        <div className="flex items-start border-b border-divider bg-surface px-6 py-3.5 text-xs font-bold text-label">
+      <div className="mx-[11px] flex min-h-0 flex-1 flex-col overflow-hidden bg-background md:mx-0 md:rounded-2xl md:border md:border-divider">
+        <div className="hidden items-start border-b border-divider bg-surface px-6 py-3.5 text-xs font-bold text-label md:flex">
           <p className="min-w-0 flex-1">CONVERSATION</p>
           <p className="w-[100px] shrink-0 text-right">LAST ACTIVE</p>
         </div>
@@ -125,29 +138,29 @@ export function ConversationsList({
               key={item.id}
               type="button"
               onClick={() => onOpen(item.id)}
-              className="flex w-full shrink-0 items-center gap-4 border-b border-divider bg-background px-6 py-5 text-left transition-colors hover:bg-accent/[0.02]"
+              className="flex w-full shrink-0 flex-col items-start gap-3 border-b border-divider bg-background px-4 py-3.5 text-left transition-colors hover:bg-accent/[0.02] md:flex-row md:items-center md:gap-4 md:px-6 md:py-5"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/ui/conversation-tile.svg" alt="" width={40} height={40} className="shrink-0" />
-              <span className="flex min-w-0 flex-1 flex-col gap-1">
-                <span className="flex w-full items-center gap-2">
-                  <span className="min-w-0 flex-1 truncate text-base font-semibold text-foreground">
+              <span className="flex w-full min-w-0 flex-1 flex-col gap-1">
+                <span className="flex w-full items-center gap-1 md:gap-2">
+                  <span className="min-w-0 flex-1 truncate text-sm font-bold text-foreground md:text-base md:font-semibold">
                     {item.title || "New chat"}
                   </span>
                   {item.hasJourney && (
-                    <span className="shrink-0 rounded-md bg-accent/10 px-2 py-0.5 text-[11px] font-semibold text-accent">
+                    <span className="shrink-0 rounded-md bg-accent/10 px-1.5 py-0.5 text-[9px] font-bold text-accent md:px-2 md:text-[11px] md:font-semibold">
                       → Journey
                     </span>
                   )}
                 </span>
-                <span className="w-full truncate text-sm text-tertiary">
+                <span className="w-full truncate text-xs font-medium text-tertiary md:text-sm md:font-normal">
                   {item.preview
                     ?.replace(/[*_`#>]+/g, "")
                     .replace(/\s+/g, " ")
                     .trim() || "No messages yet"}
                 </span>
               </span>
-              <span className="w-[100px] shrink-0 text-right text-[13px] text-tertiary">
+              <span className="shrink-0 text-[10px] font-bold text-tertiary md:w-[100px] md:text-right md:text-[13px] md:font-normal">
                 {formatRelativeTime(item.lastMessageAt ?? item.createdAt)}
               </span>
             </button>
@@ -156,7 +169,7 @@ export function ConversationsList({
 
         <nav
           aria-label="Pages"
-          className="flex shrink-0 items-center gap-2 border-t border-divider bg-surface px-6 py-4"
+          className="flex shrink-0 items-center justify-center gap-2 border-divider bg-background px-6 py-4 md:justify-start md:border-t md:bg-surface"
         >
           <button
             type="button"

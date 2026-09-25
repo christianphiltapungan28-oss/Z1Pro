@@ -213,6 +213,57 @@ body {
   }
 }
 
+/* "Building your journey" card (mobile Figma 653:10366): the pulse and the
+   first two dots fade in turn on a 1.2s loop. */
+@keyframes status-pulse {
+  0%,
+  38.33%,
+  100% {
+    opacity: 0.35;
+  }
+  18.33% {
+    opacity: 1;
+  }
+}
+@keyframes status-dot-1 {
+  0%,
+  15%,
+  53.33%,
+  100% {
+    opacity: 0.35;
+  }
+  33.33% {
+    opacity: 1;
+  }
+}
+@keyframes status-dot-2 {
+  0%,
+  30%,
+  68.33%,
+  100% {
+    opacity: 0.35;
+  }
+  48.33% {
+    opacity: 1;
+  }
+}
+.status-pulse {
+  animation: status-pulse 1.2s ease-in-out infinite;
+}
+.status-dot-1 {
+  animation: status-dot-1 1.2s ease-in-out infinite;
+}
+.status-dot-2 {
+  animation: status-dot-2 1.2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .status-pulse,
+  .status-dot-1,
+  .status-dot-2 {
+    animation: none;
+  }
+}
+
 
 /* Long-form text on the legal pages (/privacy, /terms, /cookies, /refunds). */
 .legal-prose {

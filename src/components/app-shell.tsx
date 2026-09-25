@@ -176,8 +176,8 @@ export function AppShell() {
   // The conversation, profile and notifications pages draw their own header.
   const showTopbar =
     (view !== "conversation" && view !== "profile" && view !== "notifications") || voiceMode;
-  // On phones, Home has its own search/bell header (mobile design).
-  const topbarOnPhone = !(view === "home" && !voiceMode);
+  // On phones, Home and Conversations draw their own headers (mobile design).
+  const topbarOnPhone = voiceMode || (view !== "home" && view !== "conversations");
 
   return (
     <div className="relative flex h-dvh overflow-hidden bg-background">
