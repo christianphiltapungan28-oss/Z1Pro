@@ -39,6 +39,9 @@
   --success-bg: #ecfdf5;
   --success-fg: #065f46;
   --dot-inactive: #d1d5db;
+  --field-border: #dde0e6;
+  --text-subtle: #6f7480;
+  --text-faint: #a5a9b2;
 }
 
 [data-theme="aurora"] {
@@ -68,6 +71,9 @@
   --success-bg: rgba(16, 185, 129, 0.12);
   --success-fg: #a7f3d0;
   --dot-inactive: rgba(255, 255, 255, 0.24);
+  --field-border: rgba(255, 255, 255, 0.18);
+  --text-subtle: #b8afcc;
+  --text-faint: #8e86a3;
 }
 
 [data-theme="aurora"] .ambient-background > div {
@@ -111,6 +117,9 @@
   --color-success-bg: var(--success-bg);
   --color-success-fg: var(--success-fg);
   --color-dot-inactive: var(--dot-inactive);
+  --color-field-border: var(--field-border);
+  --color-subtle: var(--text-subtle);
+  --color-faint: var(--text-faint);
   --font-display: var(--font-google-sans-flex);
   --font-logo: var(--font-parkinsans);
   --font-sans: var(--font-google-sans-flex);

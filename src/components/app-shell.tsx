@@ -1,6 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AmbientBackground } from "@/components/ambient-background";
 import { AppearanceDialog } from "@/components/appearance-dialog";
@@ -12,7 +13,6 @@ import { Journeys } from "@/components/journeys";
 import { OrganizationDialog } from "@/components/organization-dialog";
 import { SettingsPage } from "@/components/settings-page";
 import { Sidebar } from "@/components/sidebar";
-import { SignInDialog } from "@/components/sign-in-dialog";
 import { Topbar } from "@/components/topbar";
 import { UpgradeDialog } from "@/components/upgrade-dialog";
 import { VoiceMode } from "@/components/voice-mode";
@@ -68,7 +68,6 @@ export function AppShell() {
   const [view, setView] = useState<View>("home");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [appearanceOpen, setAppearanceOpen] = useState(false);
-  const [signInOpen, setSignInOpen] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [organizationOpen, setOrganizationOpen] = useState(false);
   const [activeConversationId, setActiveConversationId] = useState<
@@ -82,6 +81,11 @@ export function AppShell() {
   const { appearance, setAppearance } = useAppearance();
   const { status: sessionStatus } = useSession();
   const authenticated = sessionStatus === "authenticated";
+  const router = useRouter();
+
+  function requireAuth() {
+    router.push("/login");
+  }
 
   useEffect(() => {
     if (!authenticated) return;
@@ -170,7 +174,7 @@ export function AppShell() {
           onChangeView={changeView}
           onNewChat={() => changeView("home")}
           onOpenAppearance={() => setAppearanceOpen(true)}
-          onRequireAuth={() => setSignInOpen(true)}
+          onRequireAuth={requireAuth}
           onOpenUpgrade={() => setUpgradeOpen(true)}
           onOpenOrganization={() => setOrganizationOpen(true)}
           onOpenJourney={openJourney}
@@ -242,7 +246,7 @@ export function AppShell() {
             ) : (
               <ChatHome
                 authenticated={authenticated}
-                onRequireAuth={() => setSignInOpen(true)}
+                onRequireAuth={requireAuth}
                 onOpenConversation={openConversation}
                 onStartVoice={() => setVoiceMode(true)}
                 appearance={appearance}
@@ -258,8 +262,6 @@ export function AppShell() {
         appearance={appearance}
         onChange={setAppearance}
       />
-
-      <SignInDialog open={signInOpen} onClose={() => setSignInOpen(false)} />
 
       <UpgradeDialog open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
 

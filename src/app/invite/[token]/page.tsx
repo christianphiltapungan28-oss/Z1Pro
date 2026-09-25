@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { signIn, useSession } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 
 type InviteDetails = {
@@ -60,7 +61,7 @@ export default function InvitePage() {
     }
   }
 
-  const callbackUrl = typeof window !== "undefined" ? window.location.href : "/";
+  const callbackUrl = `/invite/${token}`;
 
   return (
     <div className="flex min-h-dvh items-center justify-center bg-background p-4">
@@ -87,22 +88,14 @@ export default function InvitePage() {
             </p>
 
             {status !== "authenticated" ? (
-              <div className="mt-6 flex flex-col gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => signIn("google", { callbackUrl })}
-                  className="rounded-full border border-card-border bg-background px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-foreground/5"
-                >
-                  Continue with Google
-                </button>
-                <button
-                  type="button"
-                  onClick={() => signIn("facebook", { callbackUrl })}
-                  className="rounded-full bg-[#1877F2] px-4 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
-                >
-                  Continue with Facebook
-                </button>
-              </div>
+              // Sign in through /login so new members see and accept the
+              // Terms and Privacy Policy like everyone else.
+              <Link
+                href={`/login?tab=signup&callbackUrl=${encodeURIComponent(callbackUrl)}`}
+                className="mt-6 block w-full rounded-full bg-gradient-to-r from-accent to-accent-strong px-4 py-2.5 text-center text-sm font-semibold text-white transition-opacity hover:opacity-90"
+              >
+                Sign in to join
+              </Link>
             ) : !invite.emailMatches ? (
               <p className="mt-6 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-500">
                 This invite was sent to a different email address. Sign in
