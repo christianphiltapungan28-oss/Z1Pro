@@ -46,6 +46,15 @@ export default function PrivacyPage() {
         </li>
         <li>Conversation titles, pinned chats and Journeys you save.</li>
         <li>
+          Files you upload to a Journey (PDFs, images and text files), the
+          summaries and steps our AI provider makes from them, and your
+          step-by-step coaching messages. Files are deleted with the Journey.
+        </li>
+        <li>
+          Life Metrics scores and notes, only if you turn Life Metrics on (see
+          section 3).
+        </li>
+        <li>
           Organization details: organization names, members and their roles,
           and the email addresses of people you invite.
         </li>
@@ -118,14 +127,38 @@ export default function PrivacyPage() {
               </td>
               <td>Contract, and the consent you give when you sign in</td>
             </tr>
+            <tr>
+              <td>
+                Life Metrics (optional, off by default): AI scores for areas of
+                your life worked out from your chats and Journeys
+              </td>
+              <td>
+                Your specific, express consent, given when you turn it on (Sec.
+                13(a) for sensitive personal information)
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>
       <p>
-        We do not use your conversations to train AI models, and we do not
-        process sensitive personal information on purpose. Please avoid sharing
-        health, government ID, financial account or other sensitive details in
-        your chats.
+        We do not use your conversations to train AI models. Apart from Life
+        Metrics (below), we do not process sensitive personal information on
+        purpose. Please avoid sharing government ID, financial account or other
+        sensitive details in your chats.
+      </p>
+      <h3 id="life-metrics">Life Metrics</h3>
+      <p>
+        Life Metrics is off until you turn it on from your Profile. If you do,
+        our AI provider reads the messages you wrote (not the assistant&apos;s
+        replies) and your Journeys, at most once a week, and gives you a score
+        and a short note for Purpose, Finances, Family, Health, Personal Growth,
+        Faith and Community. Health and religious or spiritual matters are
+        sensitive personal information, so we only do this with your express
+        consent. The scores are estimates to help you reflect; they are not a
+        medical, psychological or any other assessment, are only shown to you,
+        and are never used for advertising or shared with anyone else. You can
+        turn Life Metrics off at any time from your Profile, which permanently
+        deletes all your scores.
       </p>
 
       <h2>4. Who we share it with</h2>
@@ -216,6 +249,10 @@ export default function PrivacyPage() {
         <li>
           Payment records: for as long as Philippine tax and accounting rules
           require, even after your account is closed.
+        </li>
+        <li>
+          Life Metrics scores: until you turn Life Metrics off or close your
+          account.
         </li>
         <li>Rate-limit counters: minutes to hours.</li>
         <li>

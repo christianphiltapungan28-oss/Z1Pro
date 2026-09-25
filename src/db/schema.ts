@@ -293,6 +293,51 @@ export const journeyMessages = pgTable("journey_messages", {
     .defaultNow(),
 });
 
+// Profile — Life Metrics — created by scripts/add-life-metrics.sql. A row
+// exists only while the user has Life Metrics turned on.
+
+export type LifeMetricKey =
+  | "purpose"
+  | "finances"
+  | "family"
+  | "health"
+  | "growth"
+  | "faith"
+  | "community";
+
+export type LifeMetricCategory = {
+  key: LifeMetricKey;
+  /** 0-99, or null when the conversations say too little about this area. */
+  score: number | null;
+  direction: "up" | "down" | "steady";
+  /** Two-word trend label, e.g. "Trending Up". */
+  label: string;
+  /** How many of the analysed conversations touched this area. */
+  chats: number;
+  note: string;
+};
+
+export const lifeMetrics = pgTable("life_metrics", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  consentedAt: timestamp("consented_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  archetype: text("archetype"),
+  tagline: text("tagline"),
+  summary: text("summary"),
+  categories: jsonb("categories")
+    .$type<LifeMetricCategory[]>()
+    .notNull()
+    .default([]),
+  conversationsAnalysed: integer("conversations_analysed").notNull().default(0),
+  computedAt: timestamp("computed_at", { withTimezone: true }),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 export const aiUsageDaily = pgTable(
   "ai_usage_daily",
   {

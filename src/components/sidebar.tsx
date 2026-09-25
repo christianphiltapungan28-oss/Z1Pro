@@ -82,7 +82,7 @@ export function Sidebar({
   onChangeView,
   onOpenAppearance,
   onRequireAuth,
-  onOpenUpgrade,
+  onOpenProfile,
   onOpenOrganization,
   onNewChat,
   onOpenJourney,
@@ -94,7 +94,7 @@ export function Sidebar({
   onChangeView: (view: View) => void;
   onOpenAppearance: () => void;
   onRequireAuth: () => void;
-  onOpenUpgrade: () => void;
+  onOpenProfile: () => void;
   onOpenOrganization: () => void;
   onNewChat: () => void;
   onOpenJourney: (journey: Journey) => void;
@@ -357,16 +357,23 @@ export function Sidebar({
 
           <div className="flex w-full items-center justify-center gap-[21px]">
             <div className="flex min-w-0 items-center gap-3">
-              <ProfileAvatar
-                key={user?.image ?? "fallback"}
-                image={user?.image}
-                name={displayName}
-                authenticated={status === "authenticated"}
-              />
+              <button
+                type="button"
+                onClick={authenticated ? onOpenProfile : onRequireAuth}
+                aria-label={authenticated ? "Open your profile" : "Sign in"}
+                className="shrink-0 rounded-full"
+              >
+                <ProfileAvatar
+                  key={user?.image ?? "fallback"}
+                  image={user?.image}
+                  name={displayName}
+                  authenticated={status === "authenticated"}
+                />
+              </button>
               <div className="flex w-[117px] min-w-0 flex-col">
                 <button
                   type="button"
-                  onClick={authenticated ? onOpenUpgrade : onRequireAuth}
+                  onClick={authenticated ? onOpenProfile : onRequireAuth}
                   className="-mb-0.5 truncate text-left text-lg text-sidebar-fg"
                 >
                   {displayName}

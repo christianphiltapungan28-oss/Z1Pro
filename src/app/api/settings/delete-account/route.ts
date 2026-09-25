@@ -19,9 +19,9 @@ import { rateLimit } from "@/lib/rate-limit";
 
 /**
  * Deletes the user's account. Personal content (chats, journeys, usage,
- * settings, sessions, sign-in links) is deleted outright. The user row is
- * anonymised rather than removed, because payments reference it and must be
- * kept for tax records — deleting the row would cascade to them.
+ * settings, Life Metrics, sessions, sign-in links) is deleted outright. The
+ * user row is anonymised rather than removed, because payments reference it
+ * and must be kept for tax records — deleting the row would cascade to them.
  *
  * Blocked while the user is the only owner of an organization that still
  * has other members, so a team is never left without an owner.
@@ -92,8 +92,12 @@ export async function POST(request: Request) {
     );
   }
 
-  const [{ hasSettings }] = await db.execute<{ hasSettings: boolean }>(
-    sql`select to_regclass('public.user_settings') is not null as "hasSettings"`
+  const [{ hasSettings, hasMetrics }] = await db.execute<{
+    hasSettings: boolean;
+    hasMetrics: boolean;
+  }>(
+    sql`select to_regclass('public.user_settings') is not null as "hasSettings",
+               to_regclass('public.life_metrics') is not null as "hasMetrics"`
   );
 
   const storedPaths = await storedFilePaths({ userId });
@@ -104,6 +108,9 @@ export async function POST(request: Request) {
     await tx.delete(aiUsageDaily).where(eq(aiUsageDaily.userId, userId));
     if (hasSettings) {
       await tx.execute(sql`delete from user_settings where user_id = ${userId}`);
+    }
+    if (hasMetrics) {
+      await tx.execute(sql`delete from life_metrics where user_id = ${userId}`);
     }
     await tx
       .update(organizationInvites)

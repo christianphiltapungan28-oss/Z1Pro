@@ -11,10 +11,10 @@ import { ConversationsList } from "@/components/conversations-list";
 import { CloseIcon } from "@/components/icons";
 import { Journeys } from "@/components/journeys";
 import { OrganizationDialog } from "@/components/organization-dialog";
+import { ProfilePage } from "@/components/profile-page";
 import { SettingsPage } from "@/components/settings-page";
 import { Sidebar } from "@/components/sidebar";
 import { Topbar } from "@/components/topbar";
-import { UpgradeDialog } from "@/components/upgrade-dialog";
 import { VoiceMode } from "@/components/voice-mode";
 import { useAppearance } from "@/lib/use-appearance";
 import type { Journey } from "@/types/journey";
@@ -24,7 +24,8 @@ export type View =
   | "journeys"
   | "conversations"
   | "conversation"
-  | "settings";
+  | "settings"
+  | "profile";
 
 const CHECKOUT_MESSAGES: Record<string, string> = {
   success: "You're upgraded! Your new plan is now active.",
@@ -68,7 +69,6 @@ export function AppShell() {
   const [view, setView] = useState<View>("home");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [appearanceOpen, setAppearanceOpen] = useState(false);
-  const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [organizationOpen, setOrganizationOpen] = useState(false);
   const [activeConversationId, setActiveConversationId] = useState<
     string | null
@@ -144,7 +144,12 @@ export function AppShell() {
     const params = new URLSearchParams(window.location.search);
     // Pages outside the shell (e.g. a journey) link back with ?view=.
     const requested = params.get("view");
-    if (requested === "journeys" || requested === "conversations" || requested === "settings") {
+    if (
+      requested === "journeys" ||
+      requested === "conversations" ||
+      requested === "settings" ||
+      requested === "profile"
+    ) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time sync from the URL on mount
       setView(requested);
       params.delete("view");
@@ -164,8 +169,8 @@ export function AppShell() {
     );
   }, []);
 
-  // The conversation page draws its own header (back arrow, title, menu).
-  const showTopbar = view !== "conversation" || voiceMode;
+  // The conversation and profile pages draw their own header.
+  const showTopbar = (view !== "conversation" && view !== "profile") || voiceMode;
 
   return (
     <div className="relative flex h-dvh overflow-hidden bg-background">
@@ -180,7 +185,7 @@ export function AppShell() {
           onNewChat={() => changeView("home")}
           onOpenAppearance={() => setAppearanceOpen(true)}
           onRequireAuth={requireAuth}
-          onOpenUpgrade={() => setUpgradeOpen(true)}
+          onOpenProfile={() => changeView("profile")}
           onOpenOrganization={() => setOrganizationOpen(true)}
           onOpenJourney={openJourney}
           journeys={journeys}
@@ -210,7 +215,12 @@ export function AppShell() {
             />
           )}
           <main className="min-h-0 flex-1">
-            {view === "journeys" ? (
+            {view === "profile" ? (
+              <ProfilePage
+                onMenuClick={() => setSidebarOpen(true)}
+                onStartChat={() => changeView("home")}
+              />
+            ) : view === "journeys" ? (
               <Journeys
                 journeys={journeys}
                 loading={journeysLoading}
@@ -267,8 +277,6 @@ export function AppShell() {
         appearance={appearance}
         onChange={setAppearance}
       />
-
-      <UpgradeDialog open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
 
       <OrganizationDialog
         open={organizationOpen}

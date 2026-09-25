@@ -1,18 +1,33 @@
 import { NextResponse } from "next/server";
-import { asc, eq, sql } from "drizzle-orm";
+import { asc, eq, inArray, sql } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/db";
 import {
   aiConversations,
   aiMessages,
+  journeyFiles,
+  journeyMessages,
+  journeySteps,
   journeys,
+  lifeMetrics,
   organizationMembers,
   organizations,
   payments,
   plans,
   users,
 } from "@/db/schema";
+import { isMissingTable } from "@/lib/db-errors";
 import { rateLimit } from "@/lib/rate-limit";
+
+/** Rows from a table added by a later SQL script, or [] if it isn't there yet. */
+async function optionalRows<T>(query: Promise<T[]>): Promise<T[]> {
+  try {
+    return await query;
+  } catch (err) {
+    if (isMissingTable(err)) return [];
+    throw err;
+  }
+}
 
 /**
  * "Download Your Data": everything we hold about the user as one JSON file
@@ -85,6 +100,7 @@ export async function GET() {
 
   const journeyRows = await db
     .select({
+      id: journeys.id,
       title: journeys.title,
       description: journeys.description,
       progress: journeys.progress,
@@ -93,6 +109,66 @@ export async function GET() {
     })
     .from(journeys)
     .where(eq(journeys.userId, userId));
+  const journeyIds = journeyRows.map((j) => j.id);
+
+  const stepRows = journeyIds.length
+    ? await optionalRows(
+        db
+          .select({
+            journeyId: journeySteps.journeyId,
+            title: journeySteps.title,
+            tip: journeySteps.tip,
+            status: journeySteps.status,
+            completedAt: journeySteps.completedAt,
+          })
+          .from(journeySteps)
+          .where(inArray(journeySteps.journeyId, journeyIds))
+          .orderBy(asc(journeySteps.position))
+      )
+    : [];
+  const fileRows = await optionalRows(
+    db
+      .select({
+        journeyId: journeyFiles.journeyId,
+        fileName: journeyFiles.fileName,
+        mimeType: journeyFiles.mimeType,
+        sizeBytes: journeyFiles.sizeBytes,
+        summary: journeyFiles.summary,
+        createdAt: journeyFiles.createdAt,
+      })
+      .from(journeyFiles)
+      .where(eq(journeyFiles.userId, userId))
+  );
+  const coachingRows = await optionalRows(
+    db
+      .select({
+        journeyId: journeyMessages.journeyId,
+        role: journeyMessages.role,
+        content: journeyMessages.content,
+        createdAt: journeyMessages.createdAt,
+      })
+      .from(journeyMessages)
+      .where(eq(journeyMessages.userId, userId))
+      .orderBy(asc(journeyMessages.createdAt))
+  );
+  const forJourney = <T extends { journeyId: string }>(rows: T[], id: string) =>
+    rows
+      .filter((r) => r.journeyId === id)
+      .map((r) => Object.fromEntries(Object.entries(r).filter(([k]) => k !== "journeyId")));
+
+  const [metricsRow] = await optionalRows(
+    db
+      .select({
+        consentedAt: lifeMetrics.consentedAt,
+        archetype: lifeMetrics.archetype,
+        tagline: lifeMetrics.tagline,
+        summary: lifeMetrics.summary,
+        categories: lifeMetrics.categories,
+        computedAt: lifeMetrics.computedAt,
+      })
+      .from(lifeMetrics)
+      .where(eq(lifeMetrics.userId, userId))
+  );
 
   const memberships = await db
     .select({ organization: organizations.name, role: organizationMembers.role })
@@ -127,7 +203,13 @@ export async function GET() {
         createdAt,
       })),
     })),
-    journeys: journeyRows,
+    journeys: journeyRows.map(({ id, ...journey }) => ({
+      ...journey,
+      steps: forJourney(stepRows, id),
+      files: forJourney(fileRows, id),
+      coaching: forJourney(coachingRows, id),
+    })),
+    lifeMetrics: metricsRow ?? null,
     organizations: memberships,
     payments: paymentRows,
   };

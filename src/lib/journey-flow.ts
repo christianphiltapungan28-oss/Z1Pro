@@ -1,6 +1,4 @@
-import { openaiFetch } from "@/lib/openai";
-import { getModelForPlan } from "@/lib/plan";
-import { recordUsage } from "@/lib/usage-guard";
+import { jsonCompletion, type Content } from "@/lib/ai-json";
 
 // ---------------------------------------------------------------------------
 // Uploads
@@ -102,11 +100,6 @@ If the material is not an assignment or goal, still produce sensible steps for w
 
 const SUMMARY_PROMPT = `Summarise this extra file a student added to their assignment journey, in at most 500 characters: what it contains and how it relates to the work. Reply with JSON only: {"summary": string, "reply": string (1-2 sentences acknowledging the file to the student)}`;
 
-type Content =
-  | { type: "text"; text: string }
-  | { type: "file"; file: { filename: string; file_data: string } }
-  | { type: "image_url"; image_url: { url: string } };
-
 export function fileContent(name: string, mimeType: string, bytes: ArrayBuffer): Content {
   const kind = ACCEPTED_TYPES[mimeType];
   const b64 = Buffer.from(bytes).toString("base64");
@@ -118,37 +111,6 @@ export function fileContent(name: string, mimeType: string, bytes: ArrayBuffer):
   }
   const text = Buffer.from(bytes).toString("utf8").slice(0, MAX_TEXT_CHARS);
   return { type: "text", text: `File "${name}":\n${text}` };
-}
-
-async function jsonCompletion(
-  system: string,
-  content: Content[],
-  maxTokens: number
-): Promise<Record<string, unknown>> {
-  const res = await openaiFetch(
-    "/chat/completions",
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: getModelForPlan("free"),
-        max_completion_tokens: maxTokens,
-        response_format: { type: "json_object" },
-        messages: [
-          { role: "system", content: system },
-          { role: "user", content },
-        ],
-      }),
-    },
-    { timeoutMs: 90_000, maxRetries: 1 }
-  );
-  if (!res.ok) {
-    throw new Error(`OpenAI ${res.status}: ${await res.text().catch(() => "")}`);
-  }
-  const data = await res.json();
-  const usage = data.usage ?? {};
-  await recordUsage("chatTokens", (usage.prompt_tokens ?? 0) + (usage.completion_tokens ?? 0));
-  return JSON.parse(data.choices?.[0]?.message?.content ?? "{}");
 }
 
 function clean(value: unknown, max: number) {

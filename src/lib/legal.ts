@@ -19,5 +19,5 @@ export const LEGAL = {
   dpoName: "[Data Protection Officer name]",
   dpoEmail: "zpronathanwrightflowsmart@gmail.com",
   governingLaw: "the Republic of the Philippines",
-  lastUpdated: "September 24, 2026",
+  lastUpdated: "September 25, 2026",
 } as const;
