@@ -135,19 +135,24 @@ export function AppShell() {
     setView("conversation");
   }
 
+  // Journeys open in their own full-screen guided flow.
   function openJourney(journey: Journey) {
-    if (journey.sourceConversationId) {
-      openConversation(journey.sourceConversationId);
-    } else {
-      changeView("home");
-    }
+    router.push(`/journeys/${journey.id}`);
   }
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    // Pages outside the shell (e.g. a journey) link back with ?view=.
+    const requested = params.get("view");
+    if (requested === "journeys" || requested === "conversations" || requested === "settings") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time sync from the URL on mount
+      setView(requested);
+      params.delete("view");
+      const rest = params.toString();
+      window.history.replaceState({}, "", window.location.pathname + (rest ? `?${rest}` : ""));
+    }
     const checkout = params.get("checkout");
     if (!checkout) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time sync from the URL on mount, not derivable from render
     setCheckoutStatus(checkout);
     params.delete("checkout");
     params.delete("payment");
@@ -241,7 +246,7 @@ export function AppShell() {
                 onStartVoice={() => setVoiceMode(true)}
                 onDeleted={() => changeView("conversations")}
                 onCreateJourney={createJourney}
-                onViewJourneys={() => changeView("journeys")}
+                onViewJourney={(id) => router.push(`/journeys/${id}`)}
               />
             ) : (
               <ChatHome

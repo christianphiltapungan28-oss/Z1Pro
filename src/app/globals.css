@@ -42,6 +42,20 @@
   --field-border: #dde0e6;
   --text-subtle: #6f7480;
   --text-faint: #a5a9b2;
+  --flow: #e91e8c;
+  --flow-soft: rgba(233, 30, 140, 0.07);
+  --flow-ring: rgba(233, 30, 140, 0.15);
+  --flow-bg: #f8f9fa;
+  --flow-line: #e9ecef;
+  --flow-ink: #1a1b1f;
+  --flow-muted: #6c757d;
+  --flow-user: #f1f3f5;
+  --done: #2b8a3e;
+  --done-bg: #e6fcf5;
+  --done-line: #d3f9d8;
+  --ok: #28c76f;
+  --gold: #f59f00;
+  --gold-bg: #fff9db;
 }
 
 [data-theme="aurora"] {
@@ -74,6 +88,14 @@
   --field-border: rgba(255, 255, 255, 0.18);
   --text-subtle: #b8afcc;
   --text-faint: #8e86a3;
+  --flow-bg: #0c0812;
+  --flow-line: rgba(255, 255, 255, 0.12);
+  --flow-ink: #f7f2ff;
+  --flow-muted: #b8afcc;
+  --flow-user: rgba(255, 255, 255, 0.08);
+  --done-bg: rgba(43, 138, 62, 0.18);
+  --done-line: rgba(43, 138, 62, 0.35);
+  --gold-bg: rgba(245, 159, 0, 0.14);
 }
 
 [data-theme="aurora"] .ambient-background > div {
@@ -120,6 +142,20 @@
   --color-field-border: var(--field-border);
   --color-subtle: var(--text-subtle);
   --color-faint: var(--text-faint);
+  --color-flow: var(--flow);
+  --color-flow-soft: var(--flow-soft);
+  --color-flow-ring: var(--flow-ring);
+  --color-flow-bg: var(--flow-bg);
+  --color-flow-line: var(--flow-line);
+  --color-flow-ink: var(--flow-ink);
+  --color-flow-muted: var(--flow-muted);
+  --color-flow-user: var(--flow-user);
+  --color-done: var(--done);
+  --color-done-bg: var(--done-bg);
+  --color-done-line: var(--done-line);
+  --color-ok: var(--ok);
+  --color-gold: var(--gold);
+  --color-gold-bg: var(--gold-bg);
   --font-display: var(--font-google-sans-flex);
   --font-logo: var(--font-parkinsans);
   --font-sans: var(--font-google-sans-flex);

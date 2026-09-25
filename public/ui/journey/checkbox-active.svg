@@ -1,0 +1,6 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="checkbox-active">
+<rect x="1" y="1" width="22" height="22" rx="11" stroke="#E91E8C" stroke-width="2"/>
+<circle id="Ellipse" cx="12" cy="12" r="5" fill="#E91E8C"/>
+</g>
+</svg>

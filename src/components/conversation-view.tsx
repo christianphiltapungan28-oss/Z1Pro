@@ -156,7 +156,7 @@ export function ConversationView({
   onStartVoice,
   onDeleted,
   onCreateJourney,
-  onViewJourneys,
+  onViewJourney,
 }: {
   conversationId: string;
   /** A first message typed on Home, sent once this view opens. */
@@ -169,7 +169,8 @@ export function ConversationView({
     title: string;
     sourceConversationId: string;
   }) => Promise<Journey | null>;
-  onViewJourneys: () => void;
+  /** Opens the journey page for this conversation's journey. */
+  onViewJourney: (journeyId: string) => void;
 }) {
   const [meta, setMeta] = useState<ConversationMeta | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -383,7 +384,7 @@ export function ConversationView({
               </p>
               <button
                 type="button"
-                onClick={onViewJourneys}
+                onClick={() => meta?.journey && onViewJourney(meta.journey.id)}
                 className="shrink-0 text-[15px] font-bold text-accent underline"
               >
                 View Journey →
@@ -461,7 +462,7 @@ export function ConversationView({
         {linked ? (
           <button
             type="button"
-            onClick={onViewJourneys}
+            onClick={() => meta?.journey && onViewJourney(meta.journey.id)}
             className="shrink-0 rounded-xl bg-accent/[0.08] px-6 py-3 text-[15px] font-bold text-accent"
           >
             → Linked to Journey

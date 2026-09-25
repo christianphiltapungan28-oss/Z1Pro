@@ -241,6 +241,58 @@ export const journeys = pgTable("journeys", {
     .defaultNow(),
 });
 
+// Journey Interactive Flow — created by scripts/add-journey-flow.sql.
+
+export type JourneyStepStatus = "pending" | "active" | "done";
+
+export const journeySteps = pgTable("journey_steps", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  journeyId: uuid("journey_id")
+    .notNull()
+    .references(() => journeys.id, { onDelete: "cascade" }),
+  position: smallint("position").notNull(),
+  title: text("title").notNull(),
+  tip: text("tip"),
+  status: text("status").$type<JourneyStepStatus>().notNull().default("pending"),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const journeyFiles = pgTable("journey_files", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  journeyId: uuid("journey_id")
+    .notNull()
+    .references(() => journeys.id, { onDelete: "cascade" }),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  fileName: text("file_name").notNull(),
+  mimeType: text("mime_type").notNull(),
+  sizeBytes: integer("size_bytes").notNull(),
+  storagePath: text("storage_path"),
+  summary: text("summary"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const journeyMessages = pgTable("journey_messages", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  journeyId: uuid("journey_id")
+    .notNull()
+    .references(() => journeys.id, { onDelete: "cascade" }),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  role: text("role").$type<"user" | "assistant">().notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 export const aiUsageDaily = pgTable(
   "ai_usage_daily",
   {

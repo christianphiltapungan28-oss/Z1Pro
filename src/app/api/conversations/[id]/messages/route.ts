@@ -11,6 +11,11 @@ import {
   getModelLabelForPlan,
 } from "@/lib/plan";
 import { openaiFetch } from "@/lib/openai";
+import {
+  adjustDailyCount,
+  FAIR_USE_DAILY_MESSAGES,
+  todayUtc,
+} from "@/lib/chat-usage";
 import { rateLimit } from "@/lib/rate-limit";
 import { isOverDailyBudget, recordUsage, sendAlert } from "@/lib/usage-guard";
 
@@ -46,10 +51,6 @@ When a question is naturally about data or comparisons (trends, breakdowns, prop
 \`\`\`
 
 "type" is "bar", "line", or "pie" — use "pie" only for a single dataset showing proportions of a whole. Only include a chart block when it genuinely helps; do not force one into every answer.`;
-}
-
-function todayUtc() {
-  return new Date().toISOString().slice(0, 10);
 }
 
 async function getOwnedConversation(id: string, userId: string) {
@@ -100,10 +101,6 @@ const MAX_COMPLETION_TOKENS = { text: 4_000, voice: 1_500 } as const;
 const VOICE_INSTRUCTIONS =
   "This reply will be spoken aloud. Answer in 1 to 3 short sentences of plain conversational text: no Markdown, lists, code, tables, emoji or chart blocks.";
 
-// "Unlimited" plans still get a fair-use ceiling so a leaked account or a
-// runaway script can't run up an unbounded bill.
-const FAIR_USE_DAILY_MESSAGES = 300;
-
 function trimHistory<T extends { content: string }>(newestFirst: T[]) {
   const kept: T[] = [];
   let chars = 0;
@@ -116,20 +113,6 @@ function trimHistory<T extends { content: string }>(newestFirst: T[]) {
     chars += message.content.length;
   }
   return kept.reverse();
-}
-
-async function adjustDailyCount(userId: string, usageDate: string, delta: number) {
-  const [row] = await db
-    .insert(aiUsageDaily)
-    .values({ userId, usageDate, messageCount: Math.max(delta, 0) })
-    .onConflictDoUpdate({
-      target: [aiUsageDaily.userId, aiUsageDaily.usageDate],
-      set: {
-        messageCount: sql`greatest(${aiUsageDaily.messageCount} + ${delta}, 0)`,
-      },
-    })
-    .returning({ messageCount: aiUsageDaily.messageCount });
-  return row.messageCount;
 }
 
 export async function POST(

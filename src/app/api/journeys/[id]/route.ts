@@ -3,6 +3,8 @@ import { and, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/db";
 import { journeys } from "@/db/schema";
+import { deleteStoredFiles } from "@/lib/journey-flow";
+import { storedFilePaths } from "@/lib/journey-flow-data";
 
 async function getOwnedJourney(id: string, userId: string) {
   const [journey] = await db
@@ -69,6 +71,8 @@ export async function DELETE(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
+  const paths = await storedFilePaths({ journeyId: id });
   await db.delete(journeys).where(eq(journeys.id, id));
+  await deleteStoredFiles(paths);
   return NextResponse.json({ ok: true });
 }

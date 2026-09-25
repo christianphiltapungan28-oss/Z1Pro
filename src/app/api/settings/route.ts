@@ -8,6 +8,7 @@ import {
   users,
   type NotificationPrefs,
 } from "@/db/schema";
+import { isMissingTable } from "@/lib/db-errors";
 import { rateLimit } from "@/lib/rate-limit";
 import { LANGUAGES } from "@/lib/settings";
 
@@ -31,14 +32,6 @@ const DEFAULT_NOTIFICATIONS: Required<NotificationPrefs> = {
 };
 
 const LIMITS = { name: 80, phone: 30, about: 300, country: 60 } as const;
-
-// Postgres "undefined_table". Drizzle wraps driver errors, so check the
-// wrapped cause as well.
-function isMissingTable(err: unknown): boolean {
-  if (typeof err !== "object" || err === null) return false;
-  const { code, cause } = err as { code?: string; cause?: unknown };
-  return code === "42P01" || (cause !== undefined && isMissingTable(cause));
-}
 
 function validTimezone(tz: string) {
   try {

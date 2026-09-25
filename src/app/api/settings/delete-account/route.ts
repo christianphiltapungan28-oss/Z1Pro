@@ -13,6 +13,8 @@ import {
   sessions,
   users,
 } from "@/db/schema";
+import { deleteStoredFiles } from "@/lib/journey-flow";
+import { storedFilePaths } from "@/lib/journey-flow-data";
 import { rateLimit } from "@/lib/rate-limit";
 
 /**
@@ -94,6 +96,8 @@ export async function POST(request: Request) {
     sql`select to_regclass('public.user_settings') is not null as "hasSettings"`
   );
 
+  const storedPaths = await storedFilePaths({ userId });
+
   await db.transaction(async (tx) => {
     await tx.delete(aiConversations).where(eq(aiConversations.userId, userId));
     await tx.delete(journeys).where(eq(journeys.userId, userId));
@@ -129,6 +133,9 @@ export async function POST(request: Request) {
       })
       .where(eq(users.id, userId));
   });
+
+  // Uploaded journey files in storage go too (their rows cascade above).
+  await deleteStoredFiles(storedPaths);
 
   return NextResponse.json({ ok: true });
 }
