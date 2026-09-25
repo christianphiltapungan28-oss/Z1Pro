@@ -10,6 +10,7 @@ import { ConversationsList } from "@/components/conversations-list";
 import { CloseIcon } from "@/components/icons";
 import { Journeys } from "@/components/journeys";
 import { OrganizationDialog } from "@/components/organization-dialog";
+import { SettingsPage } from "@/components/settings-page";
 import { Sidebar } from "@/components/sidebar";
 import { SignInDialog } from "@/components/sign-in-dialog";
 import { Topbar } from "@/components/topbar";
@@ -18,7 +19,12 @@ import { VoiceMode } from "@/components/voice-mode";
 import { useAppearance } from "@/lib/use-appearance";
 import type { Journey } from "@/types/journey";
 
-export type View = "home" | "journeys" | "conversations" | "conversation";
+export type View =
+  | "home"
+  | "journeys"
+  | "conversations"
+  | "conversation"
+  | "settings";
 
 const CHECKOUT_MESSAGES: Record<string, string> = {
   success: "You're upgraded! Your new plan is now active.",
@@ -179,6 +185,12 @@ export function AppShell() {
                 title="Conversations"
                 subtitle="Access and manage your ongoing chats and conversions with Z1"
               />
+            ) : view === "settings" ? (
+              <Topbar
+                onMenuClick={() => setSidebarOpen(true)}
+                title="Settings"
+                subtitle="Manage your Z1p life-coaching profile, notifications, and security preferences"
+              />
             ) : (
               <Topbar onMenuClick={() => setSidebarOpen(true)} />
             ))}
@@ -198,6 +210,11 @@ export function AppShell() {
                   setVoiceMode(true);
                 }}
                 onOpenJourney={openJourney}
+              />
+            ) : view === "settings" ? (
+              <SettingsPage
+                appearance={appearance}
+                onOpenAppearance={() => setAppearanceOpen(true)}
               />
             ) : view === "conversations" ? (
               <ConversationsList

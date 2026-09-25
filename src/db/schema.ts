@@ -80,6 +80,35 @@ export const users = pgTable("users", {
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
 });
 
+export type NotificationPrefs = {
+  email?: boolean;
+  push?: boolean;
+  conversationReminders?: boolean;
+  weeklyReport?: boolean;
+  journeyMilestones?: boolean;
+  marketing?: boolean;
+};
+
+// Profile details and preferences from Settings. Kept out of `users` so the
+// auth adapter's full-row reads never depend on this table existing.
+// Created by scripts/add-user-settings.sql.
+export const userSettings = pgTable("user_settings", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  phone: text("phone"),
+  timezone: text("timezone"),
+  about: text("about"),
+  country: text("country"),
+  notificationPrefs: jsonb("notification_prefs")
+    .$type<NotificationPrefs>()
+    .notNull()
+    .default({}),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 export const oauthAccounts = pgTable("oauth_accounts", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id")

@@ -289,8 +289,10 @@ export function Sidebar({
             </button>
             <button
               type="button"
-              onClick={onOpenAppearance}
-              className={navItemClass(false)}
+              aria-current={view === "settings" ? "page" : undefined}
+              // Guests can't open Settings, but can still pick a theme.
+              onClick={authenticated ? () => onChangeView("settings") : onOpenAppearance}
+              className={navItemClass(view === "settings")}
             >
               <SettingsIcon className="h-[18px] w-[18px] shrink-0" />
               Settings
