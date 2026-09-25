@@ -10,6 +10,8 @@ import { ConversationView } from "@/components/conversation-view";
 import { ConversationsList } from "@/components/conversations-list";
 import { CloseIcon } from "@/components/icons";
 import { Journeys } from "@/components/journeys";
+import { MobileTabBar } from "@/components/mobile-tab-bar";
+import { NotificationsPage } from "@/components/notifications-page";
 import { OrganizationDialog } from "@/components/organization-dialog";
 import { ProfilePage } from "@/components/profile-page";
 import { SettingsPage } from "@/components/settings-page";
@@ -25,7 +27,8 @@ export type View =
   | "conversations"
   | "conversation"
   | "settings"
-  | "profile";
+  | "profile"
+  | "notifications";
 
 const CHECKOUT_MESSAGES: Record<string, string> = {
   success: "You're upgraded! Your new plan is now active.",
@@ -148,7 +151,8 @@ export function AppShell() {
       requested === "journeys" ||
       requested === "conversations" ||
       requested === "settings" ||
-      requested === "profile"
+      requested === "profile" ||
+      requested === "notifications"
     ) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time sync from the URL on mount
       setView(requested);
@@ -169,8 +173,11 @@ export function AppShell() {
     );
   }, []);
 
-  // The conversation and profile pages draw their own header.
-  const showTopbar = (view !== "conversation" && view !== "profile") || voiceMode;
+  // The conversation, profile and notifications pages draw their own header.
+  const showTopbar =
+    (view !== "conversation" && view !== "profile" && view !== "notifications") || voiceMode;
+  // On phones, Home has its own search/bell header (mobile design).
+  const topbarOnPhone = !(view === "home" && !voiceMode);
 
   return (
     <div className="relative flex h-dvh overflow-hidden bg-background">
@@ -192,8 +199,9 @@ export function AppShell() {
         />
 
         <div className="flex min-w-0 flex-1 flex-col">
-          {showTopbar &&
-            (view === "conversations" ? (
+          {showTopbar && (
+            <div className={topbarOnPhone ? "contents" : "hidden md:contents"}>
+            {view === "conversations" ? (
               <Topbar
                 onMenuClick={() => setSidebarOpen(true)}
                 title="Conversations"
@@ -207,7 +215,9 @@ export function AppShell() {
               />
             ) : (
               <Topbar onMenuClick={() => setSidebarOpen(true)} />
-            ))}
+            )}
+            </div>
+          )}
           {checkoutStatus && (
             <CheckoutBanner
               status={checkoutStatus}
@@ -215,7 +225,9 @@ export function AppShell() {
             />
           )}
           <main className="min-h-0 flex-1">
-            {view === "profile" ? (
+            {view === "notifications" ? (
+              <NotificationsPage onBack={() => changeView("home")} />
+            ) : view === "profile" ? (
               <ProfilePage
                 onMenuClick={() => setSidebarOpen(true)}
                 onStartChat={() => changeView("home")}
@@ -264,10 +276,16 @@ export function AppShell() {
                 onRequireAuth={requireAuth}
                 onOpenConversation={openConversation}
                 onStartVoice={() => setVoiceMode(true)}
+                onOpenNotifications={() => changeView("notifications")}
                 appearance={appearance}
               />
             )}
           </main>
+          {/* Phones: bottom tabs instead of the sidebar. An open chat uses the
+              whole screen for its composer, as in the mobile design. */}
+          {view !== "conversation" && (
+            <MobileTabBar view={view} onChangeView={changeView} onRequireAuth={requireAuth} />
+          )}
         </div>
       </div>
 
