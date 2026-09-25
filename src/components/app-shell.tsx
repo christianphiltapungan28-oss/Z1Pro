@@ -176,8 +176,9 @@ export function AppShell() {
   // The conversation, profile and notifications pages draw their own header.
   const showTopbar =
     (view !== "conversation" && view !== "profile" && view !== "notifications") || voiceMode;
-  // On phones, Home and Conversations draw their own headers (mobile design).
-  const topbarOnPhone = voiceMode || (view !== "home" && view !== "conversations");
+  // On phones, Home, Journeys and Conversations draw their own headers (mobile design).
+  const topbarOnPhone =
+    voiceMode || (view !== "home" && view !== "journeys" && view !== "conversations");
 
   return (
     <div className="relative flex h-dvh overflow-hidden bg-background">
@@ -241,6 +242,8 @@ export function AppShell() {
                   setVoiceMode(true);
                 }}
                 onOpenJourney={openJourney}
+                onOpenNotifications={() => changeView("notifications")}
+                onRequireAuth={requireAuth}
               />
             ) : view === "settings" ? (
               <SettingsPage

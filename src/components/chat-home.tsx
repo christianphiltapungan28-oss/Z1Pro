@@ -2,9 +2,9 @@
 
 import { useSession } from "next-auth/react";
 import { useState } from "react";
-import { AssetIcon } from "@/components/asset-icon";
 import { DesignOrb } from "@/components/design-orb";
 import { PlusIcon, SendIcon } from "@/components/icons";
+import { MobileSearchHeader } from "@/components/mobile-search-header";
 import { Orb } from "@/components/orb";
 import type { Appearance } from "@/lib/use-appearance";
 import { useMediaQuery } from "@/lib/use-media-query";
@@ -80,29 +80,7 @@ export function ChatHome({
 
   return (
     <div className="flex h-full flex-col">
-      {/* Phone header: search and notifications (the desktop top bar is hidden). */}
-      <div className="flex items-center gap-[11px] px-[27px] pt-6 md:hidden">
-        <div className="flex h-12 min-w-0 flex-1 items-center gap-2.5 rounded-[10px] border border-divider px-3.5 focus-within:ring-2 focus-within:ring-accent-strong">
-          <span className="shrink-0 text-secondary">
-            <AssetIcon name="search" width={20} height={20} />
-          </span>
-          <input
-            type="text"
-            aria-label="Search"
-            placeholder="Search your journeys..."
-            className="w-full min-w-0 bg-transparent text-[15px] text-foreground placeholder:text-secondary focus:outline-none"
-          />
-        </div>
-        <button
-          type="button"
-          onClick={authenticated ? onOpenNotifications : onRequireAuth}
-          aria-label="Notifications"
-          className="shrink-0 rounded-full"
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/ui/bell-button.svg" alt="" width={40.3457} height={40.716} />
-        </button>
-      </div>
+      <MobileSearchHeader onOpenNotifications={onOpenNotifications} onRequireAuth={onRequireAuth} />
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="flex h-full flex-col px-6 pt-9 pb-6 md:pl-[47px] md:pr-8 md:pt-[53px]">

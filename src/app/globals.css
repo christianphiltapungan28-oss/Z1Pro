@@ -51,6 +51,7 @@
   --flow-muted: #6c757d;
   --flow-user: #f1f3f5;
   --flow-faint: #adb5bd;
+  --flow-tint: #fdecf5;
   --trend-up-bg: #d1fae5;
   --done: #2b8a3e;
   --done-bg: #e6fcf5;
@@ -96,6 +97,7 @@
   --flow-muted: #b8afcc;
   --flow-user: rgba(255, 255, 255, 0.08);
   --flow-faint: #8e86a3;
+  --flow-tint: rgba(233, 30, 140, 0.16);
   --trend-up-bg: rgba(16, 185, 129, 0.16);
   --done-bg: rgba(43, 138, 62, 0.18);
   --done-line: rgba(43, 138, 62, 0.35);
@@ -155,6 +157,7 @@
   --color-flow-muted: var(--flow-muted);
   --color-flow-user: var(--flow-user);
   --color-flow-faint: var(--flow-faint);
+  --color-flow-tint: var(--flow-tint);
   --color-trend-up-bg: var(--trend-up-bg);
   --color-done: var(--done);
   --color-done-bg: var(--done-bg);

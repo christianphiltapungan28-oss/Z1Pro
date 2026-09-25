@@ -2,7 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import type { View } from "@/components/app-shell";
+import { DesignOrb } from "@/components/design-orb";
 import { MarkdownMessage } from "@/components/markdown-message";
+import { MobileTabBar } from "@/components/mobile-tab-bar";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -172,6 +175,61 @@ function HelperCard({ title, sparkle, children }: { title: string; sparkle?: boo
 }
 
 // ---------------------------------------------------------------------------
+// Phone pieces (mobile Figma 523:5379 – 533:7583)
+
+function MobileMessage({ role, children }: { role: "user" | "assistant"; children: React.ReactNode }) {
+  const ai = role === "assistant";
+  return (
+    <div className="flex w-full flex-col gap-2 rounded-[14px] border border-flow-line bg-background p-4">
+      <p className={`text-[11px] font-bold uppercase ${ai ? "text-flow" : "text-flow-muted"}`}>
+        {ai ? "Zip AI" : "You"}
+      </p>
+      <div className="text-[15px] leading-[21px] font-medium text-flow-ink">{children}</div>
+    </div>
+  );
+}
+
+function MobileTask({ step }: { step: Pick<Step, "title" | "status"> }) {
+  const done = step.status === "done";
+  const active = step.status === "active";
+  return (
+    <div
+      aria-current={active ? "step" : undefined}
+      className={`flex w-full items-center gap-2.5 rounded-[10px] border border-flow-line px-3 py-2.5 ${
+        done ? "bg-done-bg" : active ? "bg-flow-tint" : "bg-background"
+      }`}
+    >
+      <Icon name={done ? "status-done" : active ? "status-active" : "status-pending"} size={20} />
+      <p className={`min-w-0 flex-1 text-[13px] font-medium ${done ? "text-done" : "text-flow-ink"}`}>
+        {done && <span className="sr-only">Done: </span>}
+        {done ? "✓ " : ""}
+        {step.title}
+      </p>
+    </div>
+  );
+}
+
+function MobileBreakdown({ steps }: { steps: Pick<Step, "title" | "status">[] }) {
+  return (
+    <div className="flex w-full flex-col gap-2">
+      <p className="text-xs font-bold uppercase text-foreground">Actionable breakdown</p>
+      {steps.map((step, i) => (
+        <MobileTask key={`${i}-${step.title}`} step={step} />
+      ))}
+    </div>
+  );
+}
+
+function MobileTip({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="flex w-full flex-col gap-[5px] rounded-[14px] bg-flow-tint p-3.5">
+      <p className="text-[13px] font-bold text-flow-ink">✦ {title}</p>
+      <p className="text-xs leading-[17px] font-medium text-flow-muted">{children}</p>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 
 export function JourneyFlow({ journeyId }: { journeyId: string }) {
   const router = useRouter();
@@ -185,10 +243,13 @@ export function JourneyFlow({ journeyId }: { journeyId: string }) {
   const [celebrate, setCelebrate] = useState<string | null>(null);
   const [showInfo, setShowInfo] = useState(false);
   const [dragging, setDragging] = useState(false);
+  // Phones: the response bar switches between voice and typing.
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const stopTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const mobileScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let ignore = false;
@@ -213,6 +274,7 @@ export function JourneyFlow({ journeyId }: { journeyId: string }) {
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    mobileScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   }, [flow?.messages.length, busy, liveTranscript]);
 
   useEffect(() => {
@@ -451,8 +513,387 @@ export function JourneyFlow({ journeyId }: { journeyId: string }) {
 
   const composerDisabled = analyzing || busy === "replying" || !flow.ready;
 
+  // --- phone layout (below md) -------------------------------------------
+
+  const lastUser = [...messages].reverse().find((m) => m.role === "user");
+  const userReplies = messages.filter((m) => m.role === "user").length;
+  const finalStep = hasPlan && activeIndex === steps.length - 1;
+  const firstFile = files[0];
+
+  let mobileLabel: string;
+  let mobileHeading: string;
+  let mobileBody: React.ReactNode;
+
+  if (!flow.ready) {
+    mobileLabel = "Coming soon";
+    mobileHeading = journey.title;
+    mobileBody = (
+      <MobileMessage role="assistant">
+        Guided journeys aren&rsquo;t switched on yet. Please check back soon.
+      </MobileMessage>
+    );
+  } else if (analyzing) {
+    mobileLabel = "AI analyzing";
+    mobileHeading = "Building Your Plan";
+    mobileBody = (
+      <>
+        <div role="status" className="flex flex-col items-center gap-2 py-4 text-center">
+          <DesignOrb width={130} />
+          <p className="text-[11px] font-bold uppercase text-flow">
+            {pendingFile ? "Zip AI · Analyzing your file" : "Zip AI · Planning your steps"}
+          </p>
+          <p className="text-xs text-flow-muted">Finding requirements and key milestones</p>
+        </div>
+        <MobileMessage role="assistant">
+          Reading through your {pendingFile ? "document" : "notes"} and preparing personalized guidance…
+        </MobileMessage>
+      </>
+    );
+  } else if (!hasPlan) {
+    mobileLabel = "Ready to upload";
+    mobileHeading = "Add your assignment";
+    mobileBody = (
+      <>
+        <MobileMessage role="assistant">
+          Welcome! Upload your assignment and I&rsquo;ll help you work through it step by step.
+        </MobileMessage>
+        <div className="flex h-[233px] w-full flex-col items-center justify-center gap-[15px] rounded-[10px] border border-dashed border-card-border">
+          <div className="flex flex-col items-center gap-5">
+            <Icon name="m-cloud-upload" size={40} />
+            <p className="text-base font-bold text-flow-ink">Choose your assignment file</p>
+          </div>
+          <p className="-mt-1 text-xs text-flow-muted">PDF, image or text file · up to 8 MB</p>
+          <button
+            type="button"
+            onClick={() => fileInput.current?.click()}
+            className="flex h-11 w-[180px] items-center justify-center rounded-full bg-accent text-sm font-bold text-white"
+          >
+            Upload File
+          </button>
+        </div>
+        {journey.sourceConversationId && (
+          <button
+            type="button"
+            onClick={() => planFromText()}
+            className="self-center text-sm font-semibold text-flow"
+          >
+            No file? Build my steps from our conversation
+          </button>
+        )}
+      </>
+    );
+  } else if (complete) {
+    mobileLabel = "Journey complete";
+    mobileHeading = "Journey Complete";
+    mobileBody = (
+      <>
+        <div className="flex w-full flex-col items-center gap-3 rounded-[20px] bg-background px-[18px] py-[22px] text-center">
+          <span className="flex size-[72px] items-center justify-center rounded-full border border-gold bg-gold-bg">
+            <Icon name="m-award" size={32} />
+          </span>
+          <p className="text-[22px] font-bold text-flow-ink">Journey 100% Complete</p>
+          <p className="text-sm leading-5 text-flow-muted">
+            You worked through every step yourself. Your responses are saved here
+            whenever you need them.
+          </p>
+        </div>
+        <MobileBreakdown steps={steps} />
+        <div className="flex w-full items-start justify-between rounded-[14px] bg-flow-tint p-3.5 text-xs whitespace-nowrap">
+          <span className="text-flow-muted">
+            {formatDuration(journey.createdAt, journey.completedAt ?? new Date().toISOString())}
+          </span>
+          <span className="font-bold text-flow-ink">
+            {doneCount}/{steps.length} steps
+          </span>
+          <span className="text-flow-muted">
+            {files.length} {files.length === 1 ? "file" : "files"}
+          </span>
+        </div>
+        <div className="flex w-full flex-col gap-3">
+          <button
+            type="button"
+            onClick={copyDraft}
+            className="flex h-11 w-full items-center justify-center rounded-full bg-accent text-sm font-bold text-white"
+          >
+            Copy Draft Text
+          </button>
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="flex h-11 w-full items-center justify-center rounded-full border border-flow-line bg-foreground/5 text-sm font-bold text-flow-ink"
+          >
+            Export Draft (PDF)
+          </button>
+        </div>
+      </>
+    );
+  } else if (listening) {
+    mobileLabel = "User speaking";
+    mobileHeading = "I\u2019m Listening";
+    mobileBody = (
+      <div className="flex flex-col gap-1.5">
+        {lastAssistant && (
+          <MobileMessage role="assistant">
+            <MarkdownMessage content={lastAssistant.content} />
+          </MobileMessage>
+        )}
+        <MobileMessage role="user">
+          <span className="text-flow-muted">
+            {busy === "transcribing" ? "Transcribing…" : "Listening…"}
+          </span>
+        </MobileMessage>
+        <button
+          type="button"
+          onClick={toggleRecording}
+          disabled={busy === "transcribing"}
+          aria-label="Stop recording and send"
+          className="flex h-[210px] w-full flex-col items-center justify-center gap-4 rounded-[20px] border border-flow-line bg-background"
+        >
+          <span className="relative flex size-28 items-center justify-center">
+            <Icon
+              name="m-pulse"
+              size={112}
+              className={`absolute ${busy === "recording" ? "animate-pulse" : ""}`}
+            />
+            <span className="relative flex size-16 items-center justify-center rounded-full bg-flow">
+              <Icon name="m-mic" size={24} />
+            </span>
+          </span>
+          <span className="text-[15px] font-medium text-flow">
+            {busy === "transcribing" ? "Transcribing…" : "Listening… Speak now"}
+          </span>
+        </button>
+      </div>
+    );
+  } else if (busy === "replying") {
+    mobileLabel = "AI responding";
+    mobileHeading = "Zip is thinking";
+    mobileBody = (
+      <>
+        {lastUser && <MobileMessage role="user">{lastUser.content}</MobileMessage>}
+        <div role="status" className="flex w-full flex-col gap-2 rounded-[14px] border border-flow-line bg-background p-4">
+          <p className="text-[11px] font-bold uppercase text-flow">Zip AI</p>
+          <span className="flex gap-1 py-1.5">
+            <span className="sr-only">Zip is thinking…</span>
+            {[0, 1, 2].map((i) => (
+              <span
+                key={i}
+                aria-hidden="true"
+                className="size-2 animate-bounce rounded-full bg-flow"
+                style={{ animationDelay: `${i * 120}ms` }}
+              />
+            ))}
+          </span>
+        </div>
+      </>
+    );
+  } else if (celebrate && latestCompleted) {
+    mobileLabel = finalStep ? "Final review" : "Step progressing";
+    mobileHeading = finalStep ? "Almost Finished" : "Great Progress";
+    mobileBody = (
+      <>
+        <span
+          role="status"
+          className="-mt-3 self-start rounded-full bg-done-bg px-4 py-2.5 text-[13px] font-bold text-done"
+        >
+          ✓ {celebrate}
+        </span>
+        {lastAssistant && (
+          <MobileMessage role="assistant">
+            <MarkdownMessage content={lastAssistant.content} />
+          </MobileMessage>
+        )}
+        <MobileBreakdown steps={steps} />
+        {activeStep?.tip && (
+          <MobileTip title={finalStep ? "Final check" : "Tip Card"}>{activeStep.tip}</MobileTip>
+        )}
+      </>
+    );
+  } else if (userReplies === 0) {
+    mobileLabel = firstFile ? "File uploaded" : "Guidance ready";
+    mobileHeading = activeStep ? `Let\u2019s ${activeStep.title.charAt(0).toLowerCase()}${activeStep.title.slice(1)}` : "Guidance ready";
+    mobileBody = (
+      <>
+        {firstFile && (
+          <div className="flex w-full items-center justify-between gap-3 rounded-[14px] border border-flow-line bg-background p-4">
+            <div className="flex min-w-0 items-center gap-3">
+              <Icon name="file" size={20} />
+              <div className="flex min-w-0 flex-col">
+                <p className="truncate text-sm font-bold text-flow-ink">{firstFile.fileName}</p>
+                <p className="text-xs text-flow-muted">{formatSize(firstFile.sizeBytes)}</p>
+              </div>
+            </div>
+            <span className="shrink-0 text-xs font-bold text-done">Uploaded ✓</span>
+          </div>
+        )}
+        {lastAssistant && (
+          <MobileMessage role="assistant">
+            <MarkdownMessage content={lastAssistant.content} />
+          </MobileMessage>
+        )}
+        <MobileBreakdown steps={steps} />
+        {activeStep?.tip && <MobileTip title="Tip Card">{activeStep.tip}</MobileTip>}
+      </>
+    );
+  } else {
+    mobileLabel = `Step ${activeIndex + 1} of ${steps.length}`;
+    mobileHeading = "Keep going";
+    mobileBody = (
+      <>
+        {lastUser && <MobileMessage role="user">{lastUser.content}</MobileMessage>}
+        {lastAssistant && (
+          <MobileMessage role="assistant">
+            <MarkdownMessage content={lastAssistant.content} />
+          </MobileMessage>
+        )}
+        {activeStep && (
+          <div className="flex w-full flex-col gap-1.5 rounded-[14px] bg-flow-tint p-3.5">
+            <p className="text-sm font-bold text-flow">{activeStep.title}</p>
+            {activeStep.tip && <p className="text-xs leading-[17px] text-flow-muted">{activeStep.tip}</p>}
+          </div>
+        )}
+      </>
+    );
+  }
+
+  const mobileView = (
+    <div className="flex h-dvh flex-col bg-background text-flow-ink md:hidden print:hidden">
+      <header className="flex shrink-0 flex-col gap-3.5 border-b border-flow-line p-2.5 pt-4">
+        <div className="flex items-center gap-3 px-[17px]">
+          <button
+            type="button"
+            onClick={() => router.push(journeysHref)}
+            aria-label="Back to Journeys"
+            className="flex size-10 shrink-0 items-center justify-center rounded-full bg-foreground/5"
+          >
+            <Icon name="arrow-left" size={18} />
+          </button>
+          <div className="flex min-w-0 flex-1 flex-col gap-0.5 font-bold">
+            <p className="text-[10px] uppercase text-flow-muted">Active journey</p>
+            <p className="truncate text-base text-flow-ink">{journey.title}</p>
+          </div>
+          <p className="shrink-0 text-xs font-bold text-flow-muted">{stepBadge}</p>
+        </div>
+        <div
+          className="flex items-center gap-2.5"
+          role="progressbar"
+          aria-valuenow={progress}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label="Journey progress"
+        >
+          <span className="block h-1.5 flex-1 overflow-hidden rounded-full bg-flow-line">
+            <span
+              className="block h-full rounded-full bg-flow transition-[width] duration-500"
+              style={{ width: `${Math.max(progress, 4)}%` }}
+            />
+          </span>
+          <span className="text-xs font-bold text-flow">{progress}%</span>
+        </div>
+      </header>
+
+      <div ref={mobileScrollRef} className="min-h-0 flex-1 overflow-y-auto px-[29px] pt-6 pb-4">
+        <div className="flex flex-col gap-[3px]">
+          <p className="text-[10px] font-bold uppercase text-flow">{mobileLabel}</p>
+          <h2 className="text-2xl font-medium text-flow-ink">{mobileHeading}</h2>
+        </div>
+        <div className="mt-5 flex flex-col gap-[18px]">
+          {mobileBody}
+          {error && (
+            <p role="alert" className="w-full rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-600">
+              {error}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {flow.ready && !complete && (
+        <div className="shrink-0 px-[29px] pt-2 pb-3">
+          {keyboardOpen ? (
+            <form
+              onSubmit={handleSubmit}
+              className="flex items-center gap-3 rounded-[14px] border border-flow-line bg-background p-3"
+            >
+              <button
+                type="button"
+                onClick={() => setKeyboardOpen(false)}
+                aria-label="Speak instead"
+                aria-pressed="true"
+                className="flex size-10 shrink-0 items-center justify-center rounded-full bg-flow-tint"
+              >
+                <Icon name="keyboard-pink" size={18} />
+              </button>
+              <input
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                disabled={composerDisabled}
+                maxLength={4000}
+                autoFocus
+                aria-label={hasPlan ? "Type your answer" : "Describe your task"}
+                placeholder={hasPlan ? "Type your answer…" : "Describe what you need to do…"}
+                className="min-w-0 flex-1 bg-transparent text-[15px] text-flow-ink placeholder:text-flow-muted focus:outline-none"
+              />
+              <button
+                type="submit"
+                disabled={composerDisabled || !draft.trim()}
+                aria-label="Send"
+                className="flex size-12 shrink-0 items-center justify-center rounded-full bg-flow disabled:opacity-60"
+              >
+                <Icon name="send" size={14} />
+              </button>
+            </form>
+          ) : (
+            <div className="flex items-center gap-3 rounded-[14px] border border-flow-line bg-background p-3">
+              <button
+                type="button"
+                onClick={() => setKeyboardOpen(true)}
+                disabled={listening}
+                aria-label="Type instead"
+                className="flex size-10 shrink-0 items-center justify-center rounded-full bg-flow-tint disabled:opacity-50"
+              >
+                <Icon name="keyboard-pink" size={18} />
+              </button>
+              <button
+                type="button"
+                onClick={toggleRecording}
+                disabled={analyzing || busy === "replying" || busy === "transcribing"}
+                aria-pressed={busy === "recording"}
+                className="flex min-w-0 flex-1 items-center justify-end gap-3 disabled:opacity-60"
+              >
+                <span className="text-sm font-medium text-flow">
+                  {busy === "recording"
+                    ? "Tap to stop"
+                    : busy === "transcribing"
+                      ? "Transcribing…"
+                      : analyzing
+                        ? "Processing…"
+                        : "Tap to speak"}
+                </span>
+                <span
+                  className={`flex size-12 shrink-0 items-center justify-center rounded-full bg-flow ${
+                    busy === "recording" ? "animate-pulse" : ""
+                  }`}
+                >
+                  <Icon name="mic" size={20} />
+                </span>
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      <MobileTabBar
+        view="journeys"
+        onChangeView={(next: View) => router.push(next === "home" ? "/" : `/?view=${next}`)}
+        onRequireAuth={() => router.push("/login")}
+      />
+    </div>
+  );
+
   return (
-    <div className="flex min-h-dvh flex-col bg-flow-bg text-flow-ink print:bg-white">
+    <>
+    {mobileView}
+    <div className="hidden min-h-dvh flex-col bg-flow-bg text-flow-ink md:flex print:flex print:bg-white">
       {/* Top bar */}
       <header className="flex shrink-0 flex-wrap items-center justify-between gap-4 border-b border-flow-line bg-background px-4 py-5 sm:px-10 print:hidden">
         <div className="flex min-w-0 items-center gap-5">
@@ -790,17 +1231,6 @@ export function JourneyFlow({ journeyId }: { journeyId: string }) {
             </div>
           )}
 
-          <input
-            ref={fileInput}
-            type="file"
-            accept={ACCEPT}
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              e.target.value = "";
-              if (file) void upload(file);
-            }}
-          />
         </section>
 
         {/* Checklist */}
@@ -901,5 +1331,17 @@ export function JourneyFlow({ journeyId }: { journeyId: string }) {
         ))}
       </article>
     </div>
+    <input
+      ref={fileInput}
+      type="file"
+      accept={ACCEPT}
+      className="hidden"
+      onChange={(e) => {
+        const file = e.target.files?.[0];
+        e.target.value = "";
+        if (file) void upload(file);
+      }}
+    />
+    </>
   );
 }
