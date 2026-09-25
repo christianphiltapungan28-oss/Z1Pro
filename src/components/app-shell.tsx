@@ -230,7 +230,7 @@ export function AppShell() {
               <NotificationsPage onBack={() => changeView("home")} />
             ) : view === "profile" ? (
               <ProfilePage
-                onMenuClick={() => setSidebarOpen(true)}
+                onOpenSettings={() => changeView("settings")}
                 onStartChat={() => changeView("home")}
               />
             ) : view === "journeys" ? (

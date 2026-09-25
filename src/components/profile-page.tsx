@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { AssetIcon } from "@/components/asset-icon";
-import { MenuIcon } from "@/components/icons";
 import type { LifeMetricCategory } from "@/db/schema";
 import { LIFE_AREAS } from "@/lib/life-metrics-areas";
 import { formatRelativeTime } from "@/lib/relative-time";
+import { useMediaQuery } from "@/lib/use-media-query";
 import type { ProfilePayload } from "@/lib/life-metrics-data";
 
 // ---------------------------------------------------------------------------
@@ -21,7 +21,7 @@ function Avatar({ image, name }: { image: string | null; name: string }) {
         src={image}
         alt=""
         onError={() => setFailed(true)}
-        className="size-[97px] shrink-0 rounded-full object-cover"
+        className="size-[106px] shrink-0 rounded-full object-cover md:size-[97px]"
       />
     );
   }
@@ -32,7 +32,7 @@ function Avatar({ image, name }: { image: string | null; name: string }) {
     .map((p) => p[0]?.toUpperCase())
     .join("");
   return (
-    <div className="flex size-[97px] shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-accent to-accent-strong text-3xl font-semibold text-white">
+    <div className="flex size-[106px] shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-accent to-accent-strong text-3xl font-semibold text-white md:size-[97px]">
       {initials || "?"}
     </div>
   );
@@ -46,15 +46,15 @@ function Card({ children, className = "" }: { children: React.ReactNode; classNa
   );
 }
 
-const GAUGE_SIZE = 140;
-const GAUGE_STROKE = 14;
-
-function HarmonyGauge({ value }: { value: number | null }) {
+function HarmonyGauge({ value, size = 140 }: { value: number | null; size?: number }) {
+  // The ring is a tenth of the gauge's width, as in both designs.
+  const GAUGE_SIZE = size;
+  const GAUGE_STROKE = size / 10;
   const radius = (GAUGE_SIZE - GAUGE_STROKE) / 2;
   const circumference = 2 * Math.PI * radius;
   const filled = value === null ? 0 : (value / 100) * circumference;
   return (
-    <div className="relative size-[140px] shrink-0">
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
       <svg
         width={GAUGE_SIZE}
         height={GAUGE_SIZE}
@@ -83,7 +83,7 @@ function HarmonyGauge({ value }: { value: number | null }) {
         )}
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5">
-        <p className="text-[32px] font-extrabold text-flow-ink">
+        <p className={`${size < 140 ? "text-[34px]" : "text-[32px]"} font-extrabold text-flow-ink`}>
           {value === null ? "—" : `${value}%`}
         </p>
         <p className="text-[11px] uppercase text-flow-muted">Harmony</p>
@@ -174,6 +174,104 @@ function MetricCard({ category }: { category: LifeMetricCategory }) {
   );
 }
 
+/** Phone category card (mobile Figma 519:3529). */
+function MobileMetricCard({ category }: { category: LifeMetricCategory }) {
+  const area = LIFE_AREAS.find((a) => a.key === category.key)!;
+  const positive = category.score !== null && category.direction !== "down";
+  const arrow =
+    category.score === null ? "" : category.direction === "up" ? "↑ " : category.direction === "down" ? "↓ " : "→ ";
+  return (
+    <div className="flex w-full flex-col gap-3 rounded-[18px] border border-flow-line bg-background p-4 shadow-[0_5px_18px_rgba(26,27,31,0.05)]">
+      <div className="flex items-center gap-3">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent/[0.06] text-accent">
+          <AssetIcon name={area.mobileIcon} width={20} height={20} />
+        </span>
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <div className="flex items-baseline justify-between gap-2 whitespace-nowrap text-flow-ink">
+            <p className="truncate text-base font-medium">{area.name}</p>
+            <p className="font-medium">
+              <span className="text-[22px]">{category.score ?? "—"}</span>
+              <span className="text-[13px] text-flow-muted">/99</span>
+            </p>
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <span
+              className={`rounded-full px-2 py-1 text-xs whitespace-nowrap ${
+                positive ? "bg-trend-up-bg text-success" : "bg-flow-bg text-flow-muted"
+              }`}
+            >
+              {arrow}
+              {category.label}
+            </span>
+            <span className="text-[11px] font-medium whitespace-nowrap text-flow-faint">
+              {category.chats} {category.chats === 1 ? "chat" : "chats"}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div
+        className="h-[5px] w-full overflow-hidden rounded-full bg-flow-line"
+        role="progressbar"
+        aria-label={`${area.name} score`}
+        aria-valuemin={0}
+        aria-valuemax={99}
+        aria-valuenow={category.score ?? 0}
+      >
+        <div
+          className="h-full rounded-full bg-accent"
+          style={{ width: `${((category.score ?? 0) / 99) * 100}%` }}
+        />
+      </div>
+      <p className="text-xs leading-[17px] text-flow-muted">{category.note}</p>
+    </div>
+  );
+}
+
+function MobileMetricDetail({
+  categories,
+  onBack,
+}: {
+  categories: LifeMetricCategory[];
+  onBack: () => void;
+}) {
+  const strongest = categories.reduce<LifeMetricCategory | null>(
+    (best, c) => (c.score !== null && (best === null || (best.score ?? -1) < c.score) ? c : best),
+    null
+  );
+  const others = categories.filter((c) => c !== strongest);
+  return (
+    <div className="flex flex-col gap-5 md:hidden">
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={onBack}
+          aria-label="Back to profile"
+          className="flex size-10 shrink-0 items-center justify-center rounded-full bg-foreground/5"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/ui/journey/arrow-left.svg" alt="" width={18} height={18} />
+        </button>
+        <h1 className="text-xl font-bold text-flow-ink">Life Metrics</h1>
+      </div>
+      {strongest && (
+        <section className="flex flex-col gap-2">
+          <h2 className="text-xs font-bold tracking-[0.8px] text-flow-muted uppercase">Strongest signal</h2>
+          <MobileMetricCard category={strongest} />
+        </section>
+      )}
+      <section className="flex flex-col gap-3">
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-lg font-bold text-flow-ink">All categories</h2>
+          <p className="text-xs text-flow-muted">{categories.length} total</p>
+        </div>
+        {others.map((c) => (
+          <MobileMetricCard key={c.key} category={c} />
+        ))}
+      </section>
+    </div>
+  );
+}
+
 function Notice({ children }: { children: React.ReactNode }) {
   return (
     <Card className="flex flex-col items-start gap-3 p-8 text-sm leading-[22px] text-flow-muted">
@@ -247,12 +345,15 @@ function memberSince(iso: string | Date) {
 }
 
 export function ProfilePage({
-  onMenuClick,
+  onOpenSettings,
   onStartChat,
 }: {
-  onMenuClick: () => void;
+  onOpenSettings: () => void;
   onStartChat: () => void;
 }) {
+  const phone = useMediaQuery("(max-width: 767px)");
+  // Phones: the harmony card opens the category detail screen.
+  const [detail, setDetail] = useState(false);
   const [data, setData] = useState<ProfilePayload | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [updating, setUpdating] = useState(false);
@@ -325,16 +426,20 @@ export function ProfilePage({
   const firstRun = !!metrics?.enabled && metrics.eligible && !metrics.computedAt;
 
   return (
-    <div className="h-full overflow-y-auto bg-flow-bg">
-      <div className="flex flex-col gap-8 px-4 py-6 sm:p-10">
-        <button
-          type="button"
-          onClick={onMenuClick}
-          aria-label="Open menu"
-          className="-mb-4 flex size-9 items-center justify-center rounded-full text-foreground/70 hover:text-foreground md:hidden"
-        >
-          <MenuIcon className="h-5 w-5" />
-        </button>
+    <div className="h-full overflow-y-auto bg-background md:bg-flow-bg">
+      <div className="flex flex-col gap-8 px-[27px] py-6 md:p-10">
+        {!(detail && phone) && (
+          <div className="-mb-8 flex justify-end md:hidden">
+            <button
+              type="button"
+              onClick={onOpenSettings}
+              aria-label="Settings"
+              className="flex size-10 items-center justify-center rounded-full text-foreground hover:bg-foreground/5"
+            >
+              <AssetIcon name="profile/settings" width={24} height={24} />
+            </button>
+          </div>
+        )}
 
         {loadError && <Notice>Couldn&apos;t load your profile. Please refresh the page.</Notice>}
 
@@ -348,25 +453,29 @@ export function ProfilePage({
           </div>
         )}
 
-        {profile && metrics && (
+        {profile && metrics && detail && phone && scored && (
+          <MobileMetricDetail categories={metrics.categories} onBack={() => setDetail(false)} />
+        )}
+
+        {profile && metrics && !(detail && phone && scored) && (
           <>
-            <header className="flex flex-col items-start gap-6 sm:flex-row sm:items-center">
+            <header className="flex flex-col items-center gap-[21px] md:flex-row md:items-center md:gap-6">
               <Avatar image={profile.image} name={name} />
-              <div className="flex min-w-0 flex-col gap-1.5">
-                <div className="flex flex-wrap items-center gap-3">
-                  <h1 className="text-[28px] font-bold text-flow-ink">{name}</h1>
+              <div className="flex min-w-0 flex-col items-center gap-1.5 md:items-start">
+                <div className="flex flex-col items-center gap-0.5 md:flex-row md:flex-wrap md:gap-3">
+                  <h1 className="text-2xl font-bold text-flow-ink md:text-[28px]">{name}</h1>
                   {metrics.enabled && metrics.archetype && (
-                    <span className="rounded-full bg-accent/8 px-2.5 py-1 text-[11px] font-bold uppercase text-accent">
+                    <span className="rounded-full bg-accent/[0.06] px-2 py-1 text-xs font-bold uppercase text-accent md:bg-accent/8 md:px-2.5 md:text-[11px]">
                       {metrics.archetype}
                     </span>
                   )}
                 </div>
-                <p className="max-w-[420px] text-[15px] text-flow-muted">
+                <p className="hidden max-w-[420px] text-[15px] text-flow-muted md:block">
                   {profile.about ||
                     (metrics.enabled && metrics.tagline) ||
                     "Your life-coaching profile with Z1"}
                 </p>
-                <p className="text-xs text-flow-faint">
+                <p className="hidden text-xs text-flow-faint md:block">
                   Member since {memberSince(profile.memberSince)} •{" "}
                   {profile.conversations}{" "}
                   {profile.conversations === 1 ? "Conversation" : "Conversations"} Guided
@@ -374,9 +483,9 @@ export function ProfilePage({
               </div>
             </header>
 
-            <div className="flex w-full items-center gap-3 rounded-xl border border-accent/13 bg-accent/3 p-[18px]">
+            <div className="-mt-2 flex w-full items-start gap-2.5 rounded-xl border border-accent/19 bg-accent/[0.06] p-3.5 md:mt-0 md:items-center md:gap-3 md:border-accent/13 md:bg-accent/3 md:p-[18px]">
               <AssetIcon name="profile/sparkles" width={20} height={20} className="text-accent" />
-              <p className="flex-1 text-sm font-medium text-flow-ink">
+              <p className="flex-1 text-[13px] leading-[1.4] font-medium text-flow-ink md:text-sm md:leading-normal">
                 {updating
                   ? "Z1 is reading your conversations and journeys to update your scores…"
                   : "Insights based on your conversations & journeys with your AI life companion. These scores update weekly as your chat logs evolve."}
@@ -429,6 +538,30 @@ export function ProfilePage({
               </Notice>
             ) : (
               <>
+                {phone ? (
+                  <button
+                    type="button"
+                    onClick={() => setDetail(true)}
+                    className="-mt-4 flex w-full flex-col items-center gap-[18px] rounded-2xl border border-divider bg-background p-5 text-left"
+                  >
+                    <HarmonyGauge value={metrics.harmony} size={132} />
+                    <span className="flex w-full flex-col gap-2">
+                      <span className="text-center text-lg font-bold text-flow-ink">
+                        Overall Life Harmony Summary
+                      </span>
+                      <span className="text-sm leading-[1.5] text-flow-muted">
+                        {metrics.summary ? (
+                          <HighlightedSummary text={metrics.summary} />
+                        ) : (
+                          "Keep talking with Z1 and your summary will fill in."
+                        )}
+                      </span>
+                      <span className="text-center text-xs font-semibold text-accent">
+                        See all categories ›
+                      </span>
+                    </span>
+                  </button>
+                ) : (
                 <Card className="flex flex-col items-center gap-8 p-8 sm:flex-row">
                   <HarmonyGauge value={metrics.harmony} />
                   <div className="flex min-w-0 flex-1 flex-col gap-2">
@@ -442,8 +575,9 @@ export function ProfilePage({
                     </p>
                   </div>
                 </Card>
+                )}
 
-                <section className="flex flex-col gap-6" aria-labelledby="categories-heading">
+                <section className="hidden flex-col gap-6 md:flex" aria-labelledby="categories-heading">
                   <h2 id="categories-heading" className="text-lg font-bold text-flow-ink">
                     Holistic Categories Breakdown
                   </h2>
