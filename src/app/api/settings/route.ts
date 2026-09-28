@@ -34,7 +34,7 @@ const DEFAULT_NOTIFICATIONS: Required<NotificationPrefs> = {
   marketing: false,
 };
 
-const LIMITS = { name: 80, phone: 30, about: 300, country: 60 } as const;
+const LIMITS = { name: 80, phone: 30, about: 160, country: 60 } as const;
 
 function validTimezone(tz: string) {
   try {

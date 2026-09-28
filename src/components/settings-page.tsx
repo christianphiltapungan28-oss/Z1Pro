@@ -252,7 +252,7 @@ function AccountTab({
         <textarea
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          maxLength={300}
+          maxLength={ABOUT_MAX}
           rows={3}
           aria-label="About"
           className={common}
@@ -1201,7 +1201,7 @@ const FIELD_COPY: Record<
   country: { title: "Country", description: "Where you're based.", label: "Country" },
 };
 
-const ABOUT_MAX = 300;
+const ABOUT_MAX = 160;
 
 function EditFieldDialog({
   field,
