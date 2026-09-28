@@ -44,6 +44,7 @@ type SettingsData = {
   privacy: { conversationHistory: boolean };
   channels: { email: boolean; push: boolean; sms: boolean };
   phoneVerified: boolean;
+  twoFactor: { available: boolean; enabled: boolean; backupCodesLeft: number };
 };
 
 // ---------------------------------------------------------------------------
@@ -644,15 +645,19 @@ function DeleteAccountDialog({ email, onClose }: { email: string; onClose: () =>
 function PrivacyTab({
   data,
   onPrivacyChange,
+  onTwoFactorChange,
 }: {
   data: SettingsData;
   onPrivacyChange: (next: SettingsData["privacy"]) => void;
+  /** Reloads settings after two-factor is turned on or off. */
+  onTwoFactorChange: () => void;
 }) {
   const [sessions, setSessions] = useState<SessionRow[] | null>(null);
   const [showSessions, setShowSessions] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [twoFactorDialog, setTwoFactorDialog] = useState<"enable" | "disable" | null>(null);
 
   async function toggleHistory(next: boolean) {
     const previous = data.privacy;
@@ -742,12 +747,43 @@ function PrivacyTab({
           <RowText
             label="Two-Factor Authentication"
             value={
-              data.providers.length > 0
-                ? `You sign in with ${provider}. Turn on 2-step verification in your ${provider} account to protect Z1P too.`
-                : "You sign in with your email and password. Use a password you don't use anywhere else."
+              data.twoFactor.enabled
+                ? `On. A code from your authenticator app is asked at every password log-in (${data.twoFactor.backupCodesLeft} backup codes left).`
+                : data.twoFactor.available
+                  ? "Add an extra layer of security to your account"
+                  : data.providers.length > 0
+                    ? `You sign in with ${provider}. Turn on 2-step verification in your ${provider} account to protect Z1P too.`
+                    : "Add an extra layer of security to your account"
             }
           />
+          {data.twoFactor.enabled ? (
+            <ActionLink danger onClick={() => setTwoFactorDialog("disable")}>
+              Turn off
+            </ActionLink>
+          ) : (
+            data.twoFactor.available && (
+              <ActionLink onClick={() => setTwoFactorDialog("enable")}>Enable</ActionLink>
+            )
+          )}
         </div>
+        {twoFactorDialog === "enable" && (
+          <TwoFactorSetupDialog
+            onClose={() => setTwoFactorDialog(null)}
+            onDone={() => {
+              setTwoFactorDialog(null);
+              onTwoFactorChange();
+            }}
+          />
+        )}
+        {twoFactorDialog === "disable" && (
+          <TwoFactorOffDialog
+            onClose={() => setTwoFactorDialog(null)}
+            onDone={() => {
+              setTwoFactorDialog(null);
+              onTwoFactorChange();
+            }}
+          />
+        )}
 
         <div className="min-h-[68px] px-4 py-3 md:min-h-0 md:px-8 md:py-5 md:border-b md:border-divider">
           <div className="flex items-center justify-between gap-4">
@@ -1365,6 +1401,177 @@ async function codeStep(url: string, body: Record<string, unknown>) {
   return res.ok
     ? { ok: true as const, data }
     : { ok: false as const, error: (data?.error as string | undefined) ?? "Something went wrong. Please try again." };
+}
+
+/**
+ * Turn on two-factor login: scan the QR code with an authenticator app,
+ * confirm with a code, then save the one-time backup codes.
+ */
+function TwoFactorSetupDialog({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
+  const [setup, setSetup] = useState<{ secret: string; qr: string } | null>(null);
+  const [code, setCode] = useState("");
+  const [backupCodes, setBackupCodes] = useState<string[] | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    let ignore = false;
+    codeStep("/api/settings/two-factor", { step: "start" }).then((r) => {
+      if (ignore) return;
+      if (r.ok) setSetup({ secret: r.data.secret, qr: r.data.qr });
+      else setError(r.error);
+    });
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  async function enable() {
+    setBusy(true);
+    setError(null);
+    const r = await codeStep("/api/settings/two-factor", { step: "enable", code });
+    setBusy(false);
+    if (!r.ok) return setError(r.error);
+    setBackupCodes(r.data.backupCodes);
+  }
+
+  if (backupCodes) {
+    const text = `Z1P backup codes (each works once):\n\n${backupCodes.join("\n")}\n`;
+    return (
+      <SheetDialog
+        title="Save your backup codes"
+        description="If you lose your phone, each of these codes lets you log in once. Keep them somewhere safe; they won’t be shown again."
+        onClose={onDone}
+      >
+        <ul className="grid grid-cols-2 gap-2 rounded-xl bg-foreground/[0.04] p-4 font-mono text-[15px] text-foreground">
+          {backupCodes.map((c) => (
+            <li key={c}>{c}</li>
+          ))}
+        </ul>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              void navigator.clipboard.writeText(text).then(() => setCopied(true));
+            }}
+            className="h-[46px] flex-1 rounded-[10px] border border-divider text-base font-medium text-foreground hover:bg-foreground/5"
+          >
+            {copied ? "Copied" : "Copy"}
+          </button>
+          <a
+            href={`data:text/plain;charset=utf-8,${encodeURIComponent(text)}`}
+            download="z1p-backup-codes.txt"
+            className="flex h-[46px] flex-1 items-center justify-center rounded-[10px] border border-divider text-base font-medium text-foreground hover:bg-foreground/5"
+          >
+            Download
+          </a>
+        </div>
+        <button
+          type="button"
+          onClick={onDone}
+          className="h-[46px] w-full rounded-[10px] bg-accent text-base font-medium text-white hover:opacity-90"
+        >
+          I’ve saved them
+        </button>
+      </SheetDialog>
+    );
+  }
+
+  return (
+    <SheetDialog
+      title="Turn on two-factor login"
+      description="Scan this with an authenticator app (Google Authenticator, Microsoft Authenticator, 1Password…), then enter the 6-digit code it shows."
+      onClose={onClose}
+    >
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          void enable();
+        }}
+        className="flex flex-col gap-5"
+      >
+        {setup ? (
+          <div className="flex flex-col items-center gap-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={setup.qr} alt="QR code for your authenticator app" width={180} height={180} className="rounded-lg bg-white p-1" />
+            <p className="text-center text-xs text-secondary">
+              Can&rsquo;t scan? Enter this key instead:
+              <span className="mt-1 block font-mono text-sm tracking-wider break-all text-foreground select-all">
+                {setup.secret.match(/.{1,4}/g)?.join(" ")}
+              </span>
+            </p>
+          </div>
+        ) : (
+          !error && <p className="text-sm text-tertiary">Preparing…</p>
+        )}
+        {setup && <CodeInput value={code} onChange={setCode} />}
+        {error && (
+          <p role="alert" className="-mt-2 text-sm text-red-500">
+            {error}
+          </p>
+        )}
+        <DialogButtons
+          label="Turn on"
+          busyLabel="Checking…"
+          busy={busy}
+          disabled={!setup || code.length !== 6}
+          onCancel={onClose}
+        />
+      </form>
+    </SheetDialog>
+  );
+}
+
+/** Turn off two-factor login, confirmed with a current or backup code. */
+function TwoFactorOffDialog({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function disable() {
+    setBusy(true);
+    setError(null);
+    const r = await codeStep("/api/settings/two-factor", { step: "disable", code });
+    setBusy(false);
+    if (!r.ok) return setError(r.error);
+    onDone();
+  }
+
+  return (
+    <SheetDialog
+      title="Turn off two-factor login?"
+      description="Your account will be protected by your password only. Enter a code from your authenticator app, or a backup code, to confirm."
+      onClose={onClose}
+    >
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          void disable();
+        }}
+        className="flex flex-col gap-5"
+      >
+        <label className="flex flex-col gap-[9px]">
+          <span className="text-base text-foreground">Code</span>
+          <input
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            autoComplete="one-time-code"
+            placeholder="123456 or abcd-efgh"
+            aria-label="Authenticator or backup code"
+            className={FIELD_INPUT}
+            autoFocus
+          />
+        </label>
+        {error && (
+          <p role="alert" className="-mt-2 text-sm text-red-500">
+            {error}
+          </p>
+        )}
+        <DialogButtons label="Turn off" busyLabel="Turning off…" busy={busy} disabled={code.trim().length < 6} onCancel={onClose} />
+      </form>
+    </SheetDialog>
+  );
 }
 
 /**
@@ -1990,7 +2197,7 @@ function MobileSettings({
         )}
         {data && screen === "privacy" && (
           <>
-            <PrivacyTab data={data} onPrivacyChange={onPrivacyChange} />
+            <PrivacyTab data={data} onPrivacyChange={onPrivacyChange} onTwoFactorChange={() => void reload()} />
             <div className="flex flex-col gap-2">
               <SectionTitle>Policies</SectionTitle>
               <Card className="overflow-hidden">
@@ -2146,7 +2353,11 @@ export function SettingsPage({
             />
           )}
           {data && tab === "privacy" && (
-            <PrivacyTab data={data} onPrivacyChange={(privacy) => setData({ ...data, privacy })} />
+            <PrivacyTab
+              data={data}
+              onPrivacyChange={(privacy) => setData({ ...data, privacy })}
+              onTwoFactorChange={() => void load()}
+            />
           )}
           {tab === "subscription" && <SubscriptionTab />}
         </div>

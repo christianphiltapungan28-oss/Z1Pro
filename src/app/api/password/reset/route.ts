@@ -6,6 +6,7 @@ import { isMissingTable } from "@/lib/db-errors";
 import { hashPassword, passwordProblem } from "@/lib/password";
 import { startSession } from "@/lib/password-session";
 import { redeemToken } from "@/lib/password-tokens";
+import { getTwoFactor, issueLoginTicket } from "@/lib/two-factor";
 
 /**
  * POST { token, password } from the reset-password page. Sets the new
@@ -48,6 +49,11 @@ export async function POST(request: Request) {
     .update(sessions)
     .set({ revokedAt: new Date() })
     .where(and(eq(sessions.userId, payload.userId), isNull(sessions.revokedAt)));
+
+  // The emailed link proves the inbox, not the second factor: still ask for it.
+  if ((await getTwoFactor(payload.userId)).row) {
+    return NextResponse.json({ twoFactor: true, ticket: await issueLoginTicket(payload.userId) });
+  }
 
   return startSession(NextResponse.json({ ok: true }), request, payload.userId);
 }

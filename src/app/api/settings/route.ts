@@ -4,11 +4,13 @@ import { auth } from "@/auth";
 import { db } from "@/db";
 import {
   oauthAccounts,
+  userPasswords,
   userSettings,
   users,
   type NotificationPrefs,
 } from "@/db/schema";
 import { isMissingTable } from "@/lib/db-errors";
+import { getTwoFactor } from "@/lib/two-factor";
 import { emailConfigured } from "@/lib/email";
 import { pushConfigured } from "@/lib/push";
 import { rateLimit } from "@/lib/rate-limit";
@@ -88,6 +90,17 @@ export async function GET() {
     .where(eq(oauthAccounts.userId, userId));
 
   const settings = await loadSettings(userId);
+  const hasPassword = await db
+    .select({ id: userPasswords.userId })
+    .from(userPasswords)
+    .where(eq(userPasswords.userId, userId))
+    .limit(1)
+    .then((rows) => rows.length > 0)
+    .catch((err) => {
+      if (isMissingTable(err)) return false;
+      throw err;
+    });
+  const twoFactor = await getTwoFactor(userId);
   const row = settings.row;
 
   return NextResponse.json({
@@ -105,6 +118,12 @@ export async function GET() {
     // Which outside services are set up, so Settings can say what works.
     channels: { email: emailConfigured(), push: pushConfigured(), sms: smsConfigured() },
     phoneVerified: !!row?.phoneVerifiedAt,
+    // Two-factor protects password log-ins (Google/Facebook have their own).
+    twoFactor: {
+      available: twoFactor.ready && hasPassword,
+      enabled: !!twoFactor.row,
+      backupCodesLeft: twoFactor.row?.backupCodeHashes.length ?? 0,
+    },
   });
 }
 

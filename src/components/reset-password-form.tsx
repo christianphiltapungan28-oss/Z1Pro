@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { TwoFactorStep } from "@/components/login-form";
 
 const INPUT =
   "h-[54px] w-full rounded-[10px] border border-field-border bg-background px-[19px] text-base text-foreground placeholder:text-subtle focus:border-accent focus:outline-none";
@@ -16,6 +18,9 @@ export function ResetPasswordForm({ token }: { token: string }) {
   const [confirm, setConfirm] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Two-factor on: the password is changed, but logging in needs the code.
+  const [ticket, setTicket] = useState<string | null>(null);
+  const router = useRouter();
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -30,15 +35,30 @@ export function ResetPasswordForm({ token }: { token: string }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token, password }),
     });
+    const body = await res.json().catch(() => null);
+    if (res.ok && body?.twoFactor) {
+      setTicket(body.ticket);
+      return;
+    }
     if (res.ok) {
       // A full load (not router.push) so the whole app picks up the new session.
       // eslint-disable-next-line @next/next/no-location-assign-relative-destination
       window.location.assign("/");
       return;
     }
-    const body = await res.json().catch(() => null);
     setError(body?.error ?? "Couldn't change your password. Please try again.");
     setSaving(false);
+  }
+
+  if (ticket) {
+    return (
+      <div className="flex w-full flex-col gap-6 px-[25px] pt-10 md:mx-auto md:max-w-[636px] md:px-0 md:pt-[170px]">
+        <div className="rounded-2xl border border-divider bg-background p-5 shadow-[0_8px_24px_rgba(17,24,39,0.06)] md:p-10">
+          <p className="mb-4 text-sm text-foreground">Your password is changed.</p>
+          <TwoFactorStep ticket={ticket} redirectTo="/" onCancel={() => router.push("/login")} />
+        </div>
+      </div>
+    );
   }
 
   return (

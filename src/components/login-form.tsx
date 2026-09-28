@@ -101,6 +101,70 @@ function Notice({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * Second log-in step when two-factor is on: an authenticator code (or a
+ * backup code) for the ticket the password step returned. Signs in on
+ * success with a full page load.
+ */
+export function TwoFactorStep({
+  ticket,
+  redirectTo,
+  onCancel,
+}: {
+  ticket: string;
+  redirectTo: string;
+  onCancel: () => void;
+}) {
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    const failed = await post("/api/password/two-factor", { ticket, code });
+    if (failed) {
+      setError(failed);
+      setBusy(false);
+      return;
+    }
+    window.location.assign(redirectTo);
+  }
+
+  return (
+    <form onSubmit={submit} className="flex flex-col gap-4">
+      <div className="flex flex-col gap-2">
+        <h2 className="text-xl font-bold text-foreground">Enter your code</h2>
+        <p className="text-sm text-subtle">
+          Open your authenticator app and enter the 6-digit code for Z1P. Lost your phone? Use one of your
+          backup codes.
+        </p>
+      </div>
+      <label className="flex flex-col gap-[9px]">
+        <span className="text-base text-foreground">Code</span>
+        <input
+          value={code}
+          onChange={(e) => setCode(e.target.value)}
+          autoComplete="one-time-code"
+          inputMode="text"
+          placeholder="123456"
+          className={`${INPUT} tracking-widest`}
+          autoFocus
+          required
+        />
+      </label>
+      {error && <Alert>{error}</Alert>}
+      <button type="submit" disabled={busy || code.trim().length < 6} className={`${OUTLINE_BUTTON} text-foreground`}>
+        {busy ? "Checking…" : "Verify and log in"}
+      </button>
+      <button type="button" onClick={onCancel} className="self-center text-sm font-semibold text-foreground hover:underline">
+        ← Back to login
+      </button>
+    </form>
+  );
+}
+
 async function post(url: string, body: Record<string, unknown>) {
   const res = await fetch(url, {
     method: "POST",
@@ -137,6 +201,8 @@ export function LoginForm({
   const [confirm, setConfirm] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  // Set when the password was right but two-factor is on.
+  const [ticket, setTicket] = useState<string | null>(null);
   const copy = COPY[view];
 
   function go(next: AuthView) {
@@ -164,8 +230,18 @@ export function LoginForm({
     setPending("form");
     try {
       if (view === "signin") {
-        const failed = await post("/api/password/login", { email, password });
-        if (failed) return setError(failed);
+        const res = await fetch("/api/password/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok) return setError(data?.error ?? "Something went wrong. Please try again.");
+        if (data?.twoFactor) {
+          setTicket(data.ticket);
+          setPassword("");
+          return;
+        }
         // A full load so the whole app picks up the new session.
         window.location.assign(callbackUrl);
         return;
@@ -235,6 +311,17 @@ export function LoginForm({
       </Link>
     </p>
   );
+
+  if (ticket) {
+    return (
+      <div className="flex w-full flex-col gap-6 md:mx-auto md:max-w-[636px] md:gap-8 md:pt-[206px]">
+        <PhoneHeader title="Two-factor login" description="One more step to keep your account safe." />
+        <div className="mx-[31px] rounded-2xl border border-divider bg-background p-5 shadow-[0_8px_24px_rgba(17,24,39,0.06)] md:mx-0 md:p-10">
+          <TwoFactorStep ticket={ticket} redirectTo={callbackUrl} onCancel={() => setTicket(null)} />
+        </div>
+      </div>
+    );
+  }
 
   if (view === "forgot") {
     return (

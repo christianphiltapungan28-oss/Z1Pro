@@ -316,7 +316,9 @@ export default function PrivacyPage() {
       <p>
         We use encrypted connections (HTTPS), store session tokens in hashed
         form, restrict database access by role, rate-limit requests, and verify
-        payment notifications cryptographically. If a personal data breach
+        payment notifications cryptographically. If you use a password, you can
+        turn on two-factor login with an authenticator app; its secret is
+        stored encrypted and backup codes only in hashed form. If a personal data breach
         occurs that is likely to put you at risk, we will notify you and the
         National Privacy Commission within 72 hours of discovering it, as the
         law requires.

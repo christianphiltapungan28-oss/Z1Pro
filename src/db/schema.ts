@@ -126,6 +126,21 @@ export const userPasswords = pgTable("user_passwords", {
     .defaultNow(),
 });
 
+// Two-factor login for password accounts — created by
+// scripts/add-two-factor.sql.
+export const userTwoFactor = pgTable("user_two_factor", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  /** Authenticator secret, AES-256-GCM encrypted (src/lib/secret-box.ts). */
+  secretCiphertext: text("secret_ciphertext").notNull(),
+  /** SHA-256 hashes of the unused one-time backup codes. */
+  backupCodeHashes: jsonb("backup_code_hashes").$type<string[]>().notNull().default([]),
+  enabledAt: timestamp("enabled_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 export const oauthAccounts = pgTable("oauth_accounts", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id")

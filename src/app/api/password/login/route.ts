@@ -6,6 +6,7 @@ import { isMissingTable } from "@/lib/db-errors";
 import { dummyHash, verifyPassword } from "@/lib/password";
 import { startSession } from "@/lib/password-session";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
+import { getTwoFactor, issueLoginTicket } from "@/lib/two-factor";
 
 const WRONG = "That email and password don't match. Try again or reset your password.";
 
@@ -49,6 +50,12 @@ export async function POST(request: Request) {
   const ok = await verifyPassword(password, row?.hash ?? (await dummyHash()));
   if (!row || !ok) {
     return NextResponse.json({ error: WRONG }, { status: 401 });
+  }
+
+  // Two-factor on: the password was right, now ask for the code
+  // (/api/password/two-factor) before making a session.
+  if ((await getTwoFactor(row.userId)).row) {
+    return NextResponse.json({ twoFactor: true, ticket: await issueLoginTicket(row.userId) });
   }
 
   return startSession(NextResponse.json({ ok: true }), request, row.userId);
