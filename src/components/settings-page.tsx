@@ -2019,6 +2019,30 @@ const SCREEN_TITLES: Record<MobileScreen, string> = {
   privacy: "Privacy & Security",
 };
 
+/** Why Settings couldn't load: signed out (401) or anything else. */
+type LoadError = null | "signin" | "failed";
+
+function LoadProblem({ kind }: { kind: Exclude<LoadError, null> }) {
+  if (kind === "signin") {
+    return (
+      <div className="flex flex-col items-start gap-3 rounded-2xl border border-divider bg-background p-5">
+        <p className="text-sm text-foreground">You&rsquo;re signed out. Sign in to see and change your settings.</p>
+        <a
+          href="/login?callbackUrl=%2F%3Fview%3Dsettings"
+          className="rounded-[10px] bg-accent px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90"
+        >
+          Sign in
+        </a>
+      </div>
+    );
+  }
+  return (
+    <p role="alert" className="text-sm text-red-500">
+      Couldn&rsquo;t load your settings. Please refresh and try again.
+    </p>
+  );
+}
+
 function MobileRow({
   label,
   detail,
@@ -2066,7 +2090,7 @@ function MobileSettings({
   onBack,
 }: {
   data: SettingsData | null;
-  loadError: boolean;
+  loadError: LoadError;
   reload: () => Promise<void>;
   onNotificationsChange: (next: SettingsData["notifications"]) => void;
   onPrivacyChange: (next: SettingsData["privacy"]) => void;
@@ -2101,11 +2125,7 @@ function MobileSettings({
       </header>
 
       <div className={`flex flex-col gap-6 px-4 pb-8 ${screen === "main" ? "pt-[22px]" : "pt-3.5"}`}>
-        {loadError && (
-          <p role="alert" className="text-sm text-red-500">
-            Couldn&rsquo;t load your settings. Please refresh and try again.
-          </p>
-        )}
+        {loadError && <LoadProblem kind={loadError} />}
         {!data && !loadError && screen !== "subscription" && (
           <p className="text-sm text-tertiary">Loading…</p>
         )}
@@ -2259,27 +2279,27 @@ export function SettingsPage({
   const phone = useMediaQuery("(max-width: 767px)");
   const [tab, setTab] = useState<Tab>("account");
   const [data, setData] = useState<SettingsData | null>(null);
-  const [loadError, setLoadError] = useState(false);
+  const [loadError, setLoadError] = useState<LoadError>(null);
 
   async function load() {
     const res = await fetch("/api/settings");
     if (!res.ok) {
-      setLoadError(true);
+      setLoadError(res.status === 401 ? "signin" : "failed");
       return;
     }
     setData(await res.json());
-    setLoadError(false);
+    setLoadError(null);
   }
 
   useEffect(() => {
     let ignore = false;
     fetch("/api/settings")
-      .then((res) => (res.ok ? res.json() : Promise.reject()))
+      .then((res) => (res.ok ? res.json() : Promise.reject(res.status)))
       .then((body: SettingsData) => {
         if (!ignore) setData(body);
       })
-      .catch(() => {
-        if (!ignore) setLoadError(true);
+      .catch((status) => {
+        if (!ignore) setLoadError(status === 401 ? "signin" : "failed");
       });
     return () => {
       ignore = true;
@@ -2330,11 +2350,7 @@ export function SettingsPage({
         </div>
 
         <div className={tab === "subscription" ? "mt-2.5" : ""}>
-          {loadError && tab !== "subscription" && (
-            <p role="alert" className="text-sm text-red-500">
-              Couldn&rsquo;t load your settings. Please refresh and try again.
-            </p>
-          )}
+          {loadError && tab !== "subscription" && <LoadProblem kind={loadError} />}
           {!data && !loadError && tab !== "subscription" && (
             <p className="text-sm text-tertiary">Loading…</p>
           )}
