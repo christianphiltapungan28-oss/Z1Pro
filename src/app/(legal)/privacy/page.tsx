@@ -57,6 +57,11 @@ export default function PrivacyPage() {
           step-by-step coaching messages. Files are deleted with the Journey.
         </li>
         <li>
+          In-app notifications about your Journeys, Life Metrics and replies
+          from Zip, which can quote a line of a reply. They are deleted after
+          90 days.
+        </li>
+        <li>
           Life Metrics scores and notes, only if you turn Life Metrics on (see
           section 3).
         </li>

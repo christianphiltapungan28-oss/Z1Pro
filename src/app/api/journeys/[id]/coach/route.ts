@@ -12,6 +12,7 @@ import {
 import { getCurrentOrg } from "@/lib/current-org";
 import { coachingPrompt, splitStepMarker } from "@/lib/journey-flow";
 import { getOwnedJourney } from "@/lib/journey-flow-data";
+import { notify } from "@/lib/notifications";
 import { openaiFetch } from "@/lib/openai";
 import { getCurrentPlanCode, getDailyMessageLimit, getModelForPlan } from "@/lib/plan";
 import { rateLimit } from "@/lib/rate-limit";
@@ -197,12 +198,40 @@ export async function POST(
         })
         .where(eq(journeys.id, id));
     });
+    await notify(
+      userId,
+      journeyComplete
+        ? {
+            kind: "journey",
+            title: "Journey complete - well done!",
+            body: `You finished every step of your “${journey.title}” journey.`,
+            link: { type: "journey", id },
+          }
+        : {
+            kind: "step",
+            title: `Step ${activeIndex + 1} complete - Keep going!`,
+            body: `You finished “${current.title}” in your “${journey.title}” journey. Step ${activeIndex + 2} is ready.`,
+            link: { type: "journey", id },
+          }
+    );
   }
 
   const [assistantMessage] = await db
     .insert(journeyMessages)
     .values({ journeyId: id, userId, role: "assistant", content: reply })
     .returning();
+
+  // Only when the app was closed before the reply was ready; otherwise the
+  // user is looking at it already.
+  if (request.signal.aborted) {
+    await notify(userId, {
+      kind: "reply",
+      title: "Zip AI responded to your journey",
+      body: `“${reply.replace(/\s+/g, " ").slice(0, 160)}”`,
+      link: { type: "journey", id },
+      dedupeKey: `reply:journey:${id}`,
+    });
+  }
 
   const updatedSteps = await db
     .select({

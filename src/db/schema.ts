@@ -12,6 +12,7 @@ import {
   timestamp,
   date,
   primaryKey,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 export const userRole = pgEnum("user_role", ["member", "moderator", "admin"]);
@@ -337,6 +338,33 @@ export const lifeMetrics = pgTable("life_metrics", {
     .notNull()
     .defaultNow(),
 });
+
+// In-app notifications — created by scripts/add-notifications.sql.
+
+export type NotificationKind = "step" | "journey" | "metrics" | "file" | "reply" | "weekly";
+
+export const notifications = pgTable(
+  "notifications",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    kind: text("kind").$type<NotificationKind>().notNull(),
+    title: text("title").notNull(),
+    body: text("body").notNull(),
+    /** What tapping it opens: a journey, a conversation or the profile. */
+    linkType: text("link_type").$type<"journey" | "conversation" | "profile">(),
+    linkId: uuid("link_id"),
+    /** One live notification per key, e.g. a weekly report per week. */
+    dedupeKey: text("dedupe_key"),
+    readAt: timestamp("read_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [uniqueIndex("notifications_user_dedupe_key").on(t.userId, t.dedupeKey)]
+);
 
 export const aiUsageDaily = pgTable(
   "ai_usage_daily",

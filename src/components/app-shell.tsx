@@ -228,7 +228,11 @@ export function AppShell() {
           )}
           <main className="min-h-0 flex-1">
             {view === "notifications" ? (
-              <NotificationsPage onBack={() => changeView("home")} />
+              <NotificationsPage
+                onOpenJourney={(id) => router.push(`/journeys/${id}`)}
+                onOpenConversation={(id) => openConversation(id)}
+                onOpenProfile={() => changeView("profile")}
+              />
             ) : view === "profile" ? (
               <ProfilePage
                 onOpenSettings={() => changeView("settings")}

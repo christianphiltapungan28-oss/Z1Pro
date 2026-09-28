@@ -13,6 +13,7 @@ import {
   summariseExtraFile,
 } from "@/lib/journey-flow";
 import { getOwnedJourney, loadFlow, savePlan } from "@/lib/journey-flow-data";
+import { notify } from "@/lib/notifications";
 import { rateLimit } from "@/lib/rate-limit";
 import { isOverDailyBudget } from "@/lib/usage-guard";
 
@@ -98,6 +99,7 @@ export async function POST(
   const bytes = await file.arrayBuffer();
   const content = fileContent(file.name, mimeType, bytes);
 
+  let analysedBody: string;
   try {
     if (stepCount === 0) {
       const plan = await planFromContent(journey.title, [content]);
@@ -120,6 +122,7 @@ export async function POST(
         .returning({ id: journeyFiles.id });
       await savePlan(id, userId, plan);
       await attachStoredOriginal(row.id, userId, id, file.name, bytes, mimeType);
+      analysedBody = `${file.name} is ready. Your ${plan.steps.length}-step actionable breakdown is set. Tap to begin.`;
     } else {
       const extra = await summariseExtraFile(content);
       const [row] = await db
@@ -137,6 +140,7 @@ export async function POST(
         .insert(journeyMessages)
         .values({ journeyId: id, userId, role: "assistant", content: extra.reply });
       await attachStoredOriginal(row.id, userId, id, file.name, bytes, mimeType);
+      analysedBody = `${file.name} is ready. Zip added it to your “${journey.title}” journey.`;
     }
   } catch (err) {
     console.error("Journey file analysis failed", err);
@@ -144,6 +148,16 @@ export async function POST(
       { error: "Couldn't analyse that file. Please try again." },
       { status: 502 }
     );
+  }
+
+  // Only when the app was closed while the file was being analysed.
+  if (request.signal.aborted) {
+    await notify(userId, {
+      kind: "file",
+      title: "File analyzed by Zip AI",
+      body: analysedBody,
+      link: { type: "journey", id },
+    });
   }
 
   return NextResponse.json({ ready: true, ...(await loadFlow(id)) });

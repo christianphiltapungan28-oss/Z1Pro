@@ -1,6 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
 import { AssetIcon } from "@/components/asset-icon";
 
 /**
@@ -17,6 +18,20 @@ export function MobileSearchHeader({
 }) {
   const { status } = useSession();
   const authenticated = status === "authenticated";
+  const [unread, setUnread] = useState(0);
+
+  useEffect(() => {
+    if (!authenticated) return;
+    let ignore = false;
+    fetch("/api/notifications?count")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((body) => {
+        if (!ignore && body) setUnread(body.unread ?? 0);
+      });
+    return () => {
+      ignore = true;
+    };
+  }, [authenticated]);
 
   return (
     <div className="flex shrink-0 items-center gap-[11px] px-[27px] pt-6 md:hidden">
@@ -34,11 +49,14 @@ export function MobileSearchHeader({
       <button
         type="button"
         onClick={authenticated ? onOpenNotifications : onRequireAuth}
-        aria-label="Notifications"
-        className="shrink-0 rounded-full"
+        aria-label={unread > 0 ? `Notifications, ${unread} unread` : "Notifications"}
+        className="relative shrink-0 rounded-full"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/ui/bell-button.svg" alt="" width={40.3457} height={40.716} />
+        {unread > 0 && (
+          <span className="absolute top-1.5 right-1.5 size-2.5 rounded-full border-2 border-background bg-accent" />
+        )}
       </button>
     </div>
   );

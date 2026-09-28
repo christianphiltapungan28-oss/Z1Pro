@@ -10,6 +10,7 @@ import {
   getModelForPlan,
   getModelLabelForPlan,
 } from "@/lib/plan";
+import { notify } from "@/lib/notifications";
 import { openaiFetch } from "@/lib/openai";
 import {
   adjustDailyCount,
@@ -309,6 +310,18 @@ export async function POST(
         : {}),
     })
     .where(eq(aiConversations.id, id));
+
+  // Only when the app was closed before the reply was ready; otherwise the
+  // user is looking at it already.
+  if (request.signal.aborted) {
+    await notify(userId, {
+      kind: "reply",
+      title: "Zip AI responded to your convo",
+      body: `“${assistantContent.replace(/\s+/g, " ").slice(0, 160)}”`,
+      link: { type: "conversation", id },
+      dedupeKey: `reply:convo:${id}`,
+    });
+  }
 
   return NextResponse.json({
     userMessage,

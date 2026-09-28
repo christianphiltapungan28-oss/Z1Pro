@@ -6,6 +6,7 @@ import { lifeMetrics } from "@/db/schema";
 import { isMissingTable } from "@/lib/db-errors";
 import { computeLifeMetrics } from "@/lib/life-metrics";
 import { getLifeMetricsRow, loadProfile } from "@/lib/life-metrics-data";
+import { notifyLifeMetrics } from "@/lib/notifications";
 import { rateLimit, redis } from "@/lib/rate-limit";
 import { isOverDailyBudget } from "@/lib/usage-guard";
 
@@ -87,6 +88,7 @@ export async function POST(request: Request) {
         .update(lifeMetrics)
         .set({ ...result, computedAt: new Date(), updatedAt: new Date() })
         .where(eq(lifeMetrics.userId, userId));
+      await notifyLifeMetrics(userId, result.categories);
     }
   } catch (err) {
     console.error("Life Metrics computation failed", err);
