@@ -1,7 +1,7 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import Facebook from "next-auth/providers/facebook";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { organizationMembers, organizations, users } from "@/db/schema";
 import { createDbAdapter } from "@/lib/auth-adapter";
@@ -84,17 +84,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   events: {
     async signIn({ user, account, profile }) {
-      const profileImage = providerProfileImage(profile);
+      const profileImage = providerProfileImage(profile) ?? user.image;
       if (
         (account?.provider === "google" || account?.provider === "facebook") &&
         user.id &&
-        (user.name || user.image || profileImage)
+        (user.name || profileImage)
       ) {
         await db
           .update(users)
           .set({
             displayName: user.name ?? undefined,
-            avatarUrl: profileImage ?? user.image ?? undefined,
+            // A photo uploaded in Settings (a data: URL) wins over the
+            // provider's picture, which would otherwise replace it each sign-in.
+            avatarUrl: profileImage
+              ? sql`case when ${users.avatarUrl} like 'data:%' then ${users.avatarUrl} else ${profileImage} end`
+              : undefined,
             updatedAt: new Date(),
           })
           .where(eq(users.id, user.id));
