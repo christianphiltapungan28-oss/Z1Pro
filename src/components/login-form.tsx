@@ -8,16 +8,37 @@ import { LEGAL } from "@/lib/legal";
 
 type Tab = "signin" | "signup";
 
-const COPY: Record<Tab, { title: string; description: string }> = {
+const COPY: Record<Tab, { title: string; description: string; phoneTitle: string; phoneDescription: string }> = {
   signin: {
     title: "Welcome back",
     description: "Continue your journeys and conversations with Zip.",
+    phoneTitle: "Welcome back",
+    phoneDescription: "Continue your journeys and conversations with Zip.",
   },
   signup: {
     title: "Create your Zip account",
     description: "Start free. Build your first guided journey in minutes.",
+    phoneTitle: "Create Your Account",
+    phoneDescription: "Start Turning Your Journey Into a Forward Motion",
   },
 };
+
+/** Phones: the pink brand header (mobile Figma 472:3547 / 484:3969). */
+function PhoneHeader({ title, description }: { title: string; description: string }) {
+  return (
+    <header className="flex flex-col gap-[31px] rounded-b-[50px] bg-accent px-[31px] pt-3 pb-[54px] text-white md:hidden">
+      <div role="img" aria-label="Z1P" className="flex items-center gap-2">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/ui/logo-mark-white.svg" alt="" width={24} height={24} />
+        <span className="font-logo text-[28px] leading-normal font-extrabold">Z1P</span>
+      </div>
+      <div className="flex flex-col">
+        <h1 className="text-[28px] font-bold">{title}</h1>
+        <p className="text-base leading-[1.35] font-medium">{description}</p>
+      </div>
+    </header>
+  );
+}
 
 function FacebookIcon() {
   return (
@@ -57,8 +78,13 @@ export function LoginForm({
     "flex h-[54px] w-full items-center justify-center gap-2.5 rounded-[10px] border border-field-border bg-background p-2.5 text-base font-medium text-subtle transition-colors hover:bg-foreground/[0.03] disabled:cursor-not-allowed disabled:opacity-50";
 
   return (
-    <div className="flex w-full max-w-[636px] flex-col gap-10">
-      <div role="tablist" aria-label="Sign in or create an account" className="relative w-[292px] pb-[5px]">
+    <div className="flex w-full flex-col gap-6 md:max-w-[636px] md:gap-10">
+      <PhoneHeader title={copy.phoneTitle} description={copy.phoneDescription} />
+      <div
+        role="tablist"
+        aria-label="Sign in or create an account"
+        className="relative hidden w-[292px] pb-[5px] md:block"
+      >
         <div className="flex items-center gap-8 text-xl">
           {(["signin", "signup"] as const).map((t) => (
             <button
@@ -82,8 +108,8 @@ export function LoginForm({
         />
       </div>
 
-      <div className="flex w-full flex-col gap-8">
-        <div className="flex flex-col gap-2">
+      <div className="flex w-full flex-col gap-6 px-[25px] md:gap-8 md:px-0">
+        <div className="hidden flex-col gap-2 md:flex">
           <h1 className="text-[28px] font-bold text-foreground">{copy.title}</h1>
           <p className="text-base text-subtle">{copy.description}</p>
         </div>
@@ -157,7 +183,7 @@ export function LoginForm({
               <button
                 type="button"
                 onClick={() => setTab("signup")}
-                className="font-semibold text-foreground hover:underline"
+                className="font-bold text-accent hover:underline md:font-semibold md:text-foreground"
               >
                 Create an account
               </button>
@@ -177,7 +203,7 @@ export function LoginForm({
         </p>
       </div>
 
-      <p className="text-center text-xs text-faint">
+      <p className="px-[25px] text-center text-xs text-faint md:px-0">
         Need help? Contact{" "}
         <a href={`mailto:${LEGAL.contactEmail}`} className="underline">
           Zip support

@@ -41,7 +41,7 @@ export function LoginScreen({
         </div>
       </aside>
 
-      <main className="flex min-w-0 flex-1 flex-col justify-center gap-10 px-6 pt-[72px] pb-12 sm:px-12 xl:px-[152px]">
+      <main className="flex min-w-0 flex-1 flex-col pb-10 md:justify-center md:gap-10 md:px-12 md:pt-[72px] md:pb-12 xl:px-[152px]">
         <LoginForm initialTab={tab} callbackUrl={callbackUrl} error={error} />
       </main>
     </div>
