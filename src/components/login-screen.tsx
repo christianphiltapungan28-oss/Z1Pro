@@ -44,8 +44,9 @@ export function LoginScreen({
         </div>
       </aside>
 
-      {/* Centred when it fits; top-aligned (and scrollable) when taller. */}
-      <main className="flex min-w-0 flex-1 flex-col pb-10 md:justify-center-safe md:gap-10 md:px-12 md:pt-[72px] md:pb-12 xl:px-[152px]">
+      {/* Anchored at a fixed height, not centred, so switching between Sign In
+          and Create an Account (different heights) doesn't move the tabs. */}
+      <main className="flex min-w-0 flex-1 flex-col pb-10 md:gap-10 md:px-12 md:pt-[120px] md:pb-12 xl:px-[152px]">
         {children ?? (
           <LoginForm initialView={view ?? "signin"} callbackUrl={callbackUrl ?? "/"} error={error ?? null} />
         )}
