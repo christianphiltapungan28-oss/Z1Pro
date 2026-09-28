@@ -244,8 +244,9 @@ export default function PrivacyPage() {
               <td>Resend</td>
               <td>
                 Sends our emails: verification codes, notifications you turned
-                on, and security notices. Receives your email address and the
-                email&rsquo;s content.
+                on, security notices, and tips and product updates only if you
+                turned on Marketing &amp; Tips (every one has an unsubscribe
+                link). Receives your email address and the email&rsquo;s content.
               </td>
               <td>United States</td>
             </tr>

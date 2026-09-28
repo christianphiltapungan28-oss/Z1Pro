@@ -21,7 +21,10 @@ function layout(opts: { heading: string; body: string; button?: { label: string;
 <p style="font-size:22px;font-weight:800;color:#ff1da5;margin:0 0 24px">Z1P</p>
 <div style="background:#fff;border:1px solid #e2e5ea;border-radius:16px;padding:28px">
 <h1 style="font-size:20px;margin:0 0 12px">${escapeHtml(opts.heading)}</h1>
-<p style="font-size:15px;line-height:1.5;color:#3c4043;margin:0">${escapeHtml(opts.body)}</p>
+${opts.body
+  .split(/\n\s*\n/)
+  .map((para) => `<p style="font-size:15px;line-height:1.5;color:#3c4043;margin:0 0 12px">${escapeHtml(para.trim()).replace(/\n/g, "<br>")}</p>`)
+  .join("\n")}
 ${button}
 </div>
 <p style="font-size:12px;color:#8a8a8a;line-height:1.5;margin:20px 4px 0">${escapeHtml(
@@ -38,8 +41,13 @@ export async function sendEmail(opts: {
   body: string;
   button?: { label: string; url: string };
   footer?: string;
+  /** Marketing emails: footer link plus List-Unsubscribe headers (RFC 8058). */
+  unsubscribeUrl?: string;
 }) {
   if (!emailConfigured()) return false;
+  const unsubscribe = opts.unsubscribeUrl
+    ? `<p style="font-size:12px;color:#8a8a8a;margin:8px 4px 0"><a href="${escapeHtml(opts.unsubscribeUrl)}" style="color:#8a8a8a">Unsubscribe from tips and product updates</a></p>`
+    : "";
   try {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -51,8 +59,18 @@ export async function sendEmail(opts: {
         from: process.env.EMAIL_FROM,
         to: [opts.to],
         subject: opts.subject,
-        html: layout(opts),
-        text: `${opts.heading}\n\n${opts.body}${opts.button ? `\n\n${opts.button.label}: ${opts.button.url}` : ""}`,
+        html: layout(opts).replace("</div></body></html>", `${unsubscribe}</div></body></html>`),
+        text: `${opts.heading}\n\n${opts.body}${opts.button ? `\n\n${opts.button.label}: ${opts.button.url}` : ""}${
+          opts.unsubscribeUrl ? `\n\nUnsubscribe: ${opts.unsubscribeUrl}` : ""
+        }`,
+        ...(opts.unsubscribeUrl
+          ? {
+              headers: {
+                "List-Unsubscribe": `<${opts.unsubscribeUrl}>`,
+                "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+              },
+            }
+          : {}),
       }),
       signal: AbortSignal.timeout(15_000),
     });
