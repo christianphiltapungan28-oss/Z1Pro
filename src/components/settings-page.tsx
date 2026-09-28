@@ -1,8 +1,10 @@
 "use client";
 
 import { signOut, useSession } from "next-auth/react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { AssetIcon } from "@/components/asset-icon";
 import { useDialog } from "@/lib/use-dialog";
+import { useMediaQuery } from "@/lib/use-media-query";
 import { formatRelativeTime } from "@/lib/relative-time";
 import { LANGUAGES } from "@/lib/settings";
 import type { Appearance } from "@/lib/use-appearance";
@@ -45,7 +47,9 @@ type SettingsData = {
 
 function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`w-full rounded-2xl border border-divider bg-background ${className}`}>
+    <div
+      className={`w-full rounded-2xl border border-divider bg-background shadow-[0_2px_10px_rgba(32,33,36,0.06)] md:shadow-none ${className}`}
+    >
       {children}
     </div>
   );
@@ -54,8 +58,14 @@ function Card({ children, className = "" }: { children: React.ReactNode; classNa
 function RowText({ label, value, muted }: { label: string; value: React.ReactNode; muted?: boolean }) {
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-1">
-      <p className="text-[13px] font-bold text-foreground">{label}</p>
-      <div className={`text-[15px] ${muted ? "text-tertiary" : "text-label"}`}>{value}</div>
+      <p className="text-sm font-medium text-foreground md:text-[13px] md:font-bold">{label}</p>
+      <div
+        className={`text-xs leading-[1.35] md:text-[15px] md:leading-normal ${
+          muted ? "text-tertiary" : "text-secondary md:text-label"
+        }`}
+      >
+        {value}
+      </div>
     </div>
   );
 }
@@ -109,7 +119,7 @@ function ActionLink({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`shrink-0 text-sm font-semibold hover:underline disabled:opacity-50 ${
+      className={`shrink-0 text-sm font-medium hover:underline md:font-semibold disabled:opacity-50 ${
         danger ? "text-red-600" : "text-accent"
       }`}
     >
@@ -139,6 +149,7 @@ function AccountTab({
   const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [photoOpen, setPhotoOpen] = useState(false);
   const timezones = useMemo(() => {
     try {
       return Intl.supportedValuesOf("timeZone");
@@ -257,7 +268,7 @@ function AccountTab({
 
   return (
     <Card>
-      <div className="border-b border-divider p-8">
+      <div className="flex items-center gap-6 border-b border-divider p-8">
         {p.image ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -270,7 +281,16 @@ function AccountTab({
             {(p.name ?? p.email).slice(0, 1).toUpperCase()}
           </div>
         )}
+        <ActionLink onClick={() => setPhotoOpen(true)}>Change photo</ActionLink>
       </div>
+      {photoOpen && (
+        <PhotoDialog
+          name={p.name ?? p.email}
+          image={p.image}
+          onClose={() => setPhotoOpen(false)}
+          onSaved={onSaved}
+        />
+      )}
 
       {!data.settingsReady && (
         <p className="border-b border-divider bg-surface px-8 py-3 text-sm text-label">
@@ -282,12 +302,12 @@ function AccountTab({
       {rows.map((row, index) => (
         <div key={row.field}>
           {index === 1 && (
-            <div className="flex items-center justify-between gap-4 border-b border-divider px-8 py-5">
+            <div className="flex items-center justify-between gap-4 border-b border-divider min-h-[68px] px-4 py-3 md:min-h-0 md:px-8 md:py-5">
               <RowText label="Email" value={p.email} />
               <span className="shrink-0 text-[13px] text-tertiary">Managed by {provider}</span>
             </div>
           )}
-          <div className="flex items-center justify-between gap-4 border-b border-divider px-8 py-5">
+          <div className="flex items-center justify-between gap-4 border-b border-divider min-h-[68px] px-4 py-3 md:min-h-0 md:px-8 md:py-5">
             {editing === row.field ? (
               <div className="flex min-w-0 flex-1 flex-col gap-2">
                 <p className="text-[13px] font-bold text-foreground">{row.label}</p>
@@ -330,7 +350,7 @@ function AccountTab({
         </div>
       ))}
 
-      <div className="flex items-center justify-between gap-4 px-8 py-5">
+      <div className="flex items-center justify-between gap-4 min-h-[68px] px-4 py-3 md:min-h-0 md:px-8 md:py-5">
         <RowText label="Appearance" value={appearance === "aurora" ? "Aurora" : "Daylight"} />
         <ActionLink onClick={onOpenAppearance}>Edit</ActionLink>
       </div>
@@ -386,11 +406,39 @@ function NotificationsTab({
           {error}
         </p>
       )}
-      <Card>
+      <div className="flex flex-col gap-6 md:hidden">
+        {NOTIFICATION_GROUPS.map((group) => (
+          <div key={group.keys.join()} className="flex flex-col gap-2">
+            {group.title && <SectionTitle>{group.title}</SectionTitle>}
+            <Card>
+              {group.keys.map((key, i) => {
+                const row = NOTIFICATION_ROWS.find((r) => r.key === key)!;
+                return (
+                  <div
+                    key={key}
+                    className={`flex min-h-[68px] items-center justify-between gap-4 px-4 py-3 ${
+                      i < group.keys.length - 1 ? "border-b border-divider" : ""
+                    }`}
+                  >
+                    <RowText label={row.label} value={row.description} />
+                    <Toggle
+                      label={row.label}
+                      checked={data.notifications[row.key]}
+                      disabled={!data.settingsReady}
+                      onChange={(next) => toggle(row.key, next)}
+                    />
+                  </div>
+                );
+              })}
+            </Card>
+          </div>
+        ))}
+      </div>
+      <Card className="hidden md:block">
         {NOTIFICATION_ROWS.map((row, i) => (
           <div
             key={row.key}
-            className={`flex items-center justify-between gap-4 px-8 py-5 ${
+            className={`flex items-center justify-between gap-4 min-h-[68px] px-4 py-3 md:min-h-0 md:px-8 md:py-5 ${
               i < NOTIFICATION_ROWS.length - 1 ? "border-b border-divider" : ""
             }`}
           >
@@ -405,6 +453,21 @@ function NotificationsTab({
         ))}
       </Card>
     </div>
+  );
+}
+
+// Phones show the toggles in the mobile design's groups.
+const NOTIFICATION_GROUPS: { title: string | null; keys: NotificationKey[] }[] = [
+  { title: null, keys: ["email", "push"] },
+  { title: null, keys: ["conversationReminders", "weeklyReport", "journeyMilestones"] },
+  { title: "From Z1P", keys: ["marketing"] },
+];
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-xs font-medium tracking-[0.6px] text-secondary uppercase md:hidden">
+      {children}
+    </p>
   );
 }
 
@@ -578,15 +641,16 @@ function PrivacyTab({ data }: { data: SettingsData }) {
           {message}
         </p>
       )}
-      <Card>
-        <div className="flex items-center justify-between gap-4 border-b border-divider px-8 py-5">
+      <SectionTitle>Security</SectionTitle>
+      <Card className="md:rounded-b-none md:border-b-0">
+        <div className="flex items-center justify-between gap-4 border-b border-divider min-h-[68px] px-4 py-3 md:min-h-0 md:px-8 md:py-5">
           <RowText
             label="Two-Factor Authentication"
             value={`You sign in with ${provider}. Turn on 2-step verification in your ${provider} account to protect Z1P too.`}
           />
         </div>
 
-        <div className="border-b border-divider px-8 py-5">
+        <div className="min-h-[68px] px-4 py-3 md:min-h-0 md:px-8 md:py-5 md:border-b md:border-divider">
           <div className="flex items-center justify-between gap-4">
             <RowText
               label="Active Sessions"
@@ -634,14 +698,18 @@ function PrivacyTab({ data }: { data: SettingsData }) {
           )}
         </div>
 
-        <div className="flex items-center justify-between gap-4 border-b border-divider px-8 py-5">
+      </Card>
+
+      <SectionTitle>Your data</SectionTitle>
+      <Card className="md:-mt-3 md:rounded-t-none md:border-t-0">
+        <div className="flex items-center justify-between gap-4 border-b border-divider min-h-[68px] px-4 py-3 md:min-h-0 md:px-8 md:py-5">
           <RowText label="Download Your Data" value="Export all your conversations and journey data" />
           <ActionLink onClick={downloadData} disabled={busy}>
             Download
           </ActionLink>
         </div>
 
-        <div className="flex items-center justify-between gap-4 px-8 py-5">
+        <div className="flex items-center justify-between gap-4 min-h-[68px] px-4 py-3 md:min-h-0 md:px-8 md:py-5">
           <RowText label="Delete Account" value="Permanently delete your account and all data" />
           <ActionLink danger onClick={() => setDeleting(true)}>
             Delete
@@ -764,17 +832,21 @@ function SubscriptionTab() {
           return (
             <div
               key={plan.code}
-              className={`flex min-h-[299px] flex-col gap-5 rounded-2xl bg-background p-6 ${
+              className={`flex flex-col gap-3 rounded-2xl bg-background p-4 md:min-h-[299px] md:gap-5 md:p-6 ${
                 isCurrent ? "border-2 border-accent" : "border border-divider"
               }`}
             >
-              <div className="flex flex-col gap-1">
-                <p className="text-xl font-bold text-foreground">{plan.name}</p>
-                <p className={`text-[28px] font-extrabold ${isCurrent ? "text-accent" : "text-foreground"}`}>
+              <div className="flex items-baseline justify-between gap-2 md:flex-col md:items-start md:gap-1">
+                <p className="text-base font-medium text-foreground md:text-xl md:font-bold">{plan.name}</p>
+                <p
+                  className={`text-xl font-medium md:text-[28px] md:font-extrabold ${
+                    isCurrent ? "text-accent" : "text-foreground"
+                  }`}
+                >
                   {price}
                 </p>
               </div>
-              <ul className="flex flex-1 flex-col gap-2">
+              <ul className="flex flex-1 flex-col gap-1 md:gap-2">
                 {plan.features.map((feature) => (
                   <li key={feature} className="flex items-center gap-2 text-[13px] text-label">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -790,7 +862,7 @@ function SubscriptionTab() {
                 ))}
               </ul>
               {isCurrent ? (
-                <span className="w-full rounded-[10px] border border-accent bg-background px-4 py-2.5 text-center text-sm font-semibold text-accent">
+                <span className="w-full rounded-[10px] bg-accent/15 px-4 py-2.5 text-center text-sm font-semibold text-accent md:border md:border-accent md:bg-background">
                   Current Plan
                 </span>
               ) : (
@@ -811,7 +883,44 @@ function SubscriptionTab() {
         Each payment covers one billing period and does not renew automatically.
       </p>
 
-      <Card className="flex flex-col gap-6 p-8">
+      <SectionTitle>Billing</SectionTitle>
+      <Card className="-mt-4 overflow-hidden md:hidden">
+        <div className="flex min-h-[68px] items-center gap-3 border-b border-divider px-4 py-3">
+          <RowText label="Payment Method" value="Pay each period with GCash, Maya or card" />
+        </div>
+        <div className="flex min-h-[68px] items-center gap-3 px-4 py-3">
+          <RowText
+            label="Billing History"
+            value={
+              payments === null
+                ? "Loading…"
+                : succeeded.length === 0
+                  ? "No billing history yet"
+                  : `${succeeded.length} ${succeeded.length === 1 ? "payment" : "payments"}`
+            }
+          />
+          {payments && payments.length > 0 && (
+            <ActionLink onClick={() => setShowHistory((v) => !v)}>{showHistory ? "Hide" : "View"}</ActionLink>
+          )}
+        </div>
+        {showHistory && payments && (
+          <ul className="border-t border-divider">
+            {payments.map((p) => (
+              <li key={p.id} className="flex items-center justify-between gap-3 px-4 py-2.5 text-xs">
+                <span className="text-foreground">
+                  {new Date(p.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                  {" · "}
+                  {p.plan ?? "—"}
+                </span>
+                <span className="text-secondary">
+                  {formatMoney(p.amountMinorUnits, p.currency)} · <span className="capitalize">{p.status}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+      <Card className="hidden flex-col gap-6 p-8 md:flex">
         <div className="flex items-center justify-between gap-4">
           <div className="flex flex-col gap-1">
             <p className="text-base font-bold text-foreground">Payment Method</p>
@@ -880,14 +989,704 @@ function SubscriptionTab() {
 }
 
 // ---------------------------------------------------------------------------
+// Dialogs (mobile Figma 653:10877 – 653:11294)
+
+function SheetDialog({
+  title,
+  description,
+  onClose,
+  children,
+}: {
+  title: string;
+  description?: React.ReactNode;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  const panelRef = useDialog<HTMLDivElement>(true, onClose);
+  const titleId = useId();
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 p-4">
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        className="flex max-h-full w-full max-w-[350px] flex-col gap-5 overflow-y-auto rounded-[20px] bg-background p-[22px] shadow-[0_12px_28px_rgba(0,0,0,0.15)] outline-none"
+      >
+        <div className="flex flex-col gap-2">
+          <h2 id={titleId} className="text-[22px] font-bold text-foreground">
+            {title}
+          </h2>
+          {description && <div className="text-[13px] leading-[19px] text-secondary">{description}</div>}
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function DialogButtons({
+  label,
+  busy,
+  disabled,
+  onCancel,
+}: {
+  label: string;
+  busy?: boolean;
+  disabled?: boolean;
+  onCancel?: () => void;
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      <button
+        type="submit"
+        disabled={disabled || busy}
+        className="h-[46px] w-full rounded-[10px] bg-accent text-base font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+      >
+        {busy ? "Saving…" : label}
+      </button>
+      {onCancel && (
+        <button
+          type="button"
+          onClick={onCancel}
+          className="h-[46px] w-full rounded-[10px] border border-divider text-base font-medium text-foreground hover:bg-foreground/5"
+        >
+          Cancel
+        </button>
+      )}
+    </div>
+  );
+}
+
+const FIELD_INPUT =
+  "h-[54px] w-full rounded-[10px] border border-accent bg-background px-[19px] text-base text-foreground placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-accent/30";
+
+async function patchSettings(body: Record<string, unknown>) {
+  const res = await fetch("/api/settings", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (res.ok) return null;
+  const data = await res.json().catch(() => null);
+  return (data?.error as string | undefined) ?? "Couldn't save that. Please try again.";
+}
+
+const FIELD_COPY: Record<
+  Exclude<EditableField, "phone">,
+  { title: string; description: string; label: string }
+> = {
+  name: { title: "Edit name", description: "Update the name shown on your Personal Profile.", label: "Name" },
+  about: { title: "Edit about", description: "Share a little about yourself on your Personal Profile.", label: "About" },
+  timezone: { title: "Timezone", description: "Used for reminders and your weekly report.", label: "Timezone" },
+  locale: { title: "Language", description: "The language Z1P uses with you.", label: "Language" },
+  country: { title: "Country", description: "Where you're based.", label: "Country" },
+};
+
+const ABOUT_MAX = 300;
+
+function EditFieldDialog({
+  field,
+  initial,
+  onClose,
+  onSaved,
+}: {
+  field: Exclude<EditableField, "phone">;
+  initial: string | null;
+  onClose: () => void;
+  onSaved: () => Promise<void>;
+}) {
+  const { update: updateSession } = useSession();
+  const [draft, setDraft] = useState(
+    initial ?? (field === "timezone" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "")
+  );
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const copy = FIELD_COPY[field];
+  const timezones = useMemo(() => {
+    try {
+      return Intl.supportedValuesOf("timeZone");
+    } catch {
+      return ["Asia/Manila", "UTC"];
+    }
+  }, []);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    setError(null);
+    const failed = await patchSettings({ [field]: draft });
+    if (failed) {
+      setError(failed);
+      setSaving(false);
+      return;
+    }
+    if (field === "name") await updateSession();
+    await onSaved();
+    onClose();
+  }
+
+  let control: React.ReactNode;
+  if (field === "timezone" || field === "locale") {
+    control = (
+      <select value={draft} onChange={(e) => setDraft(e.target.value)} aria-label={copy.label} className={FIELD_INPUT}>
+        {field === "timezone"
+          ? timezones.map((tz) => (
+              <option key={tz} value={tz}>
+                {tz}
+              </option>
+            ))
+          : Object.entries(LANGUAGES).map(([code, label]) => (
+              <option key={code} value={code}>
+                {label}
+              </option>
+            ))}
+      </select>
+    );
+  } else if (field === "about") {
+    control = (
+      <div className="relative">
+        <textarea
+          value={draft}
+          onChange={(e) => setDraft(e.target.value.slice(0, ABOUT_MAX))}
+          maxLength={ABOUT_MAX}
+          rows={4}
+          aria-label={copy.label}
+          className="w-full resize-none rounded-[10px] border border-accent bg-background px-[13px] pt-3 pb-7 text-base text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30"
+        />
+        <span className="pointer-events-none absolute right-3 bottom-3 text-xs text-secondary">
+          {draft.length} / {ABOUT_MAX}
+        </span>
+      </div>
+    );
+  } else {
+    control = (
+      <input
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        maxLength={field === "name" ? 80 : 60}
+        aria-label={copy.label}
+        className={FIELD_INPUT}
+        autoFocus
+      />
+    );
+  }
+
+  return (
+    <SheetDialog title={copy.title} description={copy.description} onClose={onClose}>
+      <form onSubmit={submit} className="flex flex-col gap-5">
+        <label className="flex flex-col gap-[9px]">
+          <span className="text-base text-foreground">{copy.label}</span>
+          {control}
+        </label>
+        {error && (
+          <p role="alert" className="-mt-2 text-sm text-red-500">
+            {error}
+          </p>
+        )}
+        <DialogButtons label="Save changes" busy={saving} disabled={field === "name" && !draft.trim()} onCancel={onClose} />
+      </form>
+    </SheetDialog>
+  );
+}
+
+/**
+ * Phone number (mobile Figma 653:11168). Only the Philippines is offered, as
+ * in the design. There is no SMS provider yet, so the number is saved
+ * without a verification code.
+ */
+function PhoneDialog({
+  current,
+  onClose,
+  onSaved,
+}: {
+  current: string | null;
+  onClose: () => void;
+  onSaved: () => Promise<void>;
+}) {
+  const [digits, setDigits] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const valid = /^9\d{9}$/.test(digits);
+
+  async function save(value: string | null) {
+    setSaving(true);
+    setError(null);
+    const failed = await patchSettings({ phone: value });
+    if (failed) {
+      setError(failed);
+      setSaving(false);
+      return;
+    }
+    await onSaved();
+    onClose();
+  }
+
+  return (
+    <SheetDialog
+      title={current ? "Edit mobile number" : "Add mobile number"}
+      description={
+        current ? (
+          <>
+            <span className="block">Current mobile number</span>
+            <span className="block text-[15px] font-medium text-foreground">{current}</span>
+          </>
+        ) : (
+          "Add a Philippine mobile number to your profile."
+        )
+      }
+      onClose={onClose}
+    >
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (valid) void save(`+63 ${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`);
+        }}
+        className="flex flex-col gap-5"
+      >
+        <div className="flex flex-col gap-3">
+          <label className="flex flex-col gap-[9px]">
+            <span className="text-base text-foreground">
+              Country code <span className="text-xs">(Current Available Country)</span>
+            </span>
+            <select className={FIELD_INPUT} value="+63" onChange={() => {}} aria-label="Country code">
+              <option value="+63">+63 · Philippines</option>
+            </select>
+          </label>
+          <label className="flex flex-col gap-[9px]">
+            <span className="text-base text-foreground">Mobile number</span>
+            <input
+              value={digits}
+              onChange={(e) => setDigits(e.target.value.replace(/\D/g, "").replace(/^0/, "").slice(0, 10))}
+              inputMode="numeric"
+              autoComplete="tel-national"
+              placeholder="912 345 6789"
+              aria-label="Mobile number"
+              className={FIELD_INPUT}
+            />
+          </label>
+          {digits && !valid && (
+            <p className="text-xs text-secondary">Enter the 10 digits after +63, starting with 9.</p>
+          )}
+        </div>
+        {error && (
+          <p role="alert" className="-mt-2 text-sm text-red-500">
+            {error}
+          </p>
+        )}
+        <DialogButtons label="Save number" busy={saving} disabled={!valid} onCancel={onClose} />
+        {current && (
+          <button
+            type="button"
+            onClick={() => save(null)}
+            disabled={saving}
+            className="-mt-2 self-center text-sm font-medium text-red-600 disabled:opacity-50"
+          >
+            Remove number
+          </button>
+        )}
+      </form>
+    </SheetDialog>
+  );
+}
+
+const PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const PHOTO_MAX_BYTES = 10 * 1024 * 1024;
+const PHOTO_SIZE = 256;
+
+/** Square-crops and shrinks a photo to a 256×256 JPEG data URL. */
+async function resizePhoto(file: File) {
+  const bitmap = await createImageBitmap(file);
+  const side = Math.min(bitmap.width, bitmap.height);
+  const canvas = document.createElement("canvas");
+  canvas.width = PHOTO_SIZE;
+  canvas.height = PHOTO_SIZE;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("no canvas");
+  ctx.drawImage(
+    bitmap,
+    (bitmap.width - side) / 2,
+    (bitmap.height - side) / 2,
+    side,
+    side,
+    0,
+    0,
+    PHOTO_SIZE,
+    PHOTO_SIZE
+  );
+  bitmap.close();
+  return canvas.toDataURL("image/jpeg", 0.85);
+}
+
+function PhotoDialog({
+  name,
+  image,
+  onClose,
+  onSaved,
+}: {
+  name: string;
+  image: string | null;
+  onClose: () => void;
+  onSaved: () => Promise<void>;
+}) {
+  const { update: updateSession } = useSession();
+  const input = useRef<HTMLInputElement>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function choose(file: File | undefined) {
+    if (!file) return;
+    setError(null);
+    if (!PHOTO_TYPES.includes(file.type)) {
+      setError("Choose a JPG or PNG image.");
+      return;
+    }
+    if (file.size > PHOTO_MAX_BYTES) {
+      setError("That image is over 10 MB.");
+      return;
+    }
+    try {
+      setPreview(await resizePhoto(file));
+    } catch {
+      setError("That image couldn't be read. Try another one.");
+    }
+  }
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    if (!preview) {
+      input.current?.click();
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    const res = await fetch("/api/settings/photo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ image: preview }),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => null);
+      setError(body?.error ?? "Couldn't update your photo. Please try again.");
+      setSaving(false);
+      return;
+    }
+    await updateSession();
+    await onSaved();
+    onClose();
+  }
+
+  const shown = preview ?? image;
+
+  return (
+    <SheetDialog
+      title="Update profile photo"
+      description={`Choose a new image for ${name}’s Personal Profile. Use a square JPG or PNG for the best result.`}
+      onClose={onClose}
+    >
+      <form onSubmit={save} className="flex flex-col items-center gap-5">
+        <div className="flex flex-col items-center gap-2">
+          {shown ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={shown} alt="" className="size-[88px] rounded-full object-cover" />
+          ) : (
+            <span className="flex size-[88px] items-center justify-center rounded-full bg-gradient-to-br from-accent to-accent-strong text-2xl font-semibold text-white">
+              {name.slice(0, 1).toUpperCase()}
+            </span>
+          )}
+          <div className="flex flex-col items-center gap-1">
+            <p className="text-base font-bold text-foreground">{name}</p>
+            <p className="text-[13px] text-secondary">Personal Profile</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => input.current?.click()}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragging(true);
+          }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragging(false);
+            void choose(e.dataTransfer.files?.[0]);
+          }}
+          className={`flex h-36 w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-accent ${
+            dragging ? "bg-accent/15" : "bg-accent/[0.06]"
+          }`}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/ui/upload.svg" alt="" width={25} height={25} />
+          <span className="text-sm font-medium text-foreground">
+            {preview ? "Choose a different image" : "Drop your image here"}
+          </span>
+          <span className="text-xs text-secondary">JPG or PNG · up to 10 MB</span>
+        </button>
+        <input
+          ref={input}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            e.target.value = "";
+            void choose(file);
+          }}
+        />
+        {error && (
+          <p role="alert" className="-mt-2 self-stretch text-sm text-red-500">
+            {error}
+          </p>
+        )}
+        <div className="w-full">
+          <DialogButtons label={preview ? "Save Changes" : "Update photo"} busy={saving} onCancel={onClose} />
+        </div>
+      </form>
+    </SheetDialog>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Phones: list-style Settings with sub-screens (mobile Figma 552:5648 …)
+
+type MobileScreen = "main" | "notifications" | "subscription" | "privacy";
+
+const SCREEN_TITLES: Record<MobileScreen, string> = {
+  main: "Settings",
+  notifications: "Notifications",
+  subscription: "Subscriptions",
+  privacy: "Privacy & Security",
+};
+
+function MobileRow({
+  label,
+  detail,
+  action,
+  onClick,
+  last,
+  disabled,
+}: {
+  label: string;
+  detail: React.ReactNode;
+  action?: React.ReactNode;
+  onClick?: () => void;
+  last?: boolean;
+  disabled?: boolean;
+}) {
+  const content = (
+    <>
+      <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
+        <span className="text-sm font-medium text-foreground">{label}</span>
+        <span className="truncate text-xs leading-[1.35] font-medium text-secondary">{detail}</span>
+      </span>
+      {action && <span className="shrink-0 text-sm font-medium text-accent">{action}</span>}
+    </>
+  );
+  const className = `flex min-h-[68px] w-full items-center gap-3 px-4 py-3 text-left ${
+    last ? "" : "border-b border-divider"
+  }`;
+  return onClick ? (
+    <button type="button" onClick={onClick} disabled={disabled} className={`${className} disabled:opacity-50`}>
+      {content}
+    </button>
+  ) : (
+    <div className={className}>{content}</div>
+  );
+}
+
+function MobileSettings({
+  data,
+  loadError,
+  reload,
+  onNotificationsChange,
+  appearance,
+  onOpenAppearance,
+  onBack,
+}: {
+  data: SettingsData | null;
+  loadError: boolean;
+  reload: () => Promise<void>;
+  onNotificationsChange: (next: SettingsData["notifications"]) => void;
+  appearance: Appearance;
+  onOpenAppearance: () => void;
+  onBack: () => void;
+}) {
+  const [screen, setScreen] = useState<MobileScreen>("main");
+  const [dialog, setDialog] = useState<EditableField | "photo" | null>(null);
+
+  const p = data?.profile;
+  const provider = data?.providers.includes("google")
+    ? "Google"
+    : data?.providers.includes("facebook")
+      ? "Facebook"
+      : "your sign-in provider";
+  const locked = !data?.settingsReady;
+  const name = p?.name ?? p?.email ?? "";
+
+  return (
+    <div className="h-full overflow-y-auto bg-background">
+      <header className="flex h-[71px] items-center gap-3 border-b border-divider px-5">
+        <button
+          type="button"
+          onClick={screen === "main" ? onBack : () => setScreen("main")}
+          aria-label={screen === "main" ? "Back to profile" : "Back to settings"}
+          className="flex size-10 shrink-0 items-center justify-center rounded-full bg-foreground/5"
+        >
+          <AssetIcon name="journey/arrow-left" width={18} height={18} />
+        </button>
+        <h1 className="truncate text-base font-bold text-foreground">{SCREEN_TITLES[screen]}</h1>
+      </header>
+
+      <div className={`flex flex-col gap-6 px-4 pb-8 ${screen === "main" ? "pt-[22px]" : "pt-3.5"}`}>
+        {loadError && (
+          <p role="alert" className="text-sm text-red-500">
+            Couldn&rsquo;t load your settings. Please refresh and try again.
+          </p>
+        )}
+        {!data && !loadError && screen !== "subscription" && (
+          <p className="text-sm text-tertiary">Loading…</p>
+        )}
+
+        {data && p && screen === "main" && (
+          <>
+            <div className="flex items-center gap-4 px-2">
+              {p.image ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={p.image} alt="" className="size-[66px] shrink-0 rounded-full object-cover" />
+              ) : (
+                <span className="flex size-[66px] shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-accent to-accent-strong text-xl font-semibold text-white">
+                  {name.slice(0, 1).toUpperCase()}
+                </span>
+              )}
+              <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
+                <p className="truncate text-xl font-bold text-foreground">{name}</p>
+                <p className="text-sm text-secondary">Personal Profile</p>
+              </div>
+              <button type="button" onClick={() => setDialog("photo")} className="shrink-0 text-sm font-medium text-accent">
+                Change
+              </button>
+            </div>
+
+            {locked && (
+              <p className="rounded-xl bg-surface px-4 py-3 text-xs text-label">
+                Phone, timezone, about and country will be editable after the next update.
+              </p>
+            )}
+
+            <div className="flex flex-col gap-2">
+              <SectionTitle>Profile details</SectionTitle>
+              <Card className="overflow-hidden">
+                <MobileRow label="Name" detail={p.name ?? "N/A"} action="Edit" onClick={() => setDialog("name")} />
+                <MobileRow label="Email" detail={p.email} action={<span className="text-xs text-tertiary">Managed by {provider}</span>} />
+                <MobileRow label="Phone" detail={p.phone ?? "N/A"} action="Edit" onClick={() => setDialog("phone")} disabled={locked} />
+                <MobileRow label="About" detail={p.about ?? "N/A"} action="Edit" onClick={() => setDialog("about")} disabled={locked} last />
+              </Card>
+            </div>
+
+            <Card className="overflow-hidden">
+              <MobileRow label="Notifications" detail="Manage your notification preferences" action="›" onClick={() => setScreen("notifications")} />
+              <MobileRow label="Subscription" detail="Manage your plan and billing" action="›" onClick={() => setScreen("subscription")} />
+              <MobileRow label="Privacy and Policy" detail="Review privacy, security, and policies" action="›" onClick={() => setScreen("privacy")} last />
+            </Card>
+
+            <div className="flex flex-col gap-2">
+              <SectionTitle>Preferences</SectionTitle>
+              <Card className="overflow-hidden">
+                <MobileRow label="Timezone" detail={p.timezone ?? "Not set"} action="›" onClick={() => setDialog("timezone")} disabled={locked} />
+                <MobileRow
+                  label="Language"
+                  detail={LANGUAGES[p.locale as keyof typeof LANGUAGES] ?? p.locale}
+                  action="›"
+                  onClick={() => setDialog("locale")}
+                />
+                <MobileRow label="Country" detail={p.country ?? "Not set"} action="›" onClick={() => setDialog("country")} disabled={locked} />
+                <MobileRow
+                  label="Appearance"
+                  detail={appearance === "aurora" ? "Aurora" : "Daylight"}
+                  action="›"
+                  onClick={onOpenAppearance}
+                  last
+                />
+              </Card>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <SectionTitle>Account</SectionTitle>
+              <Card className="overflow-hidden">
+                <MobileRow label="Logout" detail="Sign out of your account" onClick={() => signOut({ redirectTo: "/" })} last />
+              </Card>
+            </div>
+          </>
+        )}
+
+        {data && screen === "notifications" && (
+          <NotificationsTab data={data} onChange={onNotificationsChange} />
+        )}
+        {data && screen === "privacy" && (
+          <>
+            <PrivacyTab data={data} />
+            <div className="flex flex-col gap-2">
+              <SectionTitle>Policies</SectionTitle>
+              <Card className="overflow-hidden">
+                {[
+                  ["Privacy Policy", "/privacy"],
+                  ["Terms and Conditions", "/terms"],
+                  ["Cookie Policy", "/cookies"],
+                  ["Refund Policy", "/refunds"],
+                ].map(([label, href], i, all) => (
+                  <a
+                    key={href}
+                    href={href}
+                    className={`flex min-h-[52px] items-center justify-between px-4 py-3 text-sm font-medium text-foreground ${
+                      i < all.length - 1 ? "border-b border-divider" : ""
+                    }`}
+                  >
+                    {label}
+                    <span className="text-accent">›</span>
+                  </a>
+                ))}
+              </Card>
+            </div>
+          </>
+        )}
+        {screen === "subscription" && <SubscriptionTab />}
+      </div>
+
+      {data && p && dialog === "photo" && (
+        <PhotoDialog name={name} image={p.image} onClose={() => setDialog(null)} onSaved={reload} />
+      )}
+      {data && p && dialog === "phone" && (
+        <PhoneDialog current={p.phone} onClose={() => setDialog(null)} onSaved={reload} />
+      )}
+      {data && p && dialog && dialog !== "photo" && dialog !== "phone" && (
+        <EditFieldDialog
+          field={dialog}
+          initial={dialog === "name" ? p.name : dialog === "locale" ? p.locale : p[dialog]}
+          onClose={() => setDialog(null)}
+          onSaved={reload}
+        />
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 
 export function SettingsPage({
   appearance,
   onOpenAppearance,
+  onBack,
 }: {
   appearance: Appearance;
   onOpenAppearance: () => void;
+  /** Phones: the back arrow returns to the Profile page. */
+  onBack: () => void;
 }) {
+  const phone = useMediaQuery("(max-width: 767px)");
   const [tab, setTab] = useState<Tab>("account");
   const [data, setData] = useState<SettingsData | null>(null);
   const [loadError, setLoadError] = useState(false);
@@ -916,6 +1715,20 @@ export function SettingsPage({
       ignore = true;
     };
   }, []);
+
+  if (phone) {
+    return (
+      <MobileSettings
+        data={data}
+        loadError={loadError}
+        reload={load}
+        onNotificationsChange={(notifications) => data && setData({ ...data, notifications })}
+        appearance={appearance}
+        onOpenAppearance={onOpenAppearance}
+        onBack={onBack}
+      />
+    );
+  }
 
   return (
     <div className="h-full overflow-y-auto bg-surface">

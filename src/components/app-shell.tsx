@@ -176,9 +176,10 @@ export function AppShell() {
   // The conversation, profile and notifications pages draw their own header.
   const showTopbar =
     (view !== "conversation" && view !== "profile" && view !== "notifications") || voiceMode;
-  // On phones, Home, Journeys and Conversations draw their own headers (mobile design).
+  // On phones, Home, Journeys, Conversations and Settings draw their own headers (mobile design).
   const topbarOnPhone =
-    voiceMode || (view !== "home" && view !== "journeys" && view !== "conversations");
+    voiceMode ||
+    (view !== "home" && view !== "journeys" && view !== "conversations" && view !== "settings");
 
   return (
     <div className="relative flex h-dvh overflow-hidden bg-background">
@@ -249,6 +250,7 @@ export function AppShell() {
               <SettingsPage
                 appearance={appearance}
                 onOpenAppearance={() => setAppearanceOpen(true)}
+                onBack={() => changeView("profile")}
               />
             ) : view === "conversations" ? (
               <ConversationsList

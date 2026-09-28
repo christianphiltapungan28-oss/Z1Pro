@@ -36,6 +36,12 @@ export default function PrivacyPage() {
         name, email address, profile photo and an account identifier. We never
         receive your Google or Facebook password.
       </p>
+      <p>
+        In Settings you can add a phone number, a short &ldquo;about&rdquo;
+        line, your timezone and country, and upload your own profile photo,
+        which replaces the one from your sign-in provider. We keep a small
+        resized copy of the photo, not the original file.
+      </p>
       <h3>Content you create</h3>
       <ul>
         <li>Messages you type to the assistant and the replies it generates.</li>
