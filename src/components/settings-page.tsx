@@ -741,7 +741,11 @@ function PrivacyTab({
         <div className="flex items-center justify-between gap-4 border-b border-divider min-h-[68px] px-4 py-3 md:min-h-0 md:px-8 md:py-5">
           <RowText
             label="Two-Factor Authentication"
-            value={`You sign in with ${provider}. Turn on 2-step verification in your ${provider} account to protect Z1P too.`}
+            value={
+              data.providers.length > 0
+                ? `You sign in with ${provider}. Turn on 2-step verification in your ${provider} account to protect Z1P too.`
+                : "You sign in with your email and password. Use a password you don't use anywhere else."
+            }
           />
         </div>
 

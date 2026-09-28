@@ -5,13 +5,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { organizationMembers, organizations, users } from "@/db/schema";
 import { createDbAdapter } from "@/lib/auth-adapter";
-
-function personalOrgName(user: { name?: string | null; email?: string | null }) {
-  const name = user.name?.trim();
-  if (name) return `${name}'s Organization`;
-  const emailLocalPart = user.email?.split("@")[0]?.trim();
-  return emailLocalPart ? `${emailLocalPart}'s Organization` : "My Organization";
-}
+import { createPersonalOrg } from "@/lib/personal-org";
 
 function providerProfileImage(profile: unknown) {
   if (!profile || typeof profile !== "object") return undefined;
@@ -29,6 +23,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      // Someone who signed up with a password can later use "Sign in with
+      // Google" for the same address. Safe because Google verifies emails and
+      // password accounts only exist after their email was confirmed.
+      allowDangerousEmailAccountLinking: true,
     }),
     Facebook({
       clientId: process.env.FACEBOOK_APP_ID,
@@ -106,22 +104,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
     async createUser({ user }) {
       if (!user.id) return;
-
-      const [org] = await db
-        .insert(organizations)
-        .values({ name: personalOrgName(user) })
-        .returning();
-
-      await db.insert(organizationMembers).values({
-        organizationId: org.id,
-        userId: user.id,
-        role: "owner",
-      });
-
-      await db
-        .update(users)
-        .set({ defaultOrgId: org.id })
-        .where(eq(users.id, user.id));
+      await createPersonalOrg({ id: user.id, name: user.name, email: user.email });
     },
   },
 });

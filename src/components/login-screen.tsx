@@ -1,14 +1,17 @@
-import { LoginForm } from "@/components/login-form";
+import { LoginForm, type AuthView } from "@/components/login-form";
 
-/** The auth screen from the Figma file: brand panel plus the sign-in form. */
+/** The auth screen from the Figma file: brand panel plus the form. */
 export function LoginScreen({
-  tab,
+  view,
   callbackUrl,
   error,
+  children,
 }: {
-  tab: "signin" | "signup";
-  callbackUrl: string;
-  error: string | null;
+  view?: AuthView;
+  callbackUrl?: string;
+  error?: string | null;
+  /** Replaces the sign-in form (e.g. the reset-password page). */
+  children?: React.ReactNode;
 }) {
   return (
     <div className="flex h-full min-h-dvh overflow-y-auto bg-background">
@@ -41,8 +44,11 @@ export function LoginScreen({
         </div>
       </aside>
 
-      <main className="flex min-w-0 flex-1 flex-col pb-10 md:justify-center md:gap-10 md:px-12 md:pt-[72px] md:pb-12 xl:px-[152px]">
-        <LoginForm initialTab={tab} callbackUrl={callbackUrl} error={error} />
+      {/* Centred when it fits; top-aligned (and scrollable) when taller. */}
+      <main className="flex min-w-0 flex-1 flex-col pb-10 md:justify-center-safe md:gap-10 md:px-12 md:pt-[72px] md:pb-12 xl:px-[152px]">
+        {children ?? (
+          <LoginForm initialView={view ?? "signin"} callbackUrl={callbackUrl ?? "/"} error={error ?? null} />
+        )}
       </main>
     </div>
   );

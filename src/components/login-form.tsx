@@ -6,9 +6,9 @@ import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { LEGAL } from "@/lib/legal";
 
-type Tab = "signin" | "signup";
+export type AuthView = "signin" | "signup" | "forgot";
 
-const COPY: Record<Tab, { title: string; description: string; phoneTitle: string; phoneDescription: string }> = {
+const COPY: Record<AuthView, { title: string; description: string; phoneTitle: string; phoneDescription: string }> = {
   signin: {
     title: "Welcome back",
     description: "Continue your journeys and conversations with Zip.",
@@ -21,9 +21,16 @@ const COPY: Record<Tab, { title: string; description: string; phoneTitle: string
     phoneTitle: "Create Your Account",
     phoneDescription: "Start Turning Your Journey Into a Forward Motion",
   },
+  forgot: {
+    title: "Forgot your password?",
+    description:
+      "Enter the email address connected to your Zip account. We’ll send you a secure reset link.",
+    phoneTitle: "Forgot Your Password?",
+    phoneDescription: "Enter your email address to recover or change your account password.",
+  },
 };
 
-/** Phones: the pink brand header (mobile Figma 472:3547 / 484:3969). */
+/** Phones: the pink brand header (mobile Figma 472:3547 / 484:3969 / 483:3729). */
 function PhoneHeader({ title, description }: { title: string; description: string }) {
   return (
     <header className="flex flex-col gap-[31px] rounded-b-[50px] bg-accent px-[31px] pt-3 pb-[54px] text-white md:hidden">
@@ -48,52 +55,241 @@ function FacebookIcon() {
   );
 }
 
+const OUTLINE_BUTTON =
+  "flex h-[54px] w-full items-center justify-center gap-2.5 rounded-[10px] border border-field-border bg-background p-2.5 text-base font-medium text-subtle transition-colors hover:bg-foreground/[0.03] disabled:cursor-not-allowed disabled:opacity-50";
+
+const INPUT =
+  "h-[54px] w-full rounded-[10px] border border-field-border bg-background px-[19px] text-base text-foreground placeholder:text-subtle focus:border-accent focus:outline-none";
+
+/** Labelled input as in the Figma "Input / …" components. */
+function Field({
+  label,
+  className = "",
+  ...input
+}: { label: string; className?: string } & React.InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <label className={`flex min-w-0 flex-col gap-[9px] ${className}`}>
+      <span className="text-base text-foreground">{label}</span>
+      <input {...input} className={INPUT} />
+    </label>
+  );
+}
+
+function Divider() {
+  return (
+    <div className="flex items-center gap-4" aria-hidden="true">
+      <span className="h-px flex-1 bg-field-border" />
+      <span className="text-sm text-subtle">or continue with</span>
+      <span className="h-px flex-1 bg-field-border" />
+    </div>
+  );
+}
+
+function Alert({ children }: { children: React.ReactNode }) {
+  return (
+    <p role="alert" className="rounded-[10px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+      {children}
+    </p>
+  );
+}
+
+function Notice({ children }: { children: React.ReactNode }) {
+  return (
+    <p role="status" className="rounded-[10px] border border-field-border bg-surface px-4 py-3 text-sm text-foreground">
+      {children}
+    </p>
+  );
+}
+
+async function post(url: string, body: Record<string, unknown>) {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => null);
+  return res.ok ? null : ((data?.error as string | undefined) ?? "Something went wrong. Please try again.");
+}
+
 /**
- * Sign in / create an account, from the Figma auth screens. Sign-in is only
- * through Google or Facebook, so both tabs lead to the same buttons; the
- * consent box is required on both because either button can create a new
- * account.
+ * Log in, create an account, or reset a password (Figma "Authentication —
+ * Log In / Sign Up / Forgot Password"). Email + password accounts are
+ * created only after the emailed link is clicked; Google and Facebook work
+ * alongside. The consent box guards everything that can create an account.
  */
 export function LoginForm({
-  initialTab,
+  initialView,
   callbackUrl,
-  error,
+  error: initialError,
 }: {
-  initialTab: Tab;
+  initialView: AuthView;
   callbackUrl: string;
   error: string | null;
 }) {
-  const [tab, setTab] = useState<Tab>(initialTab);
+  const [view, setView] = useState<AuthView>(initialView);
   const [agreed, setAgreed] = useState(false);
-  const [pending, setPending] = useState<"google" | "facebook" | null>(null);
-  const copy = COPY[tab];
+  const [pending, setPending] = useState<"google" | "facebook" | "form" | null>(null);
+  const [error, setError] = useState<string | null>(initialError);
+  const [notice, setNotice] = useState<string | null>(null);
 
-  function start(provider: "google" | "facebook") {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const copy = COPY[view];
+
+  function go(next: AuthView) {
+    setView(next);
+    setError(null);
+    setNotice(null);
+    setPassword("");
+    setConfirm("");
+  }
+
+  function social(provider: "google" | "facebook") {
     if (!agreed || pending) return;
     setPending(provider);
     void signIn(provider, { redirectTo: callbackUrl });
   }
 
-  const buttonClass =
-    "flex h-[54px] w-full items-center justify-center gap-2.5 rounded-[10px] border border-field-border bg-background p-2.5 text-base font-medium text-subtle transition-colors hover:bg-foreground/[0.03] disabled:cursor-not-allowed disabled:opacity-50";
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setNotice(null);
+    if (view === "signup" && password !== confirm) {
+      setError("The passwords don't match.");
+      return;
+    }
+    setPending("form");
+    try {
+      if (view === "signin") {
+        const failed = await post("/api/password/login", { email, password });
+        if (failed) return setError(failed);
+        // A full load so the whole app picks up the new session.
+        window.location.assign(callbackUrl);
+        return;
+      }
+      if (view === "signup") {
+        const failed = await post("/api/password/signup", { firstName, lastName, email, password, agreed });
+        if (failed) return setError(failed);
+        setNotice(`We sent a link to ${email.trim()}. Open it to finish creating your account.`);
+        setPassword("");
+        setConfirm("");
+        return;
+      }
+      const failed = await post("/api/password/forgot", { email });
+      if (failed) return setError(failed);
+      setNotice(`If ${email.trim()} has a Zip account, a reset link is on its way. It expires in 1 hour.`);
+    } finally {
+      setPending((p) => (p === "form" ? null : p));
+    }
+  }
+
+  const socialButtons = (
+    <>
+      <Divider />
+      <button type="button" onClick={() => social("google")} disabled={!agreed || pending !== null} className={OUTLINE_BUTTON}>
+        <Image src="/ui/google-g.png" alt="" width={24} height={24} />
+        {pending === "google" ? "Redirecting…" : view === "signup" ? "Sign Up With Google" : "Sign In With Google"}
+      </button>
+      <button type="button" onClick={() => social("facebook")} disabled={!agreed || pending !== null} className={OUTLINE_BUTTON}>
+        <FacebookIcon />
+        {pending === "facebook" ? "Redirecting…" : view === "signup" ? "Sign Up With Facebook" : "Sign In With Facebook"}
+      </button>
+    </>
+  );
+
+  const consent = (
+    <label className="flex items-start gap-3 text-sm text-subtle">
+      <input
+        type="checkbox"
+        checked={agreed}
+        onChange={(e) => setAgreed(e.target.checked)}
+        className="mt-px size-5 shrink-0 rounded border border-field-border accent-[var(--accent-strong)]"
+      />
+      <span>
+        I agree to the{" "}
+        <Link href="/terms" target="_blank" className="font-semibold text-foreground underline">
+          Terms of Use
+        </Link>{" "}
+        and{" "}
+        <Link href="/privacy" target="_blank" className="font-semibold text-foreground underline">
+          Privacy Policy
+        </Link>
+        , including my messages and voice recordings being processed by our AI provider (OpenAI) outside the
+        Philippines. I am 18 or older, or I am 15 to 17 and my parent or guardian has also agreed to them.
+      </span>
+    </label>
+  );
+
+  const help = (
+    <p className="px-[25px] text-center text-xs text-faint md:px-0">
+      Need help? Contact{" "}
+      <a href={`mailto:${LEGAL.contactEmail}`} className="underline">
+        Zip support
+      </a>
+      .{" "}
+      <Link href="/" className="underline">
+        Continue as a guest
+      </Link>
+    </p>
+  );
+
+  if (view === "forgot") {
+    return (
+      <div className="flex w-full flex-col gap-6 md:max-w-[636px] md:gap-10">
+        <PhoneHeader title={copy.phoneTitle} description={copy.phoneDescription} />
+        <div className="mx-[31px] flex flex-col gap-6 rounded-2xl border border-divider bg-background p-5 shadow-[0_8px_24px_rgba(17,24,39,0.06)] md:mx-0 md:p-10">
+          <div className="flex flex-col gap-2">
+            <h2 className="text-lg text-accent md:text-[28px] md:font-bold md:text-foreground">
+              <span className="md:hidden">Forgot Password?</span>
+              <span className="hidden md:inline">{copy.title}</span>
+            </h2>
+            <p className="text-sm text-subtle md:text-base">{copy.description}</p>
+          </div>
+          {error && <Alert>{error}</Alert>}
+          {notice && <Notice>{notice}</Notice>}
+          <form onSubmit={submit} className="flex flex-col gap-4">
+            <Field
+              label="Email address"
+              type="email"
+              autoComplete="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            <button
+              type="submit"
+              disabled={pending !== null}
+              className="h-[54px] w-full rounded-[10px] bg-accent text-base font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50 md:border md:border-field-border md:bg-background md:font-semibold md:text-foreground md:hover:bg-foreground/[0.03]"
+            >
+              {pending === "form" ? "Sending…" : "Send reset link"}
+            </button>
+          </form>
+          <button type="button" onClick={() => go("signin")} className="self-center text-sm font-semibold text-foreground hover:underline">
+            ← Back to login
+          </button>
+        </div>
+        {help}
+      </div>
+    );
+  }
 
   return (
     <div className="flex w-full flex-col gap-6 md:max-w-[636px] md:gap-10">
       <PhoneHeader title={copy.phoneTitle} description={copy.phoneDescription} />
-      <div
-        role="tablist"
-        aria-label="Sign in or create an account"
-        className="relative hidden w-[292px] pb-[5px] md:block"
-      >
+      <div role="tablist" aria-label="Sign in or create an account" className="relative hidden w-[292px] pb-[5px] md:block">
         <div className="flex items-center gap-8 text-xl">
           {(["signin", "signup"] as const).map((t) => (
             <button
               key={t}
               type="button"
               role="tab"
-              aria-selected={tab === t}
-              onClick={() => setTab(t)}
-              className={tab === t ? "font-medium text-foreground" : "text-subtle hover:text-foreground"}
+              aria-selected={view === t}
+              onClick={() => go(t)}
+              className={view === t ? "font-medium text-foreground" : "text-subtle hover:text-foreground"}
             >
               {t === "signin" ? "Sign In" : "Create an Account"}
             </button>
@@ -103,7 +299,7 @@ export function LoginForm({
         <span
           aria-hidden="true"
           className={`absolute bottom-0 h-[5px] rounded-[10px] bg-accent transition-all ${
-            tab === "signin" ? "left-0 w-[21.53%]" : "left-[28.5%] w-[71.5%]"
+            view === "signin" ? "left-0 w-[21.53%]" : "left-[28.5%] w-[71.5%]"
           }`}
         />
       </div>
@@ -114,75 +310,115 @@ export function LoginForm({
           <p className="text-base text-subtle">{copy.description}</p>
         </div>
 
-        {error && (
-          <p role="alert" className="rounded-[10px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {error}
-          </p>
-        )}
+        {error && <Alert>{error}</Alert>}
+        {notice && <Notice>{notice}</Notice>}
 
-        <label className="flex items-start gap-3 text-sm text-subtle">
-          <input
-            type="checkbox"
-            checked={agreed}
-            onChange={(e) => setAgreed(e.target.checked)}
-            className="mt-px size-5 shrink-0 rounded border border-field-border accent-[var(--accent-strong)]"
+        <form onSubmit={submit} className="flex flex-col gap-3">
+          {view === "signup" && (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-x-9">
+              <Field
+                label="First name"
+                autoComplete="given-name"
+                placeholder="Davy"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                maxLength={40}
+                required
+              />
+              <Field
+                label="Last name"
+                autoComplete="family-name"
+                placeholder="Mercado"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                maxLength={40}
+              />
+            </div>
+          )}
+          <Field
+            label="Email address"
+            type="email"
+            autoComplete="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
           />
-          <span>
-            I agree to the{" "}
-            <Link href="/terms" target="_blank" className="font-semibold text-foreground underline">
-              Terms of Use
-            </Link>{" "}
-            and{" "}
-            <Link href="/privacy" target="_blank" className="font-semibold text-foreground underline">
-              Privacy Policy
-            </Link>
-            , including my messages and voice recordings being processed by our
-            AI provider (OpenAI) outside the Philippines. I am 18 or older, or
-            I am 15 to 17 and my parent or guardian has also agreed to them.
-          </span>
-        </label>
+          {view === "signin" ? (
+            <>
+              <Field
+                label="Password"
+                type="password"
+                autoComplete="current-password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+              <button type="button" onClick={() => go("forgot")} className="self-end text-base text-subtle hover:text-foreground">
+                Forgot Password?
+              </button>
+            </>
+          ) : (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-x-9">
+              <Field
+                label="Password"
+                type="password"
+                autoComplete="new-password"
+                placeholder="8+ characters"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                minLength={8}
+                required
+              />
+              <Field
+                label="Confirm password"
+                type="password"
+                autoComplete="new-password"
+                placeholder="Repeat password"
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+                minLength={8}
+                required
+              />
+            </div>
+          )}
 
-        <div className="flex w-full flex-col gap-4">
+          {view === "signup" && <div className="pt-3">{consent}</div>}
+
           <button
-            type="button"
-            onClick={() => start("google")}
-            disabled={!agreed || pending !== null}
-            className={buttonClass}
+            type="submit"
+            disabled={pending !== null || (view === "signup" && !agreed)}
+            className={`${OUTLINE_BUTTON} mt-5 text-foreground`}
           >
-            <Image src="/ui/google-g.png" alt="" width={24} height={24} />
-            {pending === "google"
-              ? "Redirecting…"
-              : tab === "signin"
-                ? "Sign In With Google"
-                : "Sign Up With Google"}
+            {pending === "form"
+              ? view === "signin"
+                ? "Logging in…"
+                : "Creating…"
+              : view === "signin"
+                ? "Log in to Zip"
+                : "Create account"}
           </button>
-          <button
-            type="button"
-            onClick={() => start("facebook")}
-            disabled={!agreed || pending !== null}
-            className={buttonClass}
-          >
-            <FacebookIcon />
-            {pending === "facebook"
-              ? "Redirecting…"
-              : tab === "signin"
-                ? "Sign In With Facebook"
-                : "Sign Up With Facebook"}
-          </button>
+        </form>
+
+        <div className="flex flex-col gap-4">
+          {view === "signin" && consent}
+          {socialButtons}
           {!agreed && (
             <p className="text-center text-xs text-faint">
-              Tick the box above to continue.
+              Tick the box {view === "signin" ? "above" : "above the Create account button"} to use Google or
+              Facebook.
             </p>
           )}
         </div>
 
         <p className="text-center text-sm text-subtle">
-          {tab === "signin" ? (
+          {view === "signin" ? (
             <>
               New to Zip?{" "}
               <button
                 type="button"
-                onClick={() => setTab("signup")}
+                onClick={() => go("signup")}
                 className="font-bold text-accent hover:underline md:font-semibold md:text-foreground"
               >
                 Create an account
@@ -191,11 +427,7 @@ export function LoginForm({
           ) : (
             <>
               Already have an account?{" "}
-              <button
-                type="button"
-                onClick={() => setTab("signin")}
-                className="font-semibold text-accent hover:underline"
-              >
+              <button type="button" onClick={() => go("signin")} className="font-semibold text-accent hover:underline">
                 Log in
               </button>
             </>
@@ -203,16 +435,7 @@ export function LoginForm({
         </p>
       </div>
 
-      <p className="px-[25px] text-center text-xs text-faint md:px-0">
-        Need help? Contact{" "}
-        <a href={`mailto:${LEGAL.contactEmail}`} className="underline">
-          Zip support
-        </a>
-        .{" "}
-        <Link href="/" className="underline">
-          Continue as a guest
-        </Link>
-      </p>
+      {help}
     </div>
   );
 }

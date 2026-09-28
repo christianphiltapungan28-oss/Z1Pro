@@ -32,9 +32,13 @@ export default function PrivacyPage() {
       <h2>2. What we collect</h2>
       <h3>Account information</h3>
       <p>
-        You sign in with Google or Facebook. From that provider we receive your
-        name, email address, profile photo and an account identifier. We never
-        receive your Google or Facebook password.
+        You sign in with Google or Facebook, or with an email address and
+        password. From Google or Facebook we receive your name, email address,
+        profile photo and an account identifier; we never receive your Google
+        or Facebook password. If you create a password with us, we store only
+        a one-way scrambled form of it (a hash) that can&rsquo;t be turned back
+        into the password, and we confirm your email address before the
+        account is created.
       </p>
       <p>
         In Settings you can add a mobile number (confirmed with a code we send

@@ -114,6 +114,18 @@ export const userSettings = pgTable("user_settings", {
     .defaultNow(),
 });
 
+// Email + password sign-in — created by scripts/add-password-auth.sql. Kept
+// out of `users` so the auth adapter's full-row reads never carry the hash.
+export const userPasswords = pgTable("user_passwords", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  passwordHash: text("password_hash").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 export const oauthAccounts = pgTable("oauth_accounts", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id")
