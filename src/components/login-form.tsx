@@ -238,7 +238,8 @@ export function LoginForm({
 
   if (view === "forgot") {
     return (
-      <div className="flex w-full flex-col gap-6 md:max-w-[636px] md:gap-10">
+      // Desktop: the short card is centred within the Sign In form's area.
+      <div className="flex w-full flex-col gap-6 md:mx-auto md:max-w-[636px] md:gap-8 md:pt-[206px]">
         <PhoneHeader title={copy.phoneTitle} description={copy.phoneDescription} />
         <div className="mx-[31px] flex flex-col gap-6 rounded-2xl border border-divider bg-background p-5 shadow-[0_8px_24px_rgba(17,24,39,0.06)] md:mx-0 md:p-10">
           <div className="flex flex-col gap-2">
@@ -278,7 +279,7 @@ export function LoginForm({
   }
 
   return (
-    <div className="flex w-full flex-col gap-6 md:max-w-[636px] md:gap-10">
+    <div className="flex w-full flex-col gap-6 md:mx-auto md:max-w-[636px] md:gap-8">
       <PhoneHeader title={copy.phoneTitle} description={copy.phoneDescription} />
       <div role="tablist" aria-label="Sign in or create an account" className="relative hidden w-[292px] pb-[5px] md:block">
         <div className="flex items-center gap-8 text-xl">
@@ -304,7 +305,7 @@ export function LoginForm({
         />
       </div>
 
-      <div className="flex w-full flex-col gap-6 px-[25px] md:gap-8 md:px-0">
+      <div className="flex w-full flex-col gap-6 px-[25px] md:gap-5 md:px-0">
         <div className="hidden flex-col gap-2 md:flex">
           <h1 className="text-[28px] font-bold text-foreground">{copy.title}</h1>
           <p className="text-base text-subtle">{copy.description}</p>
@@ -389,7 +390,7 @@ export function LoginForm({
           <button
             type="submit"
             disabled={pending !== null || (view === "signup" && !agreed)}
-            className={`${OUTLINE_BUTTON} mt-5 text-foreground`}
+            className={`${OUTLINE_BUTTON} mt-3 text-foreground`}
           >
             {pending === "form"
               ? view === "signin"
@@ -401,7 +402,7 @@ export function LoginForm({
           </button>
         </form>
 
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-3">
           {view === "signin" && consent}
           {socialButtons}
           {!agreed && (

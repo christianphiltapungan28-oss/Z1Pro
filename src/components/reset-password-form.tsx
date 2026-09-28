@@ -42,7 +42,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
   }
 
   return (
-    <div className="flex w-full flex-col gap-6 px-[25px] pt-10 md:max-w-[636px] md:px-0 md:pt-0">
+    <div className="flex w-full flex-col gap-6 px-[25px] pt-10 md:mx-auto md:max-w-[636px] md:px-0 md:pt-[170px]">
       <div className="flex flex-col gap-6 rounded-2xl border border-divider bg-background p-5 shadow-[0_8px_24px_rgba(17,24,39,0.06)] md:p-10">
         <div className="flex flex-col gap-2">
           <h1 className="text-2xl font-bold text-foreground md:text-[28px]">Choose a new password</h1>

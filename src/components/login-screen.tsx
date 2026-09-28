@@ -44,9 +44,10 @@ export function LoginScreen({
         </div>
       </aside>
 
-      {/* Anchored at a fixed height, not centred, so switching between Sign In
-          and Create an Account (different heights) doesn't move the tabs. */}
-      <main className="flex min-w-0 flex-1 flex-col pb-10 md:gap-10 md:px-12 md:pt-[120px] md:pb-12 xl:px-[152px]">
+      {/* The top edge sits where the Sign In form (~820px tall) is centred on
+          screen, and stays there for every view, so switching to the taller
+          Create an Account form doesn't move the tabs — it just extends down. */}
+      <main className="flex min-w-0 flex-1 flex-col pb-10 md:gap-10 md:px-12 md:pt-[max(40px,calc((100dvh-820px)/2))] md:pb-12 xl:px-[152px]">
         {children ?? (
           <LoginForm initialView={view ?? "signin"} callbackUrl={callbackUrl ?? "/"} error={error ?? null} />
         )}
