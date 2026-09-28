@@ -14,6 +14,7 @@ export function proxy(request: NextRequest) {
     font-src 'self';
     media-src 'self' blob:;
     connect-src 'self';
+    worker-src 'self';
     object-src 'none';
     base-uri 'self';
     form-action 'self';

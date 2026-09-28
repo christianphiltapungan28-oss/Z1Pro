@@ -60,7 +60,7 @@ export async function loadProfile(userId: string) {
   const stats = await activity(userId);
   const settings = await optional(
     db
-      .select({ about: userSettings.about })
+      .select({ about: userSettings.about, history: userSettings.useConversationHistory })
       .from(userSettings)
       .where(eq(userSettings.userId, userId))
       .limit(1),
@@ -68,6 +68,8 @@ export async function loadProfile(userId: string) {
   );
   const metrics = await optional(getLifeMetricsRow(userId), null);
   const row = metrics.value;
+  // Settings → Privacy → Conversation History off: chats aren't read again.
+  const historyOff = settings.value[0]?.history === false;
 
   return {
     profile: {
@@ -85,7 +87,8 @@ export async function loadProfile(userId: string) {
       eligible: stats.conversations >= MIN_CONVERSATIONS,
       minConversations: MIN_CONVERSATIONS,
       refreshDays: REFRESH_DAYS,
-      stale: row ? isStale(row.computedAt, stats.lastActivityAt) : false,
+      historyOff,
+      stale: row && !historyOff ? isStale(row.computedAt, stats.lastActivityAt) : false,
       computedAt: row?.computedAt ?? null,
       archetype: row?.archetype ?? null,
       tagline: row?.tagline ?? null,

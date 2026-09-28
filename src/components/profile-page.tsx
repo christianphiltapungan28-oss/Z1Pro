@@ -492,10 +492,17 @@ export function ProfilePage({
               </p>
             </div>
 
-            {message && (
+            {message ? (
               <p role="status" className="-mt-4 text-sm text-flow-muted">
                 {message}
               </p>
+            ) : (
+              metrics.enabled &&
+              metrics.historyOff && (
+                <p className="-mt-4 text-sm text-flow-muted">
+                  Conversation History is off in Settings, so these scores won&apos;t update.
+                </p>
+              )
             )}
 
             {!metrics.ready ? (

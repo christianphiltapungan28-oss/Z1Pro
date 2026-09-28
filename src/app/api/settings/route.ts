@@ -9,8 +9,11 @@ import {
   type NotificationPrefs,
 } from "@/db/schema";
 import { isMissingTable } from "@/lib/db-errors";
+import { emailConfigured } from "@/lib/email";
+import { pushConfigured } from "@/lib/push";
 import { rateLimit } from "@/lib/rate-limit";
 import { LANGUAGES } from "@/lib/settings";
+import { smsConfigured } from "@/lib/sms";
 
 const NOTIFICATION_KEYS: (keyof NotificationPrefs)[] = [
   "email",
@@ -98,6 +101,10 @@ export async function GET() {
       country: row?.country ?? null,
     },
     notifications: { ...DEFAULT_NOTIFICATIONS, ...(row?.notificationPrefs ?? {}) },
+    privacy: { conversationHistory: row?.useConversationHistory ?? true },
+    // Which outside services are set up, so Settings can say what works.
+    channels: { email: emailConfigured(), push: pushConfigured(), sms: smsConfigured() },
+    phoneVerified: !!row?.phoneVerifiedAt,
   });
 }
 
@@ -144,11 +151,13 @@ export async function PATCH(request: Request) {
   // Fields on user_settings.
   const settingsUpdate: Partial<typeof userSettings.$inferInsert> = {};
   if ("phone" in body) {
-    const phone = cleanText(body.phone, LIMITS.phone);
-    if (phone && !/^\+?[0-9 ()-]{5,30}$/.test(phone)) {
-      return NextResponse.json({ error: "Enter a valid phone number" }, { status: 400 });
+    // Numbers are added only with an SMS code (/api/settings/phone); this
+    // just removes one.
+    if (body.phone !== null) {
+      return NextResponse.json({ error: "Verify the number with a code first." }, { status: 400 });
     }
-    settingsUpdate.phone = phone ?? null;
+    settingsUpdate.phone = null;
+    settingsUpdate.phoneVerifiedAt = null;
   }
   if ("timezone" in body) {
     const tz = cleanText(body.timezone, 64);
@@ -166,6 +175,12 @@ export async function PATCH(request: Request) {
       if (typeof body.notifications[key] === "boolean") next[key] = body.notifications[key];
     }
     settingsUpdate.notificationPrefs = next;
+  }
+  if ("conversationHistory" in body) {
+    if (typeof body.conversationHistory !== "boolean") {
+      return NextResponse.json({ error: "Invalid value" }, { status: 400 });
+    }
+    settingsUpdate.useConversationHistory = body.conversationHistory;
   }
 
   if (Object.keys(userUpdate).length > 0) {

@@ -105,6 +105,10 @@ export const userSettings = pgTable("user_settings", {
     .$type<NotificationPrefs>()
     .notNull()
     .default({}),
+  /** Settings → Privacy. Off = Life Metrics stops reading the user's chats. */
+  useConversationHistory: boolean("use_conversation_history").notNull().default(true),
+  /** When the phone number was confirmed with an SMS code. */
+  phoneVerifiedAt: timestamp("phone_verified_at", { withTimezone: true }),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -339,9 +343,31 @@ export const lifeMetrics = pgTable("life_metrics", {
     .defaultNow(),
 });
 
+// Web push — created by scripts/add-account-services.sql.
+
+export const pushSubscriptions = pgTable("push_subscriptions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  endpoint: text("endpoint").notNull().unique(),
+  p256dh: text("p256dh").notNull(),
+  auth: text("auth").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 // In-app notifications — created by scripts/add-notifications.sql.
 
-export type NotificationKind = "step" | "journey" | "metrics" | "file" | "reply" | "weekly";
+export type NotificationKind =
+  | "step"
+  | "journey"
+  | "metrics"
+  | "file"
+  | "reply"
+  | "weekly"
+  | "reminder";
 
 export const notifications = pgTable(
   "notifications",

@@ -37,10 +37,18 @@ export default function PrivacyPage() {
         receive your Google or Facebook password.
       </p>
       <p>
-        In Settings you can add a phone number, a short &ldquo;about&rdquo;
-        line, your timezone and country, and upload your own profile photo,
-        which replaces the one from your sign-in provider. We keep a small
-        resized copy of the photo, not the original file.
+        In Settings you can add a mobile number (confirmed with a code we send
+        by SMS), change the email address we write to (confirmed with a code
+        we email to it), add a short &ldquo;about&rdquo; line, your timezone
+        and country, and upload your own profile photo, which replaces the one
+        from your sign-in provider. We keep a small resized copy of the photo,
+        not the original file.
+      </p>
+      <p>
+        If you turn on push notifications, we store the address your browser
+        gives us for delivering them to that device. Turning push off in
+        Settings removes it; if you instead block notifications in the
+        browser, it is removed the next time we try to send one.
       </p>
       <h3>Content you create</h3>
       <ul>
@@ -169,7 +177,9 @@ export default function PrivacyPage() {
         medical, psychological or any other assessment, are only shown to you,
         and are never used for advertising or shared with anyone else. You can
         turn Life Metrics off at any time from your Profile, which permanently
-        deletes all your scores.
+        deletes all your scores. You can also switch off Conversation History
+        in Settings &rarr; Privacy & Security; your chats are then no longer
+        read for Life Metrics.
       </p>
 
       <h2>4. Who we share it with</h2>
@@ -227,6 +237,31 @@ export default function PrivacyPage() {
               <td>Cloud (outside the Philippines)</td>
             </tr>
             <tr>
+              <td>Resend</td>
+              <td>
+                Sends our emails: verification codes, notifications you turned
+                on, and security notices. Receives your email address and the
+                email&rsquo;s content.
+              </td>
+              <td>United States</td>
+            </tr>
+            <tr>
+              <td>Semaphore</td>
+              <td>
+                Sends SMS verification codes. Receives your mobile number and
+                the code.
+              </td>
+              <td>Philippines</td>
+            </tr>
+            <tr>
+              <td>Your browser&rsquo;s push service (e.g. Google, Apple, Mozilla)</td>
+              <td>
+                Delivers push notifications you turned on. Receives the
+                notification, encrypted so only your device can read it.
+              </td>
+              <td>United States / global</td>
+            </tr>
+            <tr>
               <td>ipwho.is</td>
               <td>
                 Estimates your country from your IP address, when we need it to
@@ -266,6 +301,7 @@ export default function PrivacyPage() {
           account.
         </li>
         <li>Rate-limit counters: minutes to hours.</li>
+        <li>Verification codes: 10 minutes, and stored only as a one-way hash.</li>
         <li>
           Our AI provider may keep API inputs and outputs for a limited period
           (currently up to 30 days) for abuse monitoring before deleting them.

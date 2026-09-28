@@ -5,13 +5,16 @@ import {
   journeys,
   notifications,
   userSettings,
+  users,
   type NotificationKind,
   type LifeMetricCategory,
   type NotificationPrefs,
 } from "@/db/schema";
 import { isMissingTable } from "@/lib/db-errors";
+import { emailLink, sendEmail } from "@/lib/email";
 import { harmonyScore } from "@/lib/life-metrics";
 import { LIFE_AREAS } from "@/lib/life-metrics-areas";
+import { sendPush } from "@/lib/push";
 
 type NewNotification = {
   kind: NotificationKind;
@@ -22,13 +25,55 @@ type NewNotification = {
   dedupeKey?: string;
 };
 
-// Which Settings → Notifications toggle, if any, silences each kind. The
-// email/push toggles are about delivery channels, which Z1P doesn't have yet.
+// Which Settings → Notifications toggle, if any, silences each kind.
 const PREF_FOR_KIND: Partial<Record<NotificationKind, keyof NotificationPrefs>> = {
   step: "journeyMilestones",
   journey: "journeyMilestones",
   weekly: "weeklyReport",
 };
+
+// Off by default (as in Settings): these only go out when switched on.
+const OPT_IN_KINDS: Partial<Record<NotificationKind, keyof NotificationPrefs>> = {
+  reminder: "conversationReminders",
+};
+
+// Kinds also sent by email (when the Email toggle is on). Step and score
+// updates stay in-app and push, so the inbox isn't flooded.
+const EMAIL_KINDS = new Set<NotificationKind>(["journey", "weekly", "reply", "file"]);
+
+/** Where tapping a push notification or email button goes. */
+function linkPath(link: NewNotification["link"]) {
+  if (link?.type === "journey" && link.id) return `/journeys/${link.id}`;
+  if (link?.type === "profile") return "/?view=profile";
+  if (link?.type === "conversation") return "/?view=conversations";
+  return "/?view=notifications";
+}
+
+/** Push (Push toggle) and email (Email toggle), both on by default. */
+async function deliver(userId: string, n: NewNotification, p: NotificationPrefs) {
+  const url = linkPath(n.link);
+  await Promise.all([
+    p.push === false ? null : sendPush(userId, { title: n.title, body: n.body, url }),
+    p.email === false || !EMAIL_KINDS.has(n.kind)
+      ? null
+      : db
+          .select({ email: users.email })
+          .from(users)
+          .where(eq(users.id, userId))
+          .limit(1)
+          .then(([u]) =>
+            u?.email
+              ? sendEmail({
+                  to: u.email,
+                  subject: n.title,
+                  heading: n.title,
+                  body: n.body,
+                  button: { label: "Open Z1P", url: emailLink(url) },
+                })
+              : null
+          ),
+  ]);
+}
 
 async function prefs(userId: string): Promise<NotificationPrefs> {
   try {
@@ -51,9 +96,12 @@ async function prefs(userId: string): Promise<NotificationPrefs> {
  */
 export async function notify(userId: string, n: NewNotification) {
   try {
+    const p = await prefs(userId);
     const pref = PREF_FOR_KIND[n.kind];
     // Toggles default to on (weekly report and milestones), as in Settings.
-    if (pref && (await prefs(userId))[pref] === false) return;
+    if (pref && p[pref] === false) return;
+    const optIn = OPT_IN_KINDS[n.kind];
+    if (optIn && p[optIn] !== true) return;
 
     const values = {
       userId,
@@ -75,6 +123,7 @@ export async function notify(userId: string, n: NewNotification) {
     } else {
       await db.insert(notifications).values(values);
     }
+    await deliver(userId, n, p);
   } catch (err) {
     if (!isMissingTable(err)) console.error("Couldn't record notification", err);
   }
@@ -91,9 +140,11 @@ function isoWeek(date: Date) {
 }
 
 /**
- * There is no scheduler, so the weekly progress report is written the first
- * time the user checks notifications in a new week, for the journey they
- * worked on most recently. At most one per week (dedupe key).
+ * The weekly progress report, for the journey the user worked on most
+ * recently. Written by the weekly job (/api/cron/weekly-report) and, as a
+ * fallback when no scheduler runs, the first time the user checks
+ * notifications in a new week. At most one per week (dedupe key); push and
+ * email go out only when this call is the one that wrote it.
  */
 export async function ensureWeeklyReport(userId: string) {
   const key = `weekly:${isoWeek(new Date())}`;
@@ -103,7 +154,8 @@ export async function ensureWeeklyReport(userId: string) {
     .where(and(eq(notifications.userId, userId), eq(notifications.dedupeKey, key)))
     .limit(1);
   if (existing) return;
-  if ((await prefs(userId)).weeklyReport === false) return;
+  const p = await prefs(userId);
+  if (p.weeklyReport === false) return;
 
   const [journey] = await db
     .select({ id: journeys.id, title: journeys.title, progress: journeys.progress })
@@ -129,18 +181,24 @@ export async function ensureWeeklyReport(userId: string) {
     if (!isMissingTable(err)) throw err;
   }
 
-  await db
+  const title = "Weekly progress report";
+  const body = `Your “${journey.title}” journey is ${journey.progress}% complete.${stepLine} Keep the momentum going!`;
+  const written = await db
     .insert(notifications)
     .values({
       userId,
       kind: "weekly",
-      title: "Weekly progress report",
-      body: `Your “${journey.title}” journey is ${journey.progress}% complete.${stepLine} Keep the momentum going!`,
+      title,
+      body,
       linkType: "journey",
       linkId: journey.id,
       dedupeKey: key,
     })
-    .onConflictDoNothing();
+    .onConflictDoNothing()
+    .returning({ id: notifications.id });
+  if (written.length) {
+    await deliver(userId, { kind: "weekly", title, body, link: { type: "journey", id: journey.id } }, p);
+  }
 }
 
 /** "Life Harmony updated" after new Life Metrics scores. */
@@ -166,4 +224,41 @@ export async function notifyLifeMetrics(userId: string, categories: LifeMetricCa
     link: { type: "profile" },
     dedupeKey: "metrics",
   });
+}
+
+const REMINDER_QUIET_HOURS = 20;
+
+/**
+ * Daily "Conversation Reminders" (Settings, off by default): for everyone
+ * who switched them on and hasn't touched their latest unfinished journey
+ * in the last 20 hours. Called by /api/cron/daily-reminder; at most one per
+ * user per day (dedupe key). Returns how many were sent.
+ */
+export async function sendDailyReminders() {
+  const optedIn = await db
+    .select({ userId: userSettings.userId })
+    .from(userSettings)
+    .where(sql`(${userSettings.notificationPrefs} ->> 'conversationReminders') = 'true'`);
+
+  const today = new Date().toISOString().slice(0, 10);
+  const quietSince = new Date(Date.now() - REMINDER_QUIET_HOURS * 60 * 60_000);
+  let sent = 0;
+  for (const { userId } of optedIn) {
+    const [journey] = await db
+      .select({ id: journeys.id, title: journeys.title, updatedAt: journeys.updatedAt })
+      .from(journeys)
+      .where(and(eq(journeys.userId, userId), isNull(journeys.completedAt)))
+      .orderBy(desc(journeys.updatedAt))
+      .limit(1);
+    if (!journey || journey.updatedAt > quietSince) continue;
+    await notify(userId, {
+      kind: "reminder",
+      title: "Journey reminder from Zip",
+      body: `You have a journey waiting. Tap to continue your “${journey.title}” journey.`,
+      link: { type: "journey", id: journey.id },
+      dedupeKey: `reminder:${today}`,
+    });
+    sent += 1;
+  }
+  return sent;
 }

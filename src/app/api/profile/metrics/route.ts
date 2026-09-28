@@ -44,6 +44,20 @@ export async function POST(request: Request) {
     throw err;
   }
 
+  const before = await loadProfile(userId);
+  if (!before) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+  if (before.metrics.historyOff) {
+    return NextResponse.json(
+      {
+        ...before,
+        error: "Conversation History is off in Settings → Privacy, so Life Metrics can't read your chats.",
+      },
+      { status: 409 }
+    );
+  }
+
   if (action === "enable" && !row) {
     await db.insert(lifeMetrics).values({ userId }).onConflictDoNothing();
   } else if (action === "refresh" && !row) {

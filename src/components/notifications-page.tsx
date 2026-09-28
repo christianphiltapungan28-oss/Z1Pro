@@ -5,7 +5,7 @@ import { AssetIcon } from "@/components/asset-icon";
 
 type Notification = {
   id: string;
-  kind: "step" | "journey" | "metrics" | "file" | "reply" | "weekly";
+  kind: "step" | "journey" | "metrics" | "file" | "reply" | "weekly" | "reminder";
   title: string;
   body: string;
   linkType: "journey" | "conversation" | "profile" | null;
@@ -21,6 +21,7 @@ const ICONS: Record<Notification["kind"], string> = {
   reply: "notifications/message-circle",
   file: "notifications/file",
   weekly: "notifications/chart-column-stacked",
+  reminder: "notifications/bell",
 };
 
 function isSameDay(a: Date, b: Date) {

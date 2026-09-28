@@ -4,6 +4,7 @@ import { signOut, useSession } from "next-auth/react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { AssetIcon } from "@/components/asset-icon";
 import { useDialog } from "@/lib/use-dialog";
+import { currentPushSubscription, disablePush, enablePush } from "@/lib/push-client";
 import { useMediaQuery } from "@/lib/use-media-query";
 import { formatRelativeTime } from "@/lib/relative-time";
 import { LANGUAGES } from "@/lib/settings";
@@ -40,6 +41,9 @@ type SettingsData = {
     country: string | null;
   };
   notifications: Record<NotificationKey, boolean>;
+  privacy: { conversationHistory: boolean };
+  channels: { email: boolean; push: boolean; sms: boolean };
+  phoneVerified: boolean;
 };
 
 // ---------------------------------------------------------------------------
@@ -150,6 +154,8 @@ function AccountTab({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [photoOpen, setPhotoOpen] = useState(false);
+  const [phoneOpen, setPhoneOpen] = useState(false);
+  const [emailOpen, setEmailOpen] = useState(false);
   const timezones = useMemo(() => {
     try {
       return Intl.supportedValuesOf("timeZone");
@@ -291,6 +297,10 @@ function AccountTab({
           onSaved={onSaved}
         />
       )}
+      {phoneOpen && (
+        <PhoneDialog current={p.phone} onClose={() => setPhoneOpen(false)} onSaved={onSaved} />
+      )}
+      {emailOpen && <EmailDialog onClose={() => setEmailOpen(false)} onSaved={onSaved} />}
 
       {!data.settingsReady && (
         <p className="border-b border-divider bg-surface px-8 py-3 text-sm text-label">
@@ -304,7 +314,11 @@ function AccountTab({
           {index === 1 && (
             <div className="flex items-center justify-between gap-4 border-b border-divider min-h-[68px] px-4 py-3 md:min-h-0 md:px-8 md:py-5">
               <RowText label="Email" value={p.email} />
-              <span className="shrink-0 text-[13px] text-tertiary">Managed by {provider}</span>
+              {data.channels.email ? (
+                <ActionLink onClick={() => setEmailOpen(true)}>Edit</ActionLink>
+              ) : (
+                <span className="shrink-0 text-[13px] text-tertiary">Managed by {provider}</span>
+              )}
             </div>
           )}
           <div className="flex items-center justify-between gap-4 border-b border-divider min-h-[68px] px-4 py-3 md:min-h-0 md:px-8 md:py-5">
@@ -340,8 +354,15 @@ function AccountTab({
               </div>
             ) : (
               <ActionLink
-                onClick={() => startEdit(row.field, row.value)}
-                disabled={needsSettingsTable(row.field) || (editing !== null && editing !== row.field)}
+                onClick={() =>
+                  // A new number is confirmed by SMS code, in its own dialog.
+                  row.field === "phone" ? setPhoneOpen(true) : startEdit(row.field, row.value)
+                }
+                disabled={
+                  needsSettingsTable(row.field) ||
+                  (editing !== null && editing !== row.field) ||
+                  (row.field === "phone" && !data.channels.sms)
+                }
               >
                 Edit
               </ActionLink>
@@ -378,6 +399,21 @@ function NotificationsTab({
   onChange: (next: SettingsData["notifications"]) => void;
 }) {
   const [error, setError] = useState<string | null>(null);
+  // Push is per device: on only when allowed here and not switched off.
+  const [deviceSubscribed, setDeviceSubscribed] = useState(false);
+  const [pushBusy, setPushBusy] = useState(false);
+
+  useEffect(() => {
+    let ignore = false;
+    currentPushSubscription()
+      .then((sub) => {
+        if (!ignore) setDeviceSubscribed(!!sub);
+      })
+      .catch(() => {});
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   async function toggle(key: NotificationKey, value: boolean) {
     setError(null);
@@ -395,12 +431,54 @@ function NotificationsTab({
     }
   }
 
+  async function togglePush(value: boolean) {
+    setError(null);
+    setPushBusy(true);
+    try {
+      if (value) {
+        const failed = await enablePush();
+        if (failed) {
+          setError(failed);
+          return;
+        }
+        setDeviceSubscribed(true);
+        if (!data.notifications.push) await toggle("push", true);
+      } else {
+        await disablePush();
+        setDeviceSubscribed(false);
+        await toggle("push", false);
+      }
+    } finally {
+      setPushBusy(false);
+    }
+  }
+
+  const checked = (key: NotificationKey) =>
+    key === "push"
+      ? data.notifications.push && deviceSubscribed
+      : key === "email"
+        ? data.notifications.email && data.channels.email
+        : data.notifications[key];
+  const onToggle = (key: NotificationKey, next: boolean) =>
+    key === "push" ? togglePush(next) : toggle(key, next);
+  const isDisabled = (key: NotificationKey) =>
+    !data.settingsReady ||
+    (key === "push" && (!data.channels.push || pushBusy)) ||
+    (key === "email" && !data.channels.email);
+
+  const notSetUp = [
+    !data.channels.email && "email",
+    !data.channels.push && "push notifications",
+  ].filter(Boolean);
+
   return (
     <div className="flex w-full flex-col gap-3">
-      <p className="text-sm text-tertiary">
-        Your choices are saved now. Z1P doesn&rsquo;t send email or push
-        notifications yet; these will apply as soon as it does.
-      </p>
+      {notSetUp.length > 0 && (
+        <p className="text-sm text-tertiary">
+          Z1P can&rsquo;t send {notSetUp.join(" or ")} yet. You&rsquo;ll still see every
+          update under Notifications in the app.
+        </p>
+      )}
       {error && (
         <p role="alert" className="text-sm text-red-500">
           {error}
@@ -423,9 +501,9 @@ function NotificationsTab({
                     <RowText label={row.label} value={row.description} />
                     <Toggle
                       label={row.label}
-                      checked={data.notifications[row.key]}
-                      disabled={!data.settingsReady}
-                      onChange={(next) => toggle(row.key, next)}
+                      checked={checked(row.key)}
+                      disabled={isDisabled(row.key)}
+                      onChange={(next) => onToggle(row.key, next)}
                     />
                   </div>
                 );
@@ -445,9 +523,9 @@ function NotificationsTab({
             <RowText label={row.label} value={row.description} />
             <Toggle
               label={row.label}
-              checked={data.notifications[row.key]}
-              disabled={!data.settingsReady}
-              onChange={(next) => toggle(row.key, next)}
+              checked={checked(row.key)}
+              disabled={isDisabled(row.key)}
+              onChange={(next) => onToggle(row.key, next)}
             />
           </div>
         ))}
@@ -563,12 +641,29 @@ function DeleteAccountDialog({ email, onClose }: { email: string; onClose: () =>
   );
 }
 
-function PrivacyTab({ data }: { data: SettingsData }) {
+function PrivacyTab({
+  data,
+  onPrivacyChange,
+}: {
+  data: SettingsData;
+  onPrivacyChange: (next: SettingsData["privacy"]) => void;
+}) {
   const [sessions, setSessions] = useState<SessionRow[] | null>(null);
   const [showSessions, setShowSessions] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  async function toggleHistory(next: boolean) {
+    const previous = data.privacy;
+    onPrivacyChange({ ...previous, conversationHistory: next });
+    setMessage(null);
+    const failed = await patchSettings({ conversationHistory: next });
+    if (failed) {
+      onPrivacyChange(previous);
+      setMessage(failed);
+    }
+  }
 
   async function loadSessions() {
     const res = await fetch("/api/settings/sessions");
@@ -698,6 +793,22 @@ function PrivacyTab({ data }: { data: SettingsData }) {
           )}
         </div>
 
+      </Card>
+
+      <SectionTitle>Privacy</SectionTitle>
+      <Card className="md:-mt-3 md:rounded-none md:border-t-0">
+        <div className="flex items-center justify-between gap-4 min-h-[68px] px-4 py-3 md:min-h-0 md:border-b md:border-divider md:px-8 md:py-5">
+          <RowText
+            label="Conversation History"
+            value="Let Life Metrics use your past conversations for personalized insights"
+          />
+          <Toggle
+            label="Conversation History"
+            checked={data.privacy.conversationHistory}
+            disabled={!data.settingsReady}
+            onChange={toggleHistory}
+          />
+        </div>
       </Card>
 
       <SectionTitle>Your data</SectionTitle>
@@ -1028,11 +1139,13 @@ function SheetDialog({
 
 function DialogButtons({
   label,
+  busyLabel = "Saving…",
   busy,
   disabled,
   onCancel,
 }: {
   label: string;
+  busyLabel?: string;
   busy?: boolean;
   disabled?: boolean;
   onCancel?: () => void;
@@ -1044,7 +1157,7 @@ function DialogButtons({
         disabled={disabled || busy}
         className="h-[46px] w-full rounded-[10px] bg-accent text-base font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
       >
-        {busy ? "Saving…" : label}
+        {busy ? busyLabel : label}
       </button>
       {onCancel && (
         <button
@@ -1191,10 +1304,176 @@ function EditFieldDialog({
   );
 }
 
+/** Six single-digit boxes for a one-time code (mobile Figma "Code digits"). */
+function CodeInput({ value, onChange }: { value: string; onChange: (next: string) => void }) {
+  const refs = useRef<(HTMLInputElement | null)[]>([]);
+  const digits = Array.from({ length: 6 }, (_, i) => value[i] ?? "");
+
+  function set(index: number, text: string) {
+    const clean = text.replace(/\D/g, "");
+    if (!clean) {
+      onChange(value.slice(0, index) + value.slice(index + 1));
+      return;
+    }
+    // Typing or pasting fills from this box onwards.
+    const next = (value.slice(0, index) + clean).slice(0, 6);
+    onChange(next);
+    refs.current[Math.min(next.length, 5)]?.focus();
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <span className="text-sm font-medium text-foreground">Verification code</span>
+      <div className="flex gap-1.5">
+        {digits.map((d, i) => (
+          <input
+            key={i}
+            ref={(el) => {
+              refs.current[i] = el;
+            }}
+            value={d}
+            onChange={(e) => set(i, e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Backspace" && !d && i > 0) refs.current[i - 1]?.focus();
+            }}
+            onFocus={(e) => e.target.select()}
+            inputMode="numeric"
+            autoComplete={i === 0 ? "one-time-code" : "off"}
+            maxLength={6}
+            aria-label={`Digit ${i + 1} of 6`}
+            autoFocus={i === 0}
+            className="h-12 min-w-0 flex-1 rounded-[10px] border border-accent bg-foreground/[0.02] text-center text-lg font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30"
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** POST to a two-step code route; returns the JSON body or an error message. */
+async function codeStep(url: string, body: Record<string, unknown>) {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => null);
+  return res.ok
+    ? { ok: true as const, data }
+    : { ok: false as const, error: (data?.error as string | undefined) ?? "Something went wrong. Please try again." };
+}
+
 /**
- * Phone number (mobile Figma 653:11168). Only the Philippines is offered, as
- * in the design. There is no SMS provider yet, so the number is saved
- * without a verification code.
+ * Update email (mobile Figma 673:2924): enter the new address, then the
+ * 6-digit code emailed to it.
+ */
+function EmailDialog({ onClose, onSaved }: { onClose: () => void; onSaved: () => Promise<void> }) {
+  const { update: updateSession } = useSession();
+  const [step, setStep] = useState<"email" | "code">("email");
+  const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  async function send() {
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+    const r = await codeStep("/api/settings/email", { step: "send", email });
+    setBusy(false);
+    if (!r.ok) return setError(r.error);
+    if (step === "code") setNotice("We sent a new code.");
+    setStep("code");
+  }
+
+  async function verify() {
+    setBusy(true);
+    setError(null);
+    const r = await codeStep("/api/settings/email", { step: "verify", code });
+    if (!r.ok) {
+      setBusy(false);
+      return setError(r.error);
+    }
+    await updateSession();
+    await onSaved();
+    onClose();
+  }
+
+  return (
+    <SheetDialog
+      title={step === "email" ? "Update email" : "Verify your email"}
+      description={
+        step === "email"
+          ? "We’ll send a one-time code to verify your new email address."
+          : "We sent a 6-digit code to your new email. Enter it below to continue."
+      }
+      onClose={onClose}
+    >
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          void (step === "email" ? send() : verify());
+        }}
+        className="flex flex-col gap-5"
+      >
+        {step === "email" ? (
+          <label className="flex flex-col gap-[9px]">
+            <span className="text-base text-foreground">New email</span>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              autoComplete="email"
+              aria-label="New email"
+              className={FIELD_INPUT}
+              autoFocus
+            />
+          </label>
+        ) : (
+          <CodeInput value={code} onChange={setCode} />
+        )}
+        {notice && <p className="-mt-2 text-sm text-secondary">{notice}</p>}
+        {error && (
+          <p role="alert" className="-mt-2 text-sm text-red-500">
+            {error}
+          </p>
+        )}
+        <div className="flex flex-col gap-2">
+          <DialogButtons
+            label={step === "email" ? "Send code" : "Verify & update"}
+            busyLabel={step === "email" ? "Sending…" : "Verifying…"}
+            busy={busy}
+            disabled={step === "email" ? !email.includes("@") : code.length !== 6}
+          />
+          {step === "code" && (
+            <button
+              type="button"
+              onClick={send}
+              disabled={busy}
+              className="h-[46px] w-full rounded-[10px] border border-divider text-base font-medium text-foreground hover:bg-foreground/5 disabled:opacity-50"
+            >
+              Resend code
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onClose}
+            className="h-[46px] w-full rounded-[10px] border border-divider text-base font-medium text-foreground hover:bg-foreground/5"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+    </SheetDialog>
+  );
+}
+
+/**
+ * Mobile number (mobile Figma 653:11247): enter the number (only the
+ * Philippines is offered, as in the design), then the 6-digit code texted
+ * to it.
  */
 function PhoneDialog({
   current,
@@ -1205,15 +1484,41 @@ function PhoneDialog({
   onClose: () => void;
   onSaved: () => Promise<void>;
 }) {
+  const [step, setStep] = useState<"number" | "code">("number");
   const [digits, setDigits] = useState("");
+  const [code, setCode] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const valid = /^9\d{9}$/.test(digits);
 
-  async function save(value: string | null) {
+  async function send() {
     setSaving(true);
     setError(null);
-    const failed = await patchSettings({ phone: value });
+    setNotice(null);
+    const r = await codeStep("/api/settings/phone", { step: "send", digits });
+    setSaving(false);
+    if (!r.ok) return setError(r.error);
+    if (step === "code") setNotice("We sent a new code.");
+    setStep("code");
+  }
+
+  async function verify() {
+    setSaving(true);
+    setError(null);
+    const r = await codeStep("/api/settings/phone", { step: "verify", code });
+    if (!r.ok) {
+      setSaving(false);
+      return setError(r.error);
+    }
+    await onSaved();
+    onClose();
+  }
+
+  async function remove() {
+    setSaving(true);
+    setError(null);
+    const failed = await patchSettings({ phone: null });
     if (failed) {
       setError(failed);
       setSaving(false);
@@ -1221,6 +1526,46 @@ function PhoneDialog({
     }
     await onSaved();
     onClose();
+  }
+
+  if (step === "code") {
+    return (
+      <SheetDialog title="Verify Your Phone Number" description={`We texted a 6-digit code to +63 ${digits}.`} onClose={onClose}>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            void verify();
+          }}
+          className="flex flex-col gap-5"
+        >
+          <CodeInput value={code} onChange={setCode} />
+          {notice && <p className="-mt-2 text-sm text-secondary">{notice}</p>}
+          {error && (
+            <p role="alert" className="-mt-2 text-sm text-red-500">
+              {error}
+            </p>
+          )}
+          <div className="flex flex-col gap-2">
+            <DialogButtons label="Verify & update" busyLabel="Verifying…" busy={saving} disabled={code.length !== 6} />
+            <button
+              type="button"
+              onClick={send}
+              disabled={saving}
+              className="h-[46px] w-full rounded-[10px] border border-divider text-base font-medium text-foreground hover:bg-foreground/5 disabled:opacity-50"
+            >
+              Resend code
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="h-[46px] w-full rounded-[10px] border border-divider text-base font-medium text-foreground hover:bg-foreground/5"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </SheetDialog>
+    );
   }
 
   return (
@@ -1231,9 +1576,10 @@ function PhoneDialog({
           <>
             <span className="block">Current mobile number</span>
             <span className="block text-[15px] font-medium text-foreground">{current}</span>
+            <span className="mt-2 block">Your new mobile number must be verified before it replaces the current one.</span>
           </>
         ) : (
-          "Add a Philippine mobile number to your profile."
+          "We’ll send a one-time code to verify your mobile number."
         )
       }
       onClose={onClose}
@@ -1241,7 +1587,7 @@ function PhoneDialog({
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          if (valid) void save(`+63 ${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`);
+          if (valid) void send();
         }}
         className="flex flex-col gap-5"
       >
@@ -1275,11 +1621,11 @@ function PhoneDialog({
             {error}
           </p>
         )}
-        <DialogButtons label="Save number" busy={saving} disabled={!valid} onCancel={onClose} />
+        <DialogButtons label="Send code" busyLabel="Sending…" busy={saving} disabled={!valid} onCancel={onClose} />
         {current && (
           <button
             type="button"
-            onClick={() => save(null)}
+            onClick={remove}
             disabled={saving}
             className="-mt-2 self-center text-sm font-medium text-red-600 disabled:opacity-50"
           >
@@ -1503,6 +1849,7 @@ function MobileSettings({
   loadError,
   reload,
   onNotificationsChange,
+  onPrivacyChange,
   appearance,
   onOpenAppearance,
   onBack,
@@ -1511,12 +1858,13 @@ function MobileSettings({
   loadError: boolean;
   reload: () => Promise<void>;
   onNotificationsChange: (next: SettingsData["notifications"]) => void;
+  onPrivacyChange: (next: SettingsData["privacy"]) => void;
   appearance: Appearance;
   onOpenAppearance: () => void;
   onBack: () => void;
 }) {
   const [screen, setScreen] = useState<MobileScreen>("main");
-  const [dialog, setDialog] = useState<EditableField | "photo" | null>(null);
+  const [dialog, setDialog] = useState<EditableField | "photo" | "email" | null>(null);
 
   const p = data?.profile;
   const provider = data?.providers.includes("google")
@@ -1581,8 +1929,18 @@ function MobileSettings({
               <SectionTitle>Profile details</SectionTitle>
               <Card className="overflow-hidden">
                 <MobileRow label="Name" detail={p.name ?? "N/A"} action="Edit" onClick={() => setDialog("name")} />
-                <MobileRow label="Email" detail={p.email} action={<span className="text-xs text-tertiary">Managed by {provider}</span>} />
-                <MobileRow label="Phone" detail={p.phone ?? "N/A"} action="Edit" onClick={() => setDialog("phone")} disabled={locked} />
+                {data.channels.email ? (
+                  <MobileRow label="Email" detail={p.email} action="Edit" onClick={() => setDialog("email")} />
+                ) : (
+                  <MobileRow label="Email" detail={p.email} action={<span className="text-xs text-tertiary">Managed by {provider}</span>} />
+                )}
+                <MobileRow
+                  label="Phone"
+                  detail={p.phone ?? "N/A"}
+                  action="Edit"
+                  onClick={() => setDialog("phone")}
+                  disabled={locked || !data.channels.sms}
+                />
                 <MobileRow label="About" detail={p.about ?? "N/A"} action="Edit" onClick={() => setDialog("about")} disabled={locked} last />
               </Card>
             </div>
@@ -1628,7 +1986,7 @@ function MobileSettings({
         )}
         {data && screen === "privacy" && (
           <>
-            <PrivacyTab data={data} />
+            <PrivacyTab data={data} onPrivacyChange={onPrivacyChange} />
             <div className="flex flex-col gap-2">
               <SectionTitle>Policies</SectionTitle>
               <Card className="overflow-hidden">
@@ -1662,7 +2020,8 @@ function MobileSettings({
       {data && p && dialog === "phone" && (
         <PhoneDialog current={p.phone} onClose={() => setDialog(null)} onSaved={reload} />
       )}
-      {data && p && dialog && dialog !== "photo" && dialog !== "phone" && (
+      {data && p && dialog === "email" && <EmailDialog onClose={() => setDialog(null)} onSaved={reload} />}
+      {data && p && dialog && dialog !== "photo" && dialog !== "phone" && dialog !== "email" && (
         <EditFieldDialog
           field={dialog}
           initial={dialog === "name" ? p.name : dialog === "locale" ? p.locale : p[dialog]}
@@ -1723,6 +2082,7 @@ export function SettingsPage({
         loadError={loadError}
         reload={load}
         onNotificationsChange={(notifications) => data && setData({ ...data, notifications })}
+        onPrivacyChange={(privacy) => data && setData({ ...data, privacy })}
         appearance={appearance}
         onOpenAppearance={onOpenAppearance}
         onBack={onBack}
@@ -1781,7 +2141,9 @@ export function SettingsPage({
               onChange={(notifications) => setData({ ...data, notifications })}
             />
           )}
-          {data && tab === "privacy" && <PrivacyTab data={data} />}
+          {data && tab === "privacy" && (
+            <PrivacyTab data={data} onPrivacyChange={(privacy) => setData({ ...data, privacy })} />
+          )}
           {tab === "subscription" && <SubscriptionTab />}
         </div>
       </div>
