@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { AssetIcon } from "@/components/asset-icon";
 import { DesignOrb } from "@/components/design-orb";
 import { MicIcon } from "@/components/icons";
 import { Orb } from "@/components/orb";
 import type { Appearance } from "@/lib/use-appearance";
+import { useElementSize } from "@/lib/use-element-size";
 import { useMediaQuery } from "@/lib/use-media-query";
 import { ORB_TRANSITION } from "@/lib/view-transition";
 import {
@@ -60,10 +62,13 @@ export function VoiceMode({
   appearance,
   conversationId,
   onConversationCreated,
+  onExit,
 }: {
   appearance: Appearance;
   conversationId: string | null;
   onConversationCreated: (id: string) => void;
+  /** Phones: the back button in voice mode's own header. */
+  onExit?: () => void;
 }) {
   // Voice mode only renders after a tap in the browser, never on the server.
   const [handsFree] = useState(() => speechRecognitionCtor() !== null);
@@ -77,6 +82,8 @@ export function VoiceMode({
   const [playBlocked, setPlayBlocked] = useState<HTMLAudioElement | null>(null);
   // Phones get the smaller orb from the mobile design, as on Home.
   const phone = useMediaQuery("(max-width: 767px)");
+  const stageRef = useRef<HTMLDivElement>(null);
+  const stage = useElementSize(stageRef);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const stopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -474,19 +481,41 @@ export function VoiceMode({
               ? "Speaking…"
               : "Tap to speak";
 
+  // Phones size the orb to the screen's height, leaving room for the headline
+  // and status below it (short phones get a smaller orb, tall ones a bigger).
+  const orbWidth = phone ? Math.round(Math.max(120, Math.min(230, ((stage?.height ?? 600) - 230) / 1.17))) : 241;
+
   return (
-    <div className="flex h-full flex-col items-center justify-center px-4 py-8 sm:px-8">
+    <div className="flex h-full flex-col">
+      <header className="flex h-14 shrink-0 items-center gap-2 px-3 md:hidden">
+        {onExit && (
+          <button
+            type="button"
+            onClick={onExit}
+            aria-label="Back to Home"
+            className="flex size-10 items-center justify-center rounded-full bg-foreground/5"
+          >
+            <AssetIcon name="journey/arrow-left" width={18} height={18} />
+          </button>
+        )}
+        <p className="text-base font-bold text-foreground">Voice</p>
+      </header>
+
+    <div
+      ref={stageRef}
+      className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto px-4 py-4 sm:px-8 md:py-8"
+    >
       {/* Shares Home's orb transition name, so the orb glides in from Home. */}
       <span style={{ viewTransitionName: ORB_TRANSITION }}>
         {appearance === "light" ? (
-          <DesignOrb width={phone ? 173 : 241} active={orbActive} getLevel={orbLevel} />
+          <DesignOrb width={orbWidth} active={orbActive} getLevel={orbLevel} />
         ) : (
-          <Orb size={168} appearance={appearance} active={orbActive} getLevel={orbLevel} />
+          <Orb size={Math.round(orbWidth * 0.75)} appearance={appearance} active={orbActive} getLevel={orbLevel} />
         )}
       </span>
 
-      <div className="mt-8 max-w-md text-center">
-        <h1 className="font-display text-2xl font-medium text-foreground sm:text-3xl">
+      <div className="mt-[clamp(12px,3vh,32px)] max-w-md text-center">
+        <h1 className="font-display text-[clamp(20px,6vw,24px)] leading-tight font-medium text-foreground sm:text-3xl">
           {HEADLINE[appearance]}
         </h1>
       </div>
@@ -529,7 +558,7 @@ export function VoiceMode({
               prepareAudioContext();
               startListening();
             }}
-            className="mt-10 flex items-center gap-2 rounded-full bg-accent px-5 py-3 text-sm font-bold text-white shadow-md"
+            className="mt-6 flex items-center gap-2 rounded-full bg-accent px-5 py-3 text-sm font-bold text-white shadow-md md:mt-10"
           >
             <MicIcon className="h-5 w-5" />
             Turn on microphone
@@ -542,7 +571,7 @@ export function VoiceMode({
           disabled={busy}
           aria-pressed={phase === "recording"}
           aria-label={phase === "recording" ? "Stop recording" : "Start speaking"}
-          className={`mt-10 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-md transition-transform disabled:opacity-60 ${
+          className={`mt-6 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-md transition-transform disabled:opacity-60 md:mt-10 ${
             phase === "recording"
               ? "scale-105 animate-pulse bg-accent"
               : "bg-accent/70"
@@ -552,9 +581,13 @@ export function VoiceMode({
         </button>
       )}
 
-      <p aria-live="polite" className={`${handsFree && !micBlocked ? "mt-10" : "mt-3"} text-xs text-muted`}>
+      <p
+        aria-live="polite"
+        className={`${handsFree && !micBlocked ? "mt-5 md:mt-10" : "mt-3"} text-xs text-muted`}
+      >
         {statusText}
       </p>
+    </div>
     </div>
   );
 }

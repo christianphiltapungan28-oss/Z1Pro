@@ -37,9 +37,14 @@ function JourneysEmptyState({
   return (
     <div className="flex h-full flex-col overflow-y-auto">
       <MobileSearchHeader onOpenNotifications={onOpenNotifications} onRequireAuth={onRequireAuth} />
-    <div className="flex flex-1 flex-col items-center justify-center px-4 pt-[134px] pb-8 md:py-8">
+    {/* Phones: the illustration and top space shrink with the screen, so
+        the message and button stay in view on small phones. */}
+    <div className="flex flex-1 flex-col items-center justify-center px-4 pt-[clamp(16px,9vh,134px)] pb-6 md:py-8">
       <div className="flex w-full max-w-[309px] flex-col items-center">
-        <div aria-hidden="true" className="relative h-[299px] w-[309px] shrink-0 overflow-hidden">
+        <div
+          aria-hidden="true"
+          className="relative aspect-[309/299] w-[min(309px,72vw,40vh)] shrink-0 overflow-hidden md:w-[309px]"
+        >
           {EMPTY_ILLUSTRATION_LAYERS.map(([file, inset]) => (
             <div key={file} className="absolute" style={{ inset }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}

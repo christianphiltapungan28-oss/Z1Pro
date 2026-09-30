@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useState, useSyncExternalStore } from "react";
+import { useRef, useState, useSyncExternalStore } from "react";
 import { DesignOrb } from "@/components/design-orb";
 import {
   AttachButton,
@@ -13,10 +13,22 @@ import { SendIcon } from "@/components/icons";
 import { MobileSearchHeader } from "@/components/mobile-search-header";
 import { Orb } from "@/components/orb";
 import type { Appearance } from "@/lib/use-appearance";
+import { useElementSize } from "@/lib/use-element-size";
 import { useMediaQuery } from "@/lib/use-media-query";
 import { ORB_TRANSITION } from "@/lib/view-transition";
 
 const noSubscription = () => () => {};
+
+// The orb is 1.17× as tall as it is wide (its glow reaches further down), and
+// "Speak with Z1p" plus the gap above it take about 84px.
+const ORB_ASPECT = 1.17;
+const ORB_LABEL_SPACE = 84;
+
+function phoneOrbWidth(area: { width: number; height: number } | null) {
+  if (!area) return 173;
+  const byHeight = (area.height - ORB_LABEL_SPACE) / ORB_ASPECT;
+  return Math.round(Math.max(110, Math.min(250, byHeight, area.width * 0.64)));
+}
 
 function greetingForHour(hour: number) {
   if (hour < 5) return "Good Night";
@@ -46,7 +58,7 @@ export function ChatHome({
   appearance?: Appearance;
 }) {
   const { data: session } = useSession();
-  const firstName = (session?.user?.name ?? "there").split(/\s+/)[0];
+  const firstName = session?.user?.name?.split(/\s+/)[0] ?? null;
   // The hour comes from the visitor's clock. The server renders in UTC, so it
   // gets no hour (a neutral "Hello") rather than a greeting that may not
   // match the browser's and trip React's hydration check.
@@ -55,8 +67,13 @@ export function ChatHome({
     () => new Date().getHours(),
     () => null
   );
-  // Phones get the smaller orb from the mobile design.
   const phone = useMediaQuery("(max-width: 767px)");
+  // Phones size the orb to the room left between the greeting and the chat
+  // box, so it fits from small to tall screens without pushing "Speak with
+  // Z1p" out of view.
+  const orbArea = useRef<HTMLDivElement>(null);
+  const area = useElementSize(orbArea);
+  const orbWidth = phone ? phoneOrbWidth(area) : 241;
 
   const [message, setMessage] = useState("");
   const [starting, setStarting] = useState(false);
@@ -104,41 +121,51 @@ export function ChatHome({
       <MobileSearchHeader onOpenNotifications={onOpenNotifications} onRequireAuth={onRequireAuth} />
 
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="flex h-full flex-col px-6 pt-9 pb-6 md:pl-[47px] md:pr-8 md:pt-[53px]">
-          <div className="flex max-w-[712px] flex-col gap-[7px] md:gap-6">
-            <p className="text-base font-medium text-secondary md:text-lg md:font-normal md:text-foreground">
+        {/* Phone type and spacing scale with the screen (clamp), so the
+            greeting stays on two lines from 320px phones up. */}
+        <div className="flex h-full flex-col px-[clamp(16px,6vw,24px)] pt-[clamp(12px,3.5vh,36px)] pb-4 md:pl-[47px] md:pr-8 md:pt-[53px] md:pb-6">
+          <div className="flex max-w-[712px] shrink-0 flex-col gap-[5px] md:gap-6">
+            <p className="text-[clamp(14px,4vw,16px)] font-medium text-secondary md:text-lg md:font-normal md:text-foreground">
               Your Workspace
             </p>
-            <div className="flex flex-col gap-[7px] md:block">
-              <h1 className="font-display text-[34px] leading-[1.05] font-bold text-foreground md:text-5xl md:leading-normal">
-                {hour === null ? "Hello" : greetingForHour(hour)},{" "}
-                <span className="text-accent-strong">{firstName}</span>
+            <div className="flex flex-col gap-[5px] md:block">
+              <h1 className="font-display text-[clamp(26px,8.2vw,34px)] leading-[1.08] font-bold text-foreground md:text-5xl md:leading-normal">
+                {firstName ? (
+                  <>
+                    {hour === null ? "Hello" : greetingForHour(hour)},{" "}
+                    <span className="text-accent-strong">{firstName}</span>
+                  </>
+                ) : (
+                  <>
+                    Welcome to <span className="text-accent-strong">Z1P</span>
+                  </>
+                )}
               </h1>
-              <p className="text-xl text-foreground md:text-2xl">
+              <p className="text-[clamp(16px,5vw,20px)] text-foreground md:text-2xl">
                 What would you like to do?
               </p>
             </div>
           </div>
 
-          <div className="flex flex-1 flex-col items-center justify-center">
+          <div ref={orbArea} className="flex min-h-0 flex-1 flex-col items-center justify-center">
             <button
               type="button"
               onClick={onStartVoice}
-              className="flex w-[248px] flex-col items-center gap-[22px]"
+              className="flex w-full max-w-[248px] flex-col items-center gap-[clamp(10px,2vh,22px)]"
             >
               {/* Named so it glides into voice mode's orb (see app-shell). */}
               <span style={{ viewTransitionName: ORB_TRANSITION }}>
                 {appearance === "light" ? (
-                  <DesignOrb width={phone ? 173 : 241} />
+                  <DesignOrb width={orbWidth} />
                 ) : (
-                  <Orb size={140} appearance={appearance} />
+                  <Orb size={Math.round(orbWidth * 0.8)} appearance={appearance} />
                 )}
               </span>
               <span className="w-full text-center text-foreground">
-                <span className="-mb-px block text-2xl font-medium">
+                <span className="-mb-px block text-[clamp(20px,6vw,24px)] font-medium md:text-2xl">
                   Speak with Z1p
                 </span>
-                <span className="block whitespace-nowrap text-base md:text-lg">
+                <span className="block whitespace-nowrap text-[clamp(14px,4vw,16px)] md:text-lg">
                   Ask anything or describe a task
                 </span>
               </span>
@@ -165,9 +192,9 @@ export function ChatHome({
       <form
         onSubmit={handleSubmit}
         // Phones: the tab bar below already clears the home indicator.
-        className="mx-auto flex w-full max-w-xl items-center gap-3 px-4 pb-8 sm:px-8 md:pb-[max(2rem,calc(env(safe-area-inset-bottom)+1rem))]"
+        className="mx-auto flex w-full max-w-xl shrink-0 items-center gap-2.5 px-[clamp(12px,4vw,16px)] pb-1.5 sm:px-8 md:gap-3 md:pb-[max(2rem,calc(env(safe-area-inset-bottom)+1rem))]"
       >
-        <div className="flex flex-1 items-center gap-2 rounded-full border border-input-border bg-input py-1.5 pr-4 pl-1.5 focus-within:border-foreground/30">
+        <div className="flex min-w-0 flex-1 items-center gap-1.5 rounded-full border border-input-border bg-input py-1 pr-4 pl-1 focus-within:border-foreground/30 md:gap-2 md:py-1.5 md:pl-1.5">
           <AttachButton
             onPick={(picked) => (authenticated ? attachments.add(picked) : onRequireAuth())}
             disabled={starting}
@@ -186,12 +213,12 @@ export function ChatHome({
           type="submit"
           disabled={!canSend}
           aria-label="Send"
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-accent text-white shadow-sm transition-opacity hover:opacity-90 disabled:opacity-50"
+          className="flex size-11 shrink-0 items-center justify-center rounded-full bg-accent text-white shadow-sm transition-opacity hover:opacity-90 disabled:opacity-50 md:size-12"
         >
           <SendIcon className="h-5 w-5" />
         </button>
       </form>
-      <p className="-mt-5 mb-3 px-4 text-center text-[11px] text-muted sm:-mt-6">
+      <p className="mb-2 shrink-0 px-4 text-center text-[11px] text-muted md:-mt-6 md:mb-3">
         Z1P can make mistakes. Check important information.
       </p>
     </div>
