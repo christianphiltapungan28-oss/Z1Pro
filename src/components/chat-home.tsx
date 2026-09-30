@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { DesignOrb } from "@/components/design-orb";
 import {
   AttachButton,
@@ -15,6 +15,8 @@ import { Orb } from "@/components/orb";
 import type { Appearance } from "@/lib/use-appearance";
 import { useMediaQuery } from "@/lib/use-media-query";
 import { ORB_TRANSITION } from "@/lib/view-transition";
+
+const noSubscription = () => () => {};
 
 function greetingForHour(hour: number) {
   if (hour < 5) return "Good Night";
@@ -45,6 +47,14 @@ export function ChatHome({
 }) {
   const { data: session } = useSession();
   const firstName = (session?.user?.name ?? "there").split(/\s+/)[0];
+  // The hour comes from the visitor's clock. The server renders in UTC, so it
+  // gets no hour (a neutral "Hello") rather than a greeting that may not
+  // match the browser's and trip React's hydration check.
+  const hour = useSyncExternalStore(
+    noSubscription,
+    () => new Date().getHours(),
+    () => null
+  );
   // Phones get the smaller orb from the mobile design.
   const phone = useMediaQuery("(max-width: 767px)");
 
@@ -101,7 +111,7 @@ export function ChatHome({
             </p>
             <div className="flex flex-col gap-[7px] md:block">
               <h1 className="font-display text-[34px] leading-[1.05] font-bold text-foreground md:text-5xl md:leading-normal">
-                {greetingForHour(new Date().getHours())},{" "}
+                {hour === null ? "Hello" : greetingForHour(hour)},{" "}
                 <span className="text-accent-strong">{firstName}</span>
               </h1>
               <p className="text-xl text-foreground md:text-2xl">
