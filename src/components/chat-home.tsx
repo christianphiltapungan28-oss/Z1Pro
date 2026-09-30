@@ -24,10 +24,14 @@ const noSubscription = () => () => {};
 const ORB_ASPECT = 1.17;
 const ORB_LABEL_SPACE = 84;
 
+// The mobile design's orb (Figma 493:6874); it only shrinks on phones too
+// short to fit it.
+const PHONE_ORB = 173;
+
 function phoneOrbWidth(area: { width: number; height: number } | null) {
-  if (!area) return 173;
+  if (!area) return PHONE_ORB;
   const byHeight = (area.height - ORB_LABEL_SPACE) / ORB_ASPECT;
-  return Math.round(Math.max(110, Math.min(250, byHeight, area.width * 0.64)));
+  return Math.round(Math.max(110, Math.min(PHONE_ORB, byHeight, area.width * 0.64)));
 }
 
 function greetingForHour(hour: number) {
@@ -123,13 +127,13 @@ export function ChatHome({
       <div className="min-h-0 flex-1 overflow-y-auto">
         {/* Phone type and spacing scale with the screen (clamp), so the
             greeting stays on two lines from 320px phones up. */}
-        <div className="flex h-full flex-col px-[clamp(16px,6vw,24px)] pt-[clamp(12px,3.5vh,36px)] pb-4 md:pl-[47px] md:pr-8 md:pt-[53px] md:pb-6">
-          <div className="flex max-w-[712px] shrink-0 flex-col gap-[5px] md:gap-6">
+        <div className="flex h-full flex-col px-[clamp(16px,6vw,24px)] pt-[clamp(12px,4vh,36px)] pb-4 md:pl-[47px] md:pr-8 md:pt-[53px] md:pb-6">
+          <div className="flex max-w-[712px] shrink-0 flex-col gap-[7px] md:gap-6">
             <p className="text-[clamp(14px,4vw,16px)] font-medium text-secondary md:text-lg md:font-normal md:text-foreground">
               Your Workspace
             </p>
-            <div className="flex flex-col gap-[5px] md:block">
-              <h1 className="font-display text-[clamp(26px,8.2vw,34px)] leading-[1.08] font-bold text-foreground md:text-5xl md:leading-normal">
+            <div className="flex flex-col gap-[7px] md:block">
+              <h1 className="font-display text-[clamp(26px,8.2vw,34px)] leading-[1.05] font-bold text-foreground md:text-5xl md:leading-normal">
                 {firstName ? (
                   <>
                     {hour === null ? "Hello" : greetingForHour(hour)},{" "}
@@ -151,7 +155,7 @@ export function ChatHome({
             <button
               type="button"
               onClick={onStartVoice}
-              className="flex w-full max-w-[248px] flex-col items-center gap-[clamp(10px,2vh,22px)]"
+              className="flex w-full max-w-[248px] flex-col items-center gap-[clamp(10px,2.4vh,22px)]"
             >
               {/* Named so it glides into voice mode's orb (see app-shell). */}
               <span style={{ viewTransitionName: ORB_TRANSITION }}>
@@ -163,7 +167,8 @@ export function ChatHome({
               </span>
               <span className="w-full text-center text-foreground">
                 <span className="-mb-px block text-[clamp(20px,6vw,24px)] font-medium md:text-2xl">
-                  Speak with Z1p
+                  Speak with <span className="md:hidden">Z1P</span>
+                  <span className="hidden md:inline">Z1p</span>
                 </span>
                 <span className="block whitespace-nowrap text-[clamp(14px,4vw,16px)] md:text-lg">
                   Ask anything or describe a task
@@ -174,6 +179,9 @@ export function ChatHome({
         </div>
       </div>
 
+      {/* The mobile design has no text box on Home (Figma 493:6874): phones
+          type in Convos, and the orb opens voice. */}
+      <div className="hidden md:contents">
       {(error || attachments.problem) && (
         <p
           role="alert"
@@ -221,6 +229,7 @@ export function ChatHome({
       <p className="mb-2 shrink-0 px-4 text-center text-[11px] text-muted md:-mt-6 md:mb-3">
         Z1P can make mistakes. Check important information.
       </p>
+      </div>
     </div>
   );
 }

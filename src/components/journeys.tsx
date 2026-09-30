@@ -43,7 +43,7 @@ function JourneysEmptyState({
       <div className="flex w-full max-w-[309px] flex-col items-center">
         <div
           aria-hidden="true"
-          className="relative aspect-[309/299] w-[min(309px,72vw,40vh)] shrink-0 overflow-hidden md:w-[309px]"
+          className="relative aspect-[309/299] w-[min(309px,78vw,40vh)] shrink-0 overflow-hidden md:w-[309px]"
         >
           {EMPTY_ILLUSTRATION_LAYERS.map(([file, inset]) => (
             <div key={file} className="absolute" style={{ inset }}>
