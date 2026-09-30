@@ -17,6 +17,14 @@ import {
   FAIR_USE_DAILY_MESSAGES,
   todayUtc,
 } from "@/lib/chat-usage";
+import {
+  chatFileProblem,
+  chatFileType,
+  MAX_CHAT_FILE_BYTES,
+  MAX_CHAT_FILES,
+  withAttachedLine,
+} from "@/lib/chat-attachments";
+import { fileContent } from "@/lib/journey-flow";
 import { rateLimit } from "@/lib/rate-limit";
 import { isOverDailyBudget, recordUsage, sendAlert } from "@/lib/usage-guard";
 
@@ -140,17 +148,54 @@ export async function POST(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const body = await request.json().catch(() => ({}));
-  const content =
-    typeof body?.content === "string" ? body.content.trim() : "";
-  const mode: "text" | "voice" = body?.mode === "voice" ? "voice" : "text";
-  if (!content) {
+  // Plain messages are JSON; messages with files attached are multipart.
+  let text = "";
+  let mode: "text" | "voice" = "text";
+  let files: File[] = [];
+  if ((request.headers.get("content-type") ?? "").startsWith("multipart/form-data")) {
+    // Reject oversized uploads before reading the body.
+    const declared = Number(request.headers.get("content-length"));
+    if (declared > MAX_CHAT_FILES * MAX_CHAT_FILE_BYTES + 256 * 1024) {
+      return NextResponse.json({ error: `Attach up to ${MAX_CHAT_FILES} files of 8 MB or less.` }, { status: 413 });
+    }
+    const form = await request.formData().catch(() => null);
+    if (!form) {
+      return NextResponse.json({ error: "Couldn't read that upload." }, { status: 400 });
+    }
+    const typed = form.get("content");
+    text = typeof typed === "string" ? typed.trim() : "";
+    files = form.getAll("files").filter((f): f is File => f instanceof File);
+  } else {
+    const body = await request.json().catch(() => ({}));
+    text = typeof body?.content === "string" ? body.content.trim() : "";
+    mode = body?.mode === "voice" ? "voice" : "text";
+  }
+
+  if (!text && files.length === 0) {
     return NextResponse.json(
       { error: "Message content is required" },
       { status: 400 }
     );
   }
-  if (content.length > 8000) {
+  if (files.length > MAX_CHAT_FILES) {
+    return NextResponse.json({ error: `Attach up to ${MAX_CHAT_FILES} files at a time.` }, { status: 400 });
+  }
+  for (const file of files) {
+    const problem = chatFileProblem(file);
+    if (problem) return NextResponse.json({ error: problem }, { status: 415 });
+  }
+  if (files.length > 0) {
+    // Reading files costs far more than text, so they have their own limit.
+    const fileLimit = await rateLimit(`chat-files:${userId}`, 10, 60 * 60_000);
+    if (!fileLimit.ok) {
+      return NextResponse.json(
+        { error: "You've attached a lot of files this hour. Try again later." },
+        { status: 429, headers: { "Retry-After": String(fileLimit.retryAfterSeconds) } }
+      );
+    }
+  }
+  const content = withAttachedLine(text, files.map((f) => f.name));
+  if (text.length > 8000) {
     return NextResponse.json(
       { error: "Message is too long (max 8000 characters)" },
       { status: 400 }
@@ -211,6 +256,16 @@ export async function POST(
     .limit(HISTORY_MAX_MESSAGES);
   const isFirstMessage = recent.length === 1;
   const history = trimHistory(recent);
+  // The attached files go with the newest message only (the one being
+  // answered); earlier turns just carry the "[Attached: …]" line.
+  const attachedParts = await Promise.all(
+    files.map(async (f) => fileContent(f.name, chatFileType(f), await f.arrayBuffer()))
+  );
+  const turns = history.map((m, i) =>
+    i === history.length - 1 && attachedParts.length > 0
+      ? { role: m.role, content: [{ type: "text", text: m.content }, ...attachedParts] }
+      : { role: m.role, content: m.content }
+  );
 
   let completionRes: Response | null = null;
   try {
@@ -229,7 +284,7 @@ export async function POST(
             // far) so OpenAI can bill it at the cached rate; anything that
             // varies per request, like the voice instruction, goes last.
             { role: "system", content: systemPrompt(modelLabel) },
-            ...history.map((m) => ({ role: m.role, content: m.content })),
+            ...turns,
             ...(mode === "voice"
               ? [{ role: "system", content: VOICE_INSTRUCTIONS }]
               : []),
@@ -306,7 +361,7 @@ export async function POST(
       lastMessageAt: new Date(),
       updatedAt: new Date(),
       ...(isFirstMessage && !conversation.title
-        ? { title: content.slice(0, 60) }
+        ? { title: (text || files.map((f) => f.name).join(", ")).slice(0, 60) }
         : {}),
     })
     .where(eq(aiConversations.id, id));

@@ -65,7 +65,7 @@ export function MobileSearchHeader({
   return (
     <div className="flex shrink-0 items-center gap-[11px] px-[27px] pt-6 md:hidden">
       <div className="relative min-w-0 flex-1">
-        <div className="flex h-12 items-center gap-2.5 rounded-[10px] border border-divider px-3.5 focus-within:ring-2 focus-within:ring-accent-strong">
+        <div className="flex h-12 items-center gap-2.5 rounded-[10px] border border-divider px-3.5 focus-within:border-foreground/30">
           <span className="shrink-0 text-secondary">
             <AssetIcon name="search" width={20} height={20} />
           </span>

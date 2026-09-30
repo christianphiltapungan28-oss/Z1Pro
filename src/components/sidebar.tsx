@@ -5,15 +5,9 @@ import { signOut, useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import type { View } from "@/components/app-shell";
 import type { Journey } from "@/types/journey";
-import { AssetIcon } from "@/components/asset-icon";
-import {
-  ChevronRightIcon,
-  CloseIcon,
-  HomeIcon,
-  SettingsIcon,
-  StacksIcon,
-  UsersIcon,
-} from "@/components/icons";
+import { IconSetIcon, type IconSetName } from "@/components/asset-icon";
+import { ChevronRightIcon, CloseIcon, UsersIcon } from "@/components/icons";
+import { Logo } from "@/components/logo";
 
 type OrgSummary = {
   id: string;
@@ -25,13 +19,22 @@ type OrgSummary = {
 
 const navItems: {
   label: string;
-  icon: typeof HomeIcon;
+  icon: IconSetName;
   view: View;
   requiresAuth: boolean;
 }[] = [
-  { label: "Home", icon: HomeIcon, view: "home", requiresAuth: false },
-  { label: "Journeys", icon: StacksIcon, view: "journeys", requiresAuth: true },
+  { label: "Home", icon: "home", view: "home", requiresAuth: false },
+  { label: "Journeys", icon: "stacks", view: "journeys", requiresAuth: true },
 ];
+
+/** Sidebar icons sit in an 18px box, as in the design (Main Sidebar 64:962). */
+function NavIcon({ name }: { name: IconSetName }) {
+  return (
+    <span className="flex size-[18px] shrink-0 items-center justify-center">
+      <IconSetIcon name={name} size={18} />
+    </span>
+  );
+}
 
 function initials(name: string) {
   return (
@@ -86,8 +89,11 @@ export function Sidebar({
   onOpenOrganization,
   onNewChat,
   onOpenJourney,
+  onGoHome,
   journeys,
 }: {
+  /** The logo: Home, or a fresh reload when already there. */
+  onGoHome: () => void;
   open: boolean;
   onClose: () => void;
   view: View;
@@ -170,19 +176,14 @@ export function Sidebar({
         }`}
       >
         <div className="relative flex h-[94px] shrink-0 items-center justify-center border-b border-divider p-2.5">
-          <div role="img" aria-label="Z1P" className="grid place-items-start leading-none">
-            <span className="col-start-1 row-start-1 ml-[32.88px] font-logo text-[45px] font-extrabold leading-normal text-logo">
-              Z1P
-            </span>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/ui/logo-mark.svg"
-              alt=""
-              width={31.9209}
-              height={31.9209}
-              className="col-start-1 row-start-1 mt-[15.32px]"
-            />
-          </div>
+          <button
+            type="button"
+            onClick={onGoHome}
+            aria-label="Z1P.pro home"
+            className="flex rounded-lg p-1 transition-opacity hover:opacity-80"
+          >
+            <Logo height={33.5} />
+          </button>
           <button
             type="button"
             onClick={onClose}
@@ -203,7 +204,7 @@ export function Sidebar({
           </button>
 
           <nav aria-label="Main" className="mt-6 flex flex-col gap-0.5">
-            {navItems.map(({ label, icon: Icon, view: itemView, requiresAuth }) => (
+            {navItems.map(({ label, icon, view: itemView, requiresAuth }) => (
               <button
                 key={label}
                 type="button"
@@ -215,7 +216,7 @@ export function Sidebar({
                 }
                 className={navItemClass(view === itemView)}
               >
-                <Icon className="h-[18px] w-[18px] shrink-0" />
+                <NavIcon name={icon} />
                 {label}
               </button>
             ))}
@@ -227,9 +228,7 @@ export function Sidebar({
               onClick={authenticated ? () => onChangeView("conversations") : onRequireAuth}
               className={navItemClass(view === "conversations" || view === "conversation")}
             >
-              <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center">
-                <AssetIcon name="conversations" width={16.0005} height={16.0005} />
-              </span>
+              <NavIcon name="chat-spark" />
               Conversations
             </button>
             <button
@@ -256,7 +255,7 @@ export function Sidebar({
                   className="flex items-center gap-2.5 rounded-[10px] p-2.5 text-left text-base text-sidebar-recent transition-colors hover:bg-sidebar-fg/5"
                 >
                   <span className="flex h-6 w-6 shrink-0 items-start justify-center pt-[0.5px]">
-                    <AssetIcon name="journey-book-muted" width={22} height={19.4717} />
+                    <IconSetIcon name="book" size={24} />
                   </span>
                   <span className="min-w-0 truncate">{journey.title}</span>
                 </button>
@@ -284,7 +283,7 @@ export function Sidebar({
               type="button"
               className={navItemClass(false)}
             >
-              <AssetIcon name="ai-guide" width={18} height={18} />
+              <NavIcon name="asterisk" />
               AI Assisted Guide
             </button>
             <button
@@ -294,7 +293,7 @@ export function Sidebar({
               onClick={authenticated ? () => onChangeView("settings") : onOpenAppearance}
               className={navItemClass(view === "settings")}
             >
-              <SettingsIcon className="h-[18px] w-[18px] shrink-0" />
+              <NavIcon name="settings" />
               Settings
             </button>
             <nav
@@ -414,7 +413,7 @@ export function Sidebar({
               aria-label={status === "authenticated" ? "Log out" : "Sign in"}
               className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sidebar-fg hover:text-accent"
             >
-              <AssetIcon name="logout" width={18} height={17.25} />
+              <IconSetIcon name="logout" size={18} />
             </button>
           </div>
         </div>

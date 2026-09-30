@@ -6,6 +6,7 @@ import { AssetIcon } from "@/components/asset-icon";
 import type { LifeMetricCategory } from "@/db/schema";
 import { LIFE_AREAS } from "@/lib/life-metrics-areas";
 import { formatRelativeTime } from "@/lib/relative-time";
+import { useCountUp } from "@/lib/use-count-up";
 import { useMediaQuery } from "@/lib/use-media-query";
 import type { ProfilePayload } from "@/lib/life-metrics-data";
 
@@ -52,7 +53,9 @@ function HarmonyGauge({ value, size = 140 }: { value: number | null; size?: numb
   const GAUGE_STROKE = size / 10;
   const radius = (GAUGE_SIZE - GAUGE_STROKE) / 2;
   const circumference = 2 * Math.PI * radius;
-  const filled = value === null ? 0 : (value / 100) * circumference;
+  // The ring fills, and the number counts up, to the score each time it opens.
+  const shown = useCountUp(value ?? 0, { duration: 1400 });
+  const filled = value === null ? 0 : (shown / 100) * circumference;
   return (
     <div className="relative shrink-0" style={{ width: size, height: size }}>
       <svg
@@ -78,13 +81,16 @@ function HarmonyGauge({ value, size = 140 }: { value: number | null; size?: numb
             fill="none"
             strokeWidth={GAUGE_STROKE}
             strokeDasharray={`${filled} ${circumference}`}
-            className="stroke-accent transition-[stroke-dasharray] duration-700"
+            className="stroke-accent"
           />
         )}
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5">
-        <p className={`${size < 140 ? "text-[34px]" : "text-[32px]"} font-extrabold text-flow-ink`}>
-          {value === null ? "—" : `${value}%`}
+        <p
+          className={`${size < 140 ? "text-[34px]" : "text-[32px]"} font-extrabold tabular-nums text-flow-ink`}
+          aria-label={value === null ? "No score yet" : `${value}%`}
+        >
+          {value === null ? "—" : `${Math.round(shown)}%`}
         </p>
         <p className="text-[11px] uppercase text-flow-muted">Harmony</p>
       </div>
@@ -132,23 +138,38 @@ function TrendBadge({ category }: { category: LifeMetricCategory }) {
   );
 }
 
-function MetricCard({ category }: { category: LifeMetricCategory }) {
+/**
+ * A category's score counting up and its bar filling, each card a little
+ * after the one before so they ripple in rather than move as one.
+ */
+function useCategoryFill(score: number | null, index: number) {
+  const shown = useCountUp(score ?? 0, { duration: 1100, delay: 200 + index * 110 });
+  return {
+    number: score === null ? "—" : String(Math.round(shown)),
+    width: `${(shown / 99) * 100}%`,
+  };
+}
+
+function MetricCard({ category, index }: { category: LifeMetricCategory; index: number }) {
   const area = LIFE_AREAS.find((a) => a.key === category.key)!;
+  const fill = useCategoryFill(category.score, index);
   return (
     <div className="flex flex-col gap-4 rounded-2xl border border-flow-line bg-background p-6">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-3">
-          <span className="flex shrink-0 rounded-[10px] bg-accent/8 p-2 text-accent">
-            <AssetIcon name={area.icon} width={20} height={20} />
-          </span>
-          <p className="truncate text-base font-semibold text-flow-ink">{area.name}</p>
+      {/* The trend sits under the name: beside it, four cards to a row left
+          no room and cut names down to "P…". */}
+      <div className="flex items-start gap-3">
+        <span className="flex shrink-0 rounded-[10px] bg-accent/8 p-2 text-accent">
+          <AssetIcon name={area.icon} width={20} height={20} />
+        </span>
+        <div className="flex min-w-0 flex-col items-start gap-1.5">
+          <p className="text-base leading-tight font-semibold text-flow-ink">{area.name}</p>
+          <TrendBadge category={category} />
         </div>
-        <TrendBadge category={category} />
       </div>
       <div className="flex flex-col gap-1.5">
         <div className="flex items-baseline justify-between gap-2 whitespace-nowrap">
           <p className="font-bold text-flow-ink">
-            <span className="text-[32px]">{category.score ?? "—"}</span>
+            <span className="text-[32px] tabular-nums">{fill.number}</span>
             <span className="text-lg font-medium text-flow-muted">/99</span>
           </p>
           <p className="text-xs text-flow-faint">
@@ -163,10 +184,7 @@ function MetricCard({ category }: { category: LifeMetricCategory }) {
           aria-valuemax={99}
           aria-valuenow={category.score ?? 0}
         >
-          <div
-            className="h-full rounded bg-accent transition-[width] duration-700"
-            style={{ width: `${((category.score ?? 0) / 99) * 100}%` }}
-          />
+          <div className="h-full rounded bg-accent" style={{ width: fill.width }} />
         </div>
       </div>
       <p className="text-[13px] leading-[18px] text-flow-muted">{category.note}</p>
@@ -175,8 +193,9 @@ function MetricCard({ category }: { category: LifeMetricCategory }) {
 }
 
 /** Phone category card (mobile Figma 519:3529). */
-function MobileMetricCard({ category }: { category: LifeMetricCategory }) {
+function MobileMetricCard({ category, index }: { category: LifeMetricCategory; index: number }) {
   const area = LIFE_AREAS.find((a) => a.key === category.key)!;
+  const fill = useCategoryFill(category.score, index);
   const positive = category.score !== null && category.direction !== "down";
   const arrow =
     category.score === null ? "" : category.direction === "up" ? "↑ " : category.direction === "down" ? "↓ " : "→ ";
@@ -190,7 +209,7 @@ function MobileMetricCard({ category }: { category: LifeMetricCategory }) {
           <div className="flex items-baseline justify-between gap-2 whitespace-nowrap text-flow-ink">
             <p className="truncate text-base font-medium">{area.name}</p>
             <p className="font-medium">
-              <span className="text-[22px]">{category.score ?? "—"}</span>
+              <span className="text-[22px] tabular-nums">{fill.number}</span>
               <span className="text-[13px] text-flow-muted">/99</span>
             </p>
           </div>
@@ -217,46 +236,29 @@ function MobileMetricCard({ category }: { category: LifeMetricCategory }) {
         aria-valuemax={99}
         aria-valuenow={category.score ?? 0}
       >
-        <div
-          className="h-full rounded-full bg-accent"
-          style={{ width: `${((category.score ?? 0) / 99) * 100}%` }}
-        />
+        <div className="h-full rounded-full bg-accent" style={{ width: fill.width }} />
       </div>
       <p className="text-xs leading-[17px] text-flow-muted">{category.note}</p>
     </div>
   );
 }
 
-function MobileMetricDetail({
+/** Phones: the category cards, under the harmony card (mobile Figma 519:3529). */
+function MobileCategories({
   categories,
-  onBack,
 }: {
   categories: LifeMetricCategory[];
-  onBack: () => void;
 }) {
   const strongest = categories.reduce<LifeMetricCategory | null>(
     (best, c) => (c.score !== null && (best === null || (best.score ?? -1) < c.score) ? c : best),
     null
   );
-  const others = categories.filter((c) => c !== strongest);
   return (
     <div className="flex flex-col gap-5 md:hidden">
-      <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={onBack}
-          aria-label="Back to profile"
-          className="flex size-10 shrink-0 items-center justify-center rounded-full bg-foreground/5"
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/ui/journey/arrow-left.svg" alt="" width={18} height={18} />
-        </button>
-        <h1 className="text-xl font-bold text-flow-ink">Life Metrics</h1>
-      </div>
       {strongest && (
         <section className="flex flex-col gap-2">
           <h2 className="text-xs font-bold tracking-[0.8px] text-flow-muted uppercase">Strongest signal</h2>
-          <MobileMetricCard category={strongest} />
+          <MobileMetricCard category={strongest} index={0} />
         </section>
       )}
       <section className="flex flex-col gap-3">
@@ -264,8 +266,8 @@ function MobileMetricDetail({
           <h2 className="text-lg font-bold text-flow-ink">All categories</h2>
           <p className="text-xs text-flow-muted">{categories.length} total</p>
         </div>
-        {others.map((c) => (
-          <MobileMetricCard key={c.key} category={c} />
+        {categories.map((c, i) => (
+          <MobileMetricCard key={c.key} category={c} index={i + 1} />
         ))}
       </section>
     </div>
@@ -291,14 +293,14 @@ function EnableCard({ busy, onEnable }: { busy: boolean; onEnable: () => void })
       <div className="flex flex-col gap-2">
         <p className="text-lg font-bold text-flow-ink">Turn on Life Metrics</p>
         <p className="text-sm leading-[22px] text-flow-muted">
-          Z1 can read what you&apos;ve shared in your conversations and journeys and
+          Z1p can read what you&apos;ve shared in your conversations and journeys and
           give you a score for seven areas of your life — Purpose, Finances,
           Family, Health, Personal Growth, Faith and Community — plus an overall
           Life Harmony score.
         </p>
       </div>
       <ul className="flex list-disc flex-col gap-1.5 pl-5 text-sm leading-[22px] text-flow-muted">
-        <li>Only your own messages and journeys are read, not Z1&apos;s replies.</li>
+        <li>Only your own messages and journeys are read, not Z1p&apos;s replies.</li>
         <li>
           Health and Faith are sensitive topics. The scores are estimates to help
           you reflect, not a diagnosis or a judgement.
@@ -317,7 +319,7 @@ function EnableCard({ busy, onEnable }: { busy: boolean; onEnable: () => void })
           className="mt-1 size-4 shrink-0 accent-accent"
         />
         <span>
-          I agree to Z1 analysing my conversations and journeys, including anything
+          I agree to Z1p analysing my conversations and journeys, including anything
           about my health and faith, to create these scores. See the{" "}
           <Link href="/privacy#life-metrics" className="font-semibold text-accent underline">
             Privacy Policy
@@ -352,8 +354,6 @@ export function ProfilePage({
   onStartChat: () => void;
 }) {
   const phone = useMediaQuery("(max-width: 767px)");
-  // Phones: the harmony card opens the category detail screen.
-  const [detail, setDetail] = useState(false);
   const [data, setData] = useState<ProfilePayload | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [updating, setUpdating] = useState(false);
@@ -402,20 +402,27 @@ export function ProfilePage({
 
   async function enable() {
     setEnabling(true);
-    await runMetrics("enable");
-    setEnabling(false);
+    try {
+      await runMetrics("enable");
+    } finally {
+      setEnabling(false);
+    }
   }
 
   async function turnOff() {
     setConfirmOff(false);
     setMessage(null);
-    const res = await fetch("/api/profile/metrics", { method: "DELETE" });
-    const body = await res.json().catch(() => null);
-    if (res.ok && body?.profile) {
-      setData(body);
-      setMessage("Life Metrics is off and your scores have been deleted.");
-    } else {
-      setMessage(body?.error ?? "Couldn't turn Life Metrics off. Please try again.");
+    try {
+      const res = await fetch("/api/profile/metrics", { method: "DELETE" });
+      const body = await res.json().catch(() => null);
+      if (res.ok && body?.profile) {
+        setData(body);
+        setMessage("Life Metrics is off and your scores have been deleted.");
+      } else {
+        setMessage(body?.error ?? "Couldn't turn Life Metrics off. Please try again.");
+      }
+    } catch {
+      setMessage("Couldn't turn Life Metrics off. Please try again.");
     }
   }
 
@@ -428,18 +435,16 @@ export function ProfilePage({
   return (
     <div className="h-full overflow-y-auto bg-background md:bg-flow-bg">
       <div className="flex flex-col gap-8 px-[27px] py-6 md:p-10">
-        {!(detail && phone) && (
-          <div className="-mb-8 flex justify-end md:hidden">
-            <button
-              type="button"
-              onClick={onOpenSettings}
-              aria-label="Settings"
-              className="flex size-10 items-center justify-center rounded-full text-foreground hover:bg-foreground/5"
-            >
-              <AssetIcon name="profile/settings" width={24} height={24} />
-            </button>
-          </div>
-        )}
+        <div className="-mb-8 flex justify-end md:hidden">
+          <button
+            type="button"
+            onClick={onOpenSettings}
+            aria-label="Settings"
+            className="flex size-10 items-center justify-center rounded-full text-foreground hover:bg-foreground/5"
+          >
+            <AssetIcon name="profile/settings" width={24} height={24} />
+          </button>
+        </div>
 
         {loadError && <Notice>Couldn&apos;t load your profile. Please refresh the page.</Notice>}
 
@@ -453,11 +458,7 @@ export function ProfilePage({
           </div>
         )}
 
-        {profile && metrics && detail && phone && scored && (
-          <MobileMetricDetail categories={metrics.categories} onBack={() => setDetail(false)} />
-        )}
-
-        {profile && metrics && !(detail && phone && scored) && (
+        {profile && metrics && (
           <>
             <header className="flex flex-col items-center gap-[21px] md:flex-row md:items-center md:gap-6">
               <Avatar image={profile.image} name={name} />
@@ -473,7 +474,7 @@ export function ProfilePage({
                 <p className="hidden max-w-[420px] text-[15px] text-flow-muted md:block">
                   {profile.about ||
                     (metrics.enabled && metrics.tagline) ||
-                    "Your life-coaching profile with Z1"}
+                    "Your life-coaching profile with Z1p"}
                 </p>
                 <p className="hidden text-xs text-flow-faint md:block">
                   Member since {memberSince(profile.memberSince)} •{" "}
@@ -487,7 +488,7 @@ export function ProfilePage({
               <AssetIcon name="profile/sparkles" width={20} height={20} className="text-accent" />
               <p className="flex-1 text-[13px] leading-[1.4] font-medium text-flow-ink md:text-sm md:leading-normal">
                 {updating
-                  ? "Z1 is reading your conversations and journeys to update your scores…"
+                  ? "Z1p is reading your conversations and journeys to update your scores…"
                   : "Insights based on your conversations & journeys with your AI life companion. These scores update weekly as your chat logs evolve."}
               </p>
             </div>
@@ -516,7 +517,7 @@ export function ProfilePage({
               <Notice>
                 <p className="font-bold text-flow-ink">Your scores are on their way</p>
                 <p>
-                  Have at least {metrics.minConversations} conversations with Z1 and your
+                  Have at least {metrics.minConversations} conversations with Z1p and your
                   first Life Metrics will appear here. You&apos;ve had{" "}
                   {profile.conversations} so far.
                 </p>
@@ -525,7 +526,7 @@ export function ProfilePage({
                   onClick={onStartChat}
                   className="rounded-[15px] bg-accent px-6 py-3 text-base font-medium text-white"
                 >
-                  Talk with Z1
+                  Talk with Z1p
                 </button>
               </Notice>
             ) : firstRun && !scored ? (
@@ -546,28 +547,24 @@ export function ProfilePage({
             ) : (
               <>
                 {phone ? (
-                  <button
-                    type="button"
-                    onClick={() => setDetail(true)}
-                    className="-mt-4 flex w-full flex-col items-center gap-[18px] rounded-2xl border border-divider bg-background p-5 text-left"
-                  >
-                    <HarmonyGauge value={metrics.harmony} size={132} />
-                    <span className="flex w-full flex-col gap-2">
-                      <span className="text-center text-lg font-bold text-flow-ink">
-                        Overall Life Harmony Summary
-                      </span>
-                      <span className="text-sm leading-[1.5] text-flow-muted">
-                        {metrics.summary ? (
-                          <HighlightedSummary text={metrics.summary} />
-                        ) : (
-                          "Keep talking with Z1 and your summary will fill in."
-                        )}
-                      </span>
-                      <span className="text-center text-xs font-semibold text-accent">
-                        See all categories ›
-                      </span>
-                    </span>
-                  </button>
+                  <>
+                    <div className="-mt-4 flex w-full flex-col items-center gap-[18px] rounded-2xl border border-divider bg-background p-5">
+                      <HarmonyGauge value={metrics.harmony} size={132} />
+                      <div className="flex w-full flex-col gap-2">
+                        <p className="text-center text-lg font-bold text-flow-ink">
+                          Overall Life Harmony Summary
+                        </p>
+                        <p className="text-sm leading-[1.5] text-flow-muted">
+                          {metrics.summary ? (
+                            <HighlightedSummary text={metrics.summary} />
+                          ) : (
+                            "Keep talking with Z1p and your summary will fill in."
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                    <MobileCategories categories={metrics.categories} />
+                  </>
                 ) : (
                 <Card className="flex flex-col items-center gap-8 p-8 sm:flex-row">
                   <HarmonyGauge value={metrics.harmony} />
@@ -577,7 +574,7 @@ export function ProfilePage({
                       {metrics.summary ? (
                         <HighlightedSummary text={metrics.summary} />
                       ) : (
-                        "Keep talking with Z1 and your summary will fill in."
+                        "Keep talking with Z1p and your summary will fill in."
                       )}
                     </p>
                   </div>
@@ -589,13 +586,13 @@ export function ProfilePage({
                     Holistic Categories Breakdown
                   </h2>
                   <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
-                    {metrics.categories.slice(0, 4).map((c) => (
-                      <MetricCard key={c.key} category={c} />
+                    {metrics.categories.slice(0, 4).map((c, i) => (
+                      <MetricCard key={c.key} category={c} index={i} />
                     ))}
                   </div>
                   <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-                    {metrics.categories.slice(4).map((c) => (
-                      <MetricCard key={c.key} category={c} />
+                    {metrics.categories.slice(4).map((c, i) => (
+                      <MetricCard key={c.key} category={c} index={i + 4} />
                     ))}
                   </div>
                 </section>

@@ -1,16 +1,38 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { DesignOrb } from "@/components/design-orb";
 import { MicIcon } from "@/components/icons";
 import { Orb } from "@/components/orb";
 import type { Appearance } from "@/lib/use-appearance";
+import { useMediaQuery } from "@/lib/use-media-query";
+import { ORB_TRANSITION } from "@/lib/view-transition";
+import {
+  afterWakeWord,
+  speechRecognitionCtor,
+  stripWakeWord,
+  type SpeechRecognition,
+  type SpeechRecognitionEvent,
+} from "@/lib/wake-word";
 
 const HEADLINE: Record<Appearance, string> = {
   light: "Speak Naturally As Z1P.pro Listen And Responds Instantly",
   aurora: "Speak Naturally As Z1P.pro Listen And Responds Instantly",
 };
 
-type VoicePhase = "idle" | "recording" | "processing" | "speaking";
+/*
+ * Hands-free (browsers with speech recognition):
+ *   waiting  → listening for "Zip"
+ *   hearing  → heard "Zip", taking down the question (also the follow-up
+ *              window after a reply, when "Zip" isn't needed)
+ *   processing → speaking → back to hearing, then waiting
+ * Tap to speak (the fallback, e.g. Firefox): idle → recording → processing.
+ */
+type VoicePhase = "waiting" | "hearing" | "idle" | "recording" | "processing" | "speaking";
+
+// How long to wait for the question after "Zip", and for a follow-up after
+// a reply, before going back to waiting for "Zip".
+const HEARING_TIMEOUT_MS = 8_000;
 
 // Transcription bills per minute of audio, so a forgotten open mic stops
 // itself instead of recording (and uploading) indefinitely.
@@ -43,58 +65,210 @@ export function VoiceMode({
   conversationId: string | null;
   onConversationCreated: (id: string) => void;
 }) {
-  const [phase, setPhase] = useState<VoicePhase>("idle");
+  // Voice mode only renders after a tap in the browser, never on the server.
+  const [handsFree] = useState(() => speechRecognitionCtor() !== null);
+  const [phase, setPhase] = useState<VoicePhase>(handsFree ? "waiting" : "idle");
+  const [heard, setHeard] = useState("");
   const [transcript, setTranscript] = useState("");
   const [reply, setReply] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [micBlocked, setMicBlocked] = useState(false);
+  // Set when the browser wouldn't play the reply without a tap.
+  const [playBlocked, setPlayBlocked] = useState<HTMLAudioElement | null>(null);
+  // Phones get the smaller orb from the mobile design, as on Home.
+  const phone = useMediaQuery("(max-width: 767px)");
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const stopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  // Measures the spoken reply's loudness so the orb pulses with Z1p's voice.
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const levelBufRef = useRef<Uint8Array<ArrayBuffer> | null>(null);
+
+  // Recognition callbacks outlive renders, so they read state through refs.
+  const phaseRef = useRef(phase);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const listeningRef = useRef(false);
+  const hearingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onResultRef = useRef<(e: SpeechRecognitionEvent) => void>(() => {});
+
+  function go(next: VoicePhase) {
+    phaseRef.current = next;
+    setPhase(next);
+  }
 
   useEffect(() => {
+    onResultRef.current = handleResult;
+  });
+
+  useEffect(() => {
+    if (handsFree) {
+      prepareAudioContext();
+      startListening();
+    }
     return () => {
+      stopListening();
+      if (hearingTimerRef.current) clearTimeout(hearingTimerRef.current);
       if (stopTimerRef.current) clearTimeout(stopTimerRef.current);
       mediaRecorderRef.current?.stream.getTracks().forEach((t) => t.stop());
       audioRef.current?.pause();
+      const ctx = audioCtxRef.current;
+      if (ctx && ctx.state !== "closed") ctx.close().catch(() => {});
+      audioCtxRef.current = null;
     };
+    // Runs once: voice mode starts listening as soon as it opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function handleRecordingComplete(mimeType: string) {
-    setPhase("processing");
+  // Browsers (Safari especially) only let audio start after a tap. Voice
+  // mode opens from one, so the context is made then, ready for replies.
+  function prepareAudioContext() {
     try {
-      const blob = new Blob(chunksRef.current, {
-        type: mimeType || "audio/webm",
-      });
-      if (blob.size < 500) {
-        setError("Didn't catch that — try speaking a bit longer.");
-        setPhase("idle");
-        return;
+      if (!audioCtxRef.current || audioCtxRef.current.state === "closed") {
+        audioCtxRef.current = new AudioContext();
       }
+      audioCtxRef.current.resume().catch(() => {});
+    } catch {
+      // No Web Audio: the orb falls back to its thinking rhythm.
+    }
+  }
 
-      const form = new FormData();
-      form.append("audio", blob, `audio.${extensionForMimeType(mimeType)}`);
+  function connectAnalyser(audioEl: HTMLAudioElement) {
+    const ctx = audioCtxRef.current;
+    // A suspended context would silence the reply, so play it directly.
+    if (!ctx || ctx.state !== "running") return null;
+    try {
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 1024;
+      ctx.createMediaElementSource(audioEl).connect(analyser);
+      analyser.connect(ctx.destination);
+      return analyser;
+    } catch {
+      return null;
+    }
+  }
 
-      const transcribeRes = await fetch("/api/transcribe", {
-        method: "POST",
-        body: form,
-      });
-      if (!transcribeRes.ok) {
-        setError("Couldn't transcribe that. Please try again.");
-        setPhase("idle");
-        return;
+  function voiceLevel() {
+    const analyser = analyserRef.current;
+    if (!analyser) return null;
+    const buf = (levelBufRef.current ??= new Uint8Array(analyser.fftSize));
+    analyser.getByteTimeDomainData(buf);
+    let sum = 0;
+    for (const v of buf) sum += ((v - 128) / 128) ** 2;
+    // Speech RMS rarely passes ~0.2, so scale it up to fill 0–1.
+    return Math.min(1, Math.sqrt(sum / buf.length) * 5);
+  }
+
+  // --- Hands-free listening -------------------------------------------
+
+  function startListening() {
+    const Recognition = speechRecognitionCtor();
+    if (!Recognition) return;
+    listeningRef.current = true;
+    if (recognitionRef.current) return;
+
+    const recognition = new Recognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = navigator.language || "en-US";
+    let failed = false;
+    recognition.onresult = (e) => onResultRef.current(e);
+    recognition.onerror = (e) => {
+      if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+        listeningRef.current = false;
+        setMicBlocked(true);
       }
-      const transcribeData: { text?: string } = await transcribeRes.json();
-      const spoken = (transcribeData.text ?? "").trim();
-      if (!spoken) {
-        setError("Didn't catch that — try again.");
-        setPhase("idle");
-        return;
-      }
-      setTranscript(spoken);
-      setReply("");
+      // "no-speech" and "aborted" are routine; anything else backs off.
+      if (e.error !== "no-speech" && e.error !== "aborted") failed = true;
+    };
+    // Browsers end recognition every so often even when continuous, so it's
+    // restarted for as long as voice mode wants to listen.
+    recognition.onend = () => {
+      if (recognitionRef.current === recognition) recognitionRef.current = null;
+      if (!listeningRef.current) return;
+      setTimeout(() => {
+        if (listeningRef.current) startListening();
+      }, failed ? 2_000 : 250);
+    };
 
+    recognitionRef.current = recognition;
+    try {
+      recognition.start();
+      setMicBlocked(false);
+    } catch {
+      recognitionRef.current = null;
+    }
+  }
+
+  function stopListening() {
+    listeningRef.current = false;
+    recognitionRef.current?.abort();
+    recognitionRef.current = null;
+  }
+
+  function hearFor(ms: number) {
+    if (hearingTimerRef.current) clearTimeout(hearingTimerRef.current);
+    hearingTimerRef.current = setTimeout(() => {
+      if (phaseRef.current !== "hearing") return;
+      setHeard("");
+      go("waiting");
+    }, ms);
+  }
+
+  function handleResult(e: SpeechRecognitionEvent) {
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const result = e.results[i];
+      const text = result[0]?.transcript ?? "";
+
+      if (phaseRef.current === "waiting") {
+        const question = afterWakeWord(text);
+        if (question === null) continue;
+        setError(null);
+        go("hearing");
+        hearFor(HEARING_TIMEOUT_MS);
+        setHeard(question);
+        // "Zip, what's…" in one breath is asked now; "Zip" alone waits for
+        // the question in the next result.
+        if (result.isFinal && question) submit(question);
+      } else if (phaseRef.current === "hearing") {
+        const question = stripWakeWord(text);
+        setHeard(question);
+        hearFor(HEARING_TIMEOUT_MS);
+        if (result.isFinal && question) submit(question);
+      }
+    }
+  }
+
+  function submit(question: string) {
+    // Stop listening while replying, so Z1p doesn't hear itself.
+    stopListening();
+    if (hearingTimerRef.current) clearTimeout(hearingTimerRef.current);
+    setHeard("");
+    void respond(question);
+  }
+
+  /** After a reply: a short window for a follow-up without saying "Zip". */
+  function afterReply() {
+    analyserRef.current = null;
+    if (!handsFree) {
+      go("idle");
+      return;
+    }
+    go("hearing");
+    hearFor(HEARING_TIMEOUT_MS);
+    startListening();
+  }
+
+  // --- Asking and replying --------------------------------------------
+
+  async function respond(spoken: string) {
+    go("processing");
+    setError(null);
+    setTranscript(spoken);
+    setReply("");
+    try {
       let activeId = conversationId;
       if (!activeId) {
         const createRes = await fetch("/api/conversations", {
@@ -104,7 +278,7 @@ export function VoiceMode({
         });
         if (!createRes.ok) {
           setError("Couldn't start a new chat. Please try again.");
-          setPhase("idle");
+          afterReply();
           return;
         }
         const conversation: { id: string } = await createRes.json();
@@ -131,7 +305,7 @@ export function VoiceMode({
         } else {
           setError("Something went wrong. Please try again.");
         }
-        setPhase("idle");
+        afterReply();
         return;
       }
       const messageData: {
@@ -143,7 +317,7 @@ export function VoiceMode({
 
       const replyId = messageData.assistantMessage?.id;
       if (!replyText || !replyId) {
-        setPhase("idle");
+        afterReply();
         return;
       }
 
@@ -153,26 +327,78 @@ export function VoiceMode({
         body: JSON.stringify({ messageId: replyId }),
       });
       if (!speechRes.ok) {
-        setPhase("idle");
+        afterReply();
         return;
       }
       const audioBlob = await speechRes.blob();
       const url = URL.createObjectURL(audioBlob);
       const audioEl = new Audio(url);
       audioRef.current = audioEl;
+      analyserRef.current = connectAnalyser(audioEl);
       audioEl.onended = () => {
-        setPhase("idle");
         URL.revokeObjectURL(url);
+        afterReply();
       };
       audioEl.onerror = () => {
-        setPhase("idle");
         URL.revokeObjectURL(url);
+        afterReply();
       };
-      setPhase("speaking");
-      await audioEl.play();
+      go("speaking");
+      try {
+        await audioEl.play();
+      } catch {
+        // The browser wants a tap before playing sound.
+        setPlayBlocked(audioEl);
+      }
     } catch {
       setError("Something went wrong. Please try again.");
-      setPhase("idle");
+      afterReply();
+    }
+  }
+
+  function playBlockedReply() {
+    prepareAudioContext();
+    void playBlocked?.play().catch(() => afterReply());
+    setPlayBlocked(null);
+  }
+
+  // --- Tap to speak (browsers without speech recognition) -------------
+
+  async function handleRecordingComplete(mimeType: string) {
+    go("processing");
+    try {
+      const blob = new Blob(chunksRef.current, {
+        type: mimeType || "audio/webm",
+      });
+      if (blob.size < 500) {
+        setError("Didn't catch that — try speaking a bit longer.");
+        go("idle");
+        return;
+      }
+
+      const form = new FormData();
+      form.append("audio", blob, `audio.${extensionForMimeType(mimeType)}`);
+
+      const transcribeRes = await fetch("/api/transcribe", {
+        method: "POST",
+        body: form,
+      });
+      if (!transcribeRes.ok) {
+        setError("Couldn't transcribe that. Please try again.");
+        go("idle");
+        return;
+      }
+      const transcribeData: { text?: string } = await transcribeRes.json();
+      const spoken = (transcribeData.text ?? "").trim();
+      if (!spoken) {
+        setError("Didn't catch that — try again.");
+        go("idle");
+        return;
+      }
+      await respond(spoken);
+    } catch {
+      setError("Something went wrong. Please try again.");
+      go("idle");
     }
   }
 
@@ -209,7 +435,7 @@ export function VoiceMode({
       stopTimerRef.current = setTimeout(() => {
         if (recorder.state === "recording") recorder.stop();
       }, MAX_RECORDING_MS);
-      setPhase("recording");
+      go("recording");
     } catch {
       setError(
         "Couldn't access your microphone. Check permissions and try again."
@@ -223,23 +449,41 @@ export function VoiceMode({
       return;
     }
     if (phase === "idle") {
+      prepareAudioContext();
       startRecording();
     }
   }
 
+  // --- View -----------------------------------------------------------
+
   const busy = phase === "processing" || phase === "speaking";
-  const statusText =
-    phase === "recording"
-      ? "Listening… tap to stop"
-      : phase === "processing"
-        ? "Thinking…"
-        : phase === "speaking"
-          ? "Speaking…"
-          : "Tap to speak";
+  const orbActive = busy || phase === "hearing";
+  // Before the voice starts there's no level, so the orb keeps its own rhythm.
+  const orbLevel = phase === "speaking" ? voiceLevel : undefined;
+  const statusText = micBlocked
+    ? "Z1p needs your microphone to hear you"
+    : phase === "waiting"
+      ? "Say “Zip” and ask anything"
+      : phase === "hearing"
+        ? "Listening…"
+        : phase === "recording"
+          ? "Listening… tap to stop"
+          : phase === "processing"
+            ? "Thinking…"
+            : phase === "speaking"
+              ? "Speaking…"
+              : "Tap to speak";
 
   return (
     <div className="flex h-full flex-col items-center justify-center px-4 py-8 sm:px-8">
-      <Orb size={168} appearance={appearance} />
+      {/* Shares Home's orb transition name, so the orb glides in from Home. */}
+      <span style={{ viewTransitionName: ORB_TRANSITION }}>
+        {appearance === "light" ? (
+          <DesignOrb width={phone ? 173 : 241} active={orbActive} getLevel={orbLevel} />
+        ) : (
+          <Orb size={168} appearance={appearance} active={orbActive} getLevel={orbLevel} />
+        )}
+      </span>
 
       <div className="mt-8 max-w-md text-center">
         <h1 className="font-display text-2xl font-medium text-foreground sm:text-3xl">
@@ -247,11 +491,15 @@ export function VoiceMode({
         </h1>
       </div>
 
-      {(transcript || reply) && (
-        <div className="mt-6 flex w-full max-w-md flex-col gap-2 text-center text-sm">
-          {transcript && <p className="text-muted">&ldquo;{transcript}&rdquo;</p>}
-          {reply && <p className="text-foreground">{reply}</p>}
-        </div>
+      {phase === "hearing" && heard ? (
+        <p className="mt-6 max-w-md text-center text-sm text-muted">&ldquo;{heard}&rdquo;</p>
+      ) : (
+        (transcript || reply) && (
+          <div className="mt-6 flex w-full max-w-md flex-col gap-2 text-center text-sm">
+            {transcript && <p className="text-muted">&ldquo;{transcript}&rdquo;</p>}
+            {reply && <p className="text-foreground">{reply}</p>}
+          </div>
+        )
       )}
 
       {error && (
@@ -263,29 +511,49 @@ export function VoiceMode({
         </p>
       )}
 
-      <button
-        type="button"
-        onClick={handleMicClick}
-        disabled={busy}
-        aria-pressed={phase === "recording"}
-        aria-label={phase === "recording" ? "Stop recording" : "Start speaking"}
-        className={`mt-10 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-md transition-transform disabled:opacity-60 ${
-          phase === "recording"
-            ? "scale-105 animate-pulse bg-accent"
-            : "bg-accent/70"
-        }`}
-      >
-        <MicIcon className="h-6 w-6" />
-      </button>
+      {playBlocked && (
+        <button
+          type="button"
+          onClick={playBlockedReply}
+          className="mt-6 rounded-full bg-accent px-5 py-2.5 text-sm font-bold text-white shadow-md"
+        >
+          Play Z1p&rsquo;s reply
+        </button>
+      )}
 
-      <p aria-live="polite" className="mt-3 text-xs text-muted">
+      {handsFree ? (
+        micBlocked && (
+          <button
+            type="button"
+            onClick={() => {
+              prepareAudioContext();
+              startListening();
+            }}
+            className="mt-10 flex items-center gap-2 rounded-full bg-accent px-5 py-3 text-sm font-bold text-white shadow-md"
+          >
+            <MicIcon className="h-5 w-5" />
+            Turn on microphone
+          </button>
+        )
+      ) : (
+        <button
+          type="button"
+          onClick={handleMicClick}
+          disabled={busy}
+          aria-pressed={phase === "recording"}
+          aria-label={phase === "recording" ? "Stop recording" : "Start speaking"}
+          className={`mt-10 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-md transition-transform disabled:opacity-60 ${
+            phase === "recording"
+              ? "scale-105 animate-pulse bg-accent"
+              : "bg-accent/70"
+          }`}
+        >
+          <MicIcon className="h-6 w-6" />
+        </button>
+      )}
+
+      <p aria-live="polite" className={`${handsFree && !micBlocked ? "mt-10" : "mt-3"} text-xs text-muted`}>
         {statusText}
-      </p>
-
-      <p className="mt-6 max-w-sm text-center text-[11px] leading-relaxed text-muted">
-        Your recording is sent to OpenAI to be transcribed; we don&rsquo;t keep
-        the audio, only the text in your chat. Z1P can make mistakes, so check
-        important information.
       </p>
     </div>
   );

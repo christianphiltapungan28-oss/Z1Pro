@@ -82,7 +82,7 @@ export async function POST(request: Request) {
   }
   if (await isOverDailyBudget("chatTokens")) {
     return NextResponse.json(
-      { ...current, error: "Z1 is very busy right now. Your scores will update later." },
+      { ...current, error: "Z1p is very busy right now. Your scores will update later." },
       { status: 503 }
     );
   }

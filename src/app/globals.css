@@ -59,6 +59,9 @@
   --ok: #28c76f;
   --gold: #f59f00;
   --gold-bg: #fff9db;
+  /* Top-bar calendar (Figma 370:2315 / Day Number 371:2242). */
+  --calendar-accent: #ed127d;
+  --calendar-tint: #faebf5;
 }
 
 [data-theme="aurora"] {
@@ -102,6 +105,7 @@
   --done-bg: rgba(43, 138, 62, 0.18);
   --done-line: rgba(43, 138, 62, 0.35);
   --gold-bg: rgba(245, 159, 0, 0.14);
+  --calendar-tint: rgba(237, 18, 125, 0.18);
 }
 
 [data-theme="aurora"] .ambient-background > div {
@@ -165,6 +169,8 @@
   --color-ok: var(--ok);
   --color-gold: var(--gold);
   --color-gold-bg: var(--gold-bg);
+  --color-calendar-accent: var(--calendar-accent);
+  --color-calendar-tint: var(--calendar-tint);
   --font-display: var(--font-google-sans-flex);
   --font-logo: var(--font-parkinsans);
   --font-sans: var(--font-google-sans-flex);
@@ -205,6 +211,17 @@ body {
   50% {
     transform: translate3d(0, -4%, 0) scale(1.03);
   }
+}
+
+/* Home ⇄ voice mode (src/lib/view-transition.ts): the orb glides between
+   its two spots while the rest of the screen cross-fades. */
+::view-transition-group(z1p-orb) {
+  animation-duration: 600ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 380ms;
 }
 
 @keyframes aurora-ambient-drift {
@@ -264,8 +281,7 @@ body {
   .status-dot-1,
   .status-dot-2 {
     animation: none;
-  }
-}
+  }}
 
 
 /* Long-form text on the legal pages (/privacy, /terms, /cookies, /refunds). */
@@ -329,8 +345,12 @@ body {
   font-size: 0.875rem;
 }
 
-/* Visible keyboard focus everywhere; mouse clicks don't trigger it. */
-:focus-visible {
-  outline: 2px solid var(--accent-strong);
-  outline-offset: 2px;
+/* Visible keyboard focus everywhere; mouse clicks don't trigger it. In the
+   base layer so an element's own `outline-none` wins: text boxes (which
+   count as focus-visible even when clicked) and dialog panels. */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--accent-strong);
+    outline-offset: 2px;
+  }
 }

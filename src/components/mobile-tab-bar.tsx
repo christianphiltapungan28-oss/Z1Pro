@@ -2,15 +2,15 @@
 
 import { useSession } from "next-auth/react";
 import { useState } from "react";
-import { AssetIcon } from "@/components/asset-icon";
+import { IconSetIcon, type IconSetName } from "@/components/asset-icon";
 import type { View } from "@/components/app-shell";
 
-const TABS: { label: string; icon: string; views: View[]; target: View; requiresAuth: boolean }[] = [
-  { label: "Home", icon: "nav/home", views: ["home"], target: "home", requiresAuth: false },
-  { label: "Journeys", icon: "nav/stacks", views: ["journeys"], target: "journeys", requiresAuth: true },
+const TABS: { label: string; icon: IconSetName; views: View[]; target: View; requiresAuth: boolean }[] = [
+  { label: "Home", icon: "home", views: ["home"], target: "home", requiresAuth: false },
+  { label: "Journeys", icon: "stacks", views: ["journeys"], target: "journeys", requiresAuth: true },
   {
     label: "Convos",
-    icon: "nav/convos",
+    icon: "chat-spark",
     views: ["conversations", "conversation"],
     target: "conversations",
     requiresAuth: true,
@@ -77,7 +77,10 @@ export function MobileTabBar({
                 active ? "text-accent" : "text-foreground"
               }`}
             >
-              <AssetIcon name={tab.icon} width={22.213} height={18.257} />
+              {/* Each icon at its own proportions (all were drawn at the home icon's). */}
+              <span className="flex h-6 items-center justify-center">
+                <IconSetIcon name={tab.icon} size={tab.icon === "chat-spark" ? 24 : 22} />
+              </span>
               {tab.label}
             </button>
           );

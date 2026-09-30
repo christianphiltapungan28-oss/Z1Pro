@@ -1,4 +1,8 @@
+"use client";
+
+import { useRef } from "react";
 import type { Appearance } from "@/lib/use-appearance";
+import { useOrbMotion, type LevelSource } from "@/lib/use-orb-motion";
 
 function GlossyOrb({ size }: { size: number }) {
   return (
@@ -127,14 +131,38 @@ function MeshOrb({ size }: { size: number }) {
   );
 }
 
+/**
+ * `active` makes the orb pulse, for while Z1p is thinking or speaking;
+ * `getLevel` gives the voice's loudness so the pulse follows it.
+ */
 export function Orb({
   size = 168,
   appearance = "light",
+  active = false,
+  getLevel,
 }: {
   size?: number;
   appearance?: Appearance;
+  active?: boolean;
+  getLevel?: LevelSource;
 }) {
-  if (appearance === "light") return <SoftOrb size={size} />;
-  if (appearance === "aurora") return <MeshOrb size={size} />;
-  return <GlossyOrb size={size} />;
+  const ref = useRef<HTMLDivElement>(null);
+  useOrbMotion(ref, active, getLevel);
+  const orb =
+    appearance === "light" ? (
+      <SoftOrb size={size} />
+    ) : appearance === "aurora" ? (
+      <MeshOrb size={size} />
+    ) : (
+      <GlossyOrb size={size} />
+    );
+  return (
+    <div
+      ref={ref}
+      className="shrink-0"
+      style={{ transform: "scale(calc(1 + var(--orb-level, 0) * 0.07))" }}
+    >
+      {orb}
+    </div>
+  );
 }

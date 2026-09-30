@@ -86,7 +86,7 @@ export function ConversationsList({
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 px-[11px] md:px-0">
-        <label className="flex h-12 w-full items-center gap-2.5 rounded-[10px] border border-divider bg-background px-3.5 text-label focus-within:ring-2 focus-within:ring-accent-strong md:h-auto md:max-w-[500px] md:px-4 md:py-2.5">
+        <label className="flex h-12 w-full items-center gap-2.5 rounded-[10px] border border-divider bg-background px-3.5 text-label focus-within:border-foreground/30 md:h-auto md:max-w-[500px] md:px-4 md:py-2.5">
           <span className="text-secondary md:hidden">
             <AssetIcon name="search" width={20} height={20} />
           </span>

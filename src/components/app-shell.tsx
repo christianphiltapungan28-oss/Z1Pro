@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AmbientBackground } from "@/components/ambient-background";
 import { AppearanceDialog } from "@/components/appearance-dialog";
+import type { Outgoing } from "@/components/chat-attachments";
 import { ChatHome } from "@/components/chat-home";
 import { ConversationView } from "@/components/conversation-view";
 import { ConversationsList } from "@/components/conversations-list";
@@ -19,6 +20,7 @@ import { Sidebar } from "@/components/sidebar";
 import { Topbar } from "@/components/topbar";
 import { VoiceMode } from "@/components/voice-mode";
 import { useAppearance } from "@/lib/use-appearance";
+import { withViewTransition } from "@/lib/view-transition";
 import type { Journey } from "@/types/journey";
 
 export type View =
@@ -77,7 +79,7 @@ export function AppShell() {
     string | null
   >(null);
   // A message typed on Home, handed to the conversation view to send.
-  const [pendingMessage, setPendingMessage] = useState<string | null>(null);
+  const [pendingMessage, setPendingMessage] = useState<Outgoing | null>(null);
   const [checkoutStatus, setCheckoutStatus] = useState<string | null>(null);
   const [journeys, setJourneys] = useState<Journey[]>([]);
   const [journeysLoading, setJourneysLoading] = useState(true);
@@ -124,13 +126,29 @@ export function AppShell() {
   }
 
   function changeView(next: View) {
-    setView(next);
-    setVoiceMode(false);
-    setSidebarOpen(false);
-    if (next === "home") setActiveConversationId(null);
+    const apply = () => {
+      setView(next);
+      setVoiceMode(false);
+      setSidebarOpen(false);
+      if (next === "home") setActiveConversationId(null);
+    };
+    // Leaving voice mode for Home glides the orb back to its place.
+    if (voiceMode && next === "home") withViewTransition(apply);
+    else apply();
   }
 
-  function openConversation(id: string, firstMessage: string | null = null) {
+  // The logo: Home from anywhere else; on Home itself, a fresh reload.
+  function goHome() {
+    if (view === "home" && !voiceMode) window.location.reload();
+    else changeView("home");
+  }
+
+  // Tapping the orb glides it into voice mode.
+  function startVoice() {
+    withViewTransition(() => setVoiceMode(true));
+  }
+
+  function openConversation(id: string, firstMessage: Outgoing | null = null) {
     setActiveConversationId(id);
     setPendingMessage(firstMessage);
     setVoiceMode(false);
@@ -197,6 +215,7 @@ export function AppShell() {
           onOpenProfile={() => changeView("profile")}
           onOpenOrganization={() => setOrganizationOpen(true)}
           onOpenJourney={openJourney}
+          onGoHome={goHome}
           journeys={journeys}
         />
 
@@ -207,7 +226,7 @@ export function AppShell() {
               <Topbar
                 onMenuClick={() => setSidebarOpen(true)}
                 title="Conversations"
-                subtitle="Access and manage your ongoing chats and conversions with Z1"
+                subtitle="Access and manage your ongoing chats and conversations with Z1p"
               />
             ) : view === "settings" ? (
               <Topbar
@@ -274,7 +293,7 @@ export function AppShell() {
                 initialMessage={pendingMessage}
                 onInitialMessageSent={() => setPendingMessage(null)}
                 onBack={() => changeView("conversations")}
-                onStartVoice={() => setVoiceMode(true)}
+                onStartVoice={startVoice}
                 onDeleted={() => changeView("conversations")}
                 onCreateJourney={createJourney}
                 onViewJourney={(id) => router.push(`/journeys/${id}`)}
@@ -284,7 +303,7 @@ export function AppShell() {
                 authenticated={authenticated}
                 onRequireAuth={requireAuth}
                 onOpenConversation={openConversation}
-                onStartVoice={() => setVoiceMode(true)}
+                onStartVoice={startVoice}
                 onOpenNotifications={() => changeView("notifications")}
                 appearance={appearance}
               />

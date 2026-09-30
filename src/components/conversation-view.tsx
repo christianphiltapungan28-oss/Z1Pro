@@ -1,8 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AssetIcon } from "@/components/asset-icon";
+import { AssetIcon, IconSetIcon } from "@/components/asset-icon";
+import {
+  AttachButton,
+  AttachmentChips,
+  messageRequest,
+  SentAttachments,
+  useChatAttachments,
+  type Outgoing,
+} from "@/components/chat-attachments";
 import { MarkdownMessage } from "@/components/markdown-message";
+import { splitAttachedLine } from "@/lib/chat-attachments";
 import { useDialog } from "@/lib/use-dialog";
 import { useMediaQuery } from "@/lib/use-media-query";
 import { formatRelativeTime } from "@/lib/relative-time";
@@ -25,10 +34,12 @@ type ConversationMeta = {
 
 function MessageRow({ message }: { message: Message }) {
   if (message.role === "user") {
+    const { text, files } = splitAttachedLine(message.content);
     return (
       <div className="flex w-full justify-end">
-        <div className="max-w-[292px] whitespace-pre-wrap rounded-2xl bg-accent px-3.5 py-[11px] text-[13px] leading-[18px] font-medium text-white md:max-w-[700px] md:px-[18px] md:py-3.5 md:text-[15px] md:leading-[22px] md:font-normal">
-          {message.content}
+        <div className="flex max-w-[292px] flex-col gap-2 rounded-2xl bg-accent px-3.5 py-[11px] text-[13px] leading-[18px] font-medium text-white md:max-w-[700px] md:px-[18px] md:py-3.5 md:text-[15px] md:leading-[22px] md:font-normal">
+          {files.length > 0 && <SentAttachments names={files} />}
+          {text && <p className="whitespace-pre-wrap">{text}</p>}
         </div>
       </div>
     );
@@ -234,7 +245,7 @@ export function ConversationView({
 }: {
   conversationId: string;
   /** A first message typed on Home, sent once this view opens. */
-  initialMessage?: string | null;
+  initialMessage?: Outgoing | null;
   onInitialMessageSent?: () => void;
   onBack: () => void;
   onStartVoice: () => void;
@@ -256,6 +267,7 @@ export function ConversationView({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [converting, setConverting] = useState(false);
   const [createdJourneyTitle, setCreatedJourneyTitle] = useState<string | null>(null);
+  const attachments = useChatAttachments();
   const scrollRef = useRef<HTMLDivElement>(null);
   const phone = useMediaQuery("(max-width: 767px)");
   const sentInitial = useRef(false);
@@ -291,26 +303,28 @@ export function ConversationView({
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [menuOpen]);
 
-  async function send(content: string) {
+  async function send({ content, files }: Outgoing) {
     const trimmed = content.trim();
-    if (!trimmed || sending) return;
+    if ((!trimmed && files.length === 0) || sending) return;
     setError(null);
     setSending(true);
     try {
-      const res = await fetch(`/api/conversations/${conversationId}/messages`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: trimmed }),
-      });
+      const res = await fetch(
+        `/api/conversations/${conversationId}/messages`,
+        messageRequest({ content: trimmed, files })
+      );
       if (!res.ok) {
         setDraft(trimmed);
-        if (res.status === 429) {
-          const data = await res.json().catch(() => null);
+        attachments.restore(files);
+        const data = await res.json().catch(() => null);
+        if (res.status === 429 && data?.dailyLimit) {
           setError(
-            data?.dailyLimit
-              ? `You've hit today's ${data.dailyLimit}-message limit on the ${data.planCode} plan. Upgrade for more.`
-              : "You've hit today's message limit. Try again later."
+            `You've hit today's ${data.dailyLimit}-message limit on the ${data.planCode} plan. Upgrade for more.`
           );
+        } else if (res.status === 429) {
+          setError(data?.error ?? "You've hit today's message limit. Try again later.");
+        } else if (res.status === 413 || res.status === 415 || (res.status === 400 && files.length > 0)) {
+          setError(data?.error ?? "Those files couldn't be attached.");
         } else {
           setError("Something went wrong sending that message. Try again.");
         }
@@ -337,10 +351,14 @@ export function ConversationView({
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const content = draft;
+    const outgoing = { content: draft, files: attachments.files };
+    if (!outgoing.content.trim() && outgoing.files.length === 0) return;
     setDraft("");
-    void send(content);
+    attachments.clear();
+    void send(outgoing);
   }
+
+  const canSend = !sending && (draft.trim() !== "" || attachments.files.length > 0);
 
   async function togglePinned() {
     if (!meta) return;
@@ -508,15 +526,23 @@ export function ConversationView({
         </div>
       </div>
 
-      {error && (
+      {(error || attachments.problem) && (
         <p role="alert" className="px-4 pb-2 text-center text-xs text-red-500 md:px-10">
-          {error}
+          {attachments.problem ?? error}
         </p>
       )}
 
+      <AttachmentChips
+        files={attachments.files}
+        onRemove={attachments.remove}
+        className="shrink-0 bg-background px-3.5 pt-2 md:border-t md:border-divider md:px-10 md:pt-4"
+      />
+
       <form
         onSubmit={handleSubmit}
-        className="flex shrink-0 items-center gap-2 bg-background px-3.5 pt-2 pb-[max(12px,env(safe-area-inset-bottom))] md:gap-4 md:border-t md:border-divider md:px-10 md:py-5"
+        className={`flex shrink-0 items-center gap-2 bg-background px-3.5 pt-2 pb-[max(12px,env(safe-area-inset-bottom))] md:gap-4 md:px-10 md:py-5 ${
+          attachments.files.length > 0 ? "md:pt-3" : "md:border-t md:border-divider"
+        }`}
       >
         <button
           type="button"
@@ -526,7 +552,12 @@ export function ConversationView({
         >
           <AssetIcon name="mic" width={18} height={18} />
         </button>
-        <div className="flex h-[54px] min-w-0 flex-1 items-center justify-between gap-2 rounded-[10px] border border-field-border bg-background px-[19px] focus-within:ring-2 focus-within:ring-accent-strong md:h-11 md:rounded-xl md:border-divider md:bg-surface md:px-4">
+        <div className="flex h-[54px] min-w-0 flex-1 items-center justify-between gap-2 rounded-[10px] border border-field-border bg-background pr-[19px] pl-2 focus-within:border-foreground/30 md:h-11 md:rounded-xl md:border-divider md:bg-surface md:pr-4 md:pl-1.5">
+          <AttachButton
+            onPick={attachments.add}
+            disabled={sending}
+            className="size-9 md:size-8"
+          />
           <input
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
@@ -536,7 +567,7 @@ export function ConversationView({
           />
           <button
             type="submit"
-            disabled={sending || !draft.trim()}
+            disabled={!canSend}
             aria-label="Send"
             className="hidden shrink-0 disabled:opacity-40 md:block"
           >
@@ -547,7 +578,7 @@ export function ConversationView({
 
         {/* Phones: one round button that sends when there's text, and
             otherwise starts voice (the design shows the mic). */}
-        {draft.trim() ? (
+        {draft.trim() || attachments.files.length > 0 ? (
           <button
             type="submit"
             disabled={sending}
@@ -581,7 +612,7 @@ export function ConversationView({
             linked ? "border-accent bg-accent/[0.08] text-accent" : "border-field-border text-foreground"
           }`}
         >
-          <AssetIcon name="nav/stacks" width={22.213} height={18.257} />
+          <IconSetIcon name="stacks" size={21} />
         </button>
 
         {linked ? (

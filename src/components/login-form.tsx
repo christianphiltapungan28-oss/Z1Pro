@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useState } from "react";
+import { Logo } from "@/components/logo";
 import { LEGAL } from "@/lib/legal";
 
 export type AuthView = "signin" | "signup" | "forgot";
@@ -34,11 +35,9 @@ const COPY: Record<AuthView, { title: string; description: string; phoneTitle: s
 function PhoneHeader({ title, description }: { title: string; description: string }) {
   return (
     <header className="flex flex-col gap-[31px] rounded-b-[50px] bg-accent px-[31px] pt-3 pb-[54px] text-white md:hidden">
-      <div role="img" aria-label="Z1P" className="flex items-center gap-2">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/ui/logo-mark-white.svg" alt="" width={24} height={24} />
-        <span className="font-logo text-[28px] leading-normal font-extrabold">Z1P</span>
-      </div>
+      <Link href="/" aria-label="Z1P.pro home" className="flex self-start py-2">
+        <Logo height={26} className="text-white" />
+      </Link>
       <div className="flex flex-col">
         <h1 className="text-[28px] font-bold">{title}</h1>
         <p className="text-base leading-[1.35] font-medium">{description}</p>

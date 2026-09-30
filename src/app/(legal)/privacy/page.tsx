@@ -58,9 +58,18 @@ export default function PrivacyPage() {
       <ul>
         <li>Messages you type to the assistant and the replies it generates.</li>
         <li>
-          Voice input: when you use voice mode, your recording is sent to our AI
-          provider to be converted to text. We keep the resulting text as a
-          chat message; we do not store the audio recording itself.
+          Voice input: while voice mode is open, your browser listens for
+          &ldquo;Zip&rdquo; and converts what you say to text using its own
+          speech service (for example Google in Chrome or Apple in Safari),
+          under that company&rsquo;s terms. In browsers without one, your
+          recording is sent to our AI provider to be converted to text instead.
+          Either way we keep only the resulting text as a chat message; we do
+          not store the audio itself.
+        </li>
+        <li>
+          Files you attach to a chat message (PDFs, images and text files) are
+          sent to our AI provider to be read with that message. We keep only
+          their names in the chat, not the files themselves.
         </li>
         <li>Conversation titles, pinned chats and Journeys you save.</li>
         <li>

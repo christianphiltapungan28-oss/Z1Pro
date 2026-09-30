@@ -96,7 +96,7 @@ async function gatherInput(userId: string) {
 // ---------------------------------------------------------------------------
 // The AI call (cheapest model, once a week at most per user)
 
-const PROMPT = `You are Z1, a warm AI life coach. From a user's own chat messages and journeys, estimate how well each life area is going for them right now. Be kind, specific and honest. Never diagnose medical or mental-health conditions, never judge beliefs or religion, and don't guess about areas the material doesn't mention. Write to the user as "you".
+const PROMPT = `You are Z1p, a warm AI life coach. From a user's own chat messages and journeys, estimate how well each life area is going for them right now. Be kind, specific and honest. Never diagnose medical or mental-health conditions, never judge beliefs or religion, and don't guess about areas the material doesn't mention. Write to the user as "you".
 
 Areas:
 ${LIFE_AREAS.map((a) => `- ${a.key} ("${a.name}"): ${a.covers}`).join("\n")}
@@ -141,7 +141,7 @@ function normaliseArea(key: LifeMetricCategory["key"], raw: RawArea | undefined,
     chats,
     note:
       score === null
-        ? "Talk with Z1 about this part of your life and a score will appear here."
+        ? "Talk with Z1p about this part of your life and a score will appear here."
         : clean(raw?.note, 200),
   };
 }

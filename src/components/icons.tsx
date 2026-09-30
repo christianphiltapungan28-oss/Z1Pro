@@ -59,15 +59,6 @@ export function ToolsIcon({ className }: IconProps) {
   );
 }
 
-export function SettingsIcon({ className }: IconProps) {
-  return (
-    <svg className={className} {...base}>
-      <circle cx="12" cy="12" r="3.2" />
-      <path d="M19.4 13.5a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.04 1.56V19.5a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1.1-1.56 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1.04H4.5a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.56-1.1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H10.5a1.7 1.7 0 0 0 1.04-1.56V4.5a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1.04 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.09a1.7 1.7 0 0 0 1.56 1.04h.09a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.56 1.04Z" />
-    </svg>
-  );
-}
-
 export function HelpIcon({ className }: IconProps) {
   return (
     <svg className={className} {...base}>
@@ -217,26 +208,6 @@ export function SendIcon({ className }: IconProps) {
     <svg className={className} {...base}>
       <path d="M12 19V5" />
       <path d="M6 11l6-6 6 6" />
-    </svg>
-  );
-}
-
-export function HomeIcon({ className }: IconProps) {
-  return (
-    <svg className={className} {...base}>
-      <path d="M4 11.5 12 4l8 7.5" />
-      <path d="M6 10v9a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-9" />
-      <path d="M10 20v-6h4v6" />
-    </svg>
-  );
-}
-
-export function StacksIcon({ className }: IconProps) {
-  return (
-    <svg className={className} {...base}>
-      <path d="M12 3.5 3.5 8 12 12.5 20.5 8 12 3.5Z" />
-      <path d="M3.5 12 12 16.5 20.5 12" />
-      <path d="M3.5 16 12 20.5 20.5 16" />
     </svg>
   );
 }

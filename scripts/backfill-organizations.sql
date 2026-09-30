@@ -31,7 +31,6 @@ BEGIN
     VALUES (new_org_id, u.id, 'owner');
 
     UPDATE users SET default_org_id = new_org_id WHERE id = u.id;
-
     UPDATE subscriptions SET org_id = new_org_id WHERE user_id = u.id AND org_id IS NULL;
     UPDATE payments      SET org_id = new_org_id WHERE user_id = u.id AND org_id IS NULL;
   END LOOP;

@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { LoginForm, type AuthView } from "@/components/login-form";
+import { Logo } from "@/components/logo";
 
 /** The auth screen from the Figma file: brand panel plus the form. */
 export function LoginScreen({
@@ -16,23 +18,9 @@ export function LoginScreen({
   return (
     <div className="flex h-full min-h-dvh overflow-y-auto bg-background">
       <aside className="relative hidden w-[500px] shrink-0 overflow-hidden border-r border-field-border bg-accent lg:block">
-        <div
-          role="img"
-          aria-label="Z1P"
-          className="absolute left-10 top-[42px] grid place-items-start leading-none"
-        >
-          <span className="col-start-1 row-start-1 ml-[32.88px] font-logo text-[45px] font-extrabold leading-normal text-white">
-            Z1P
-          </span>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/ui/logo-mark-white.svg"
-            alt=""
-            width={31.9209}
-            height={31.9209}
-            className="col-start-1 row-start-1 mt-[15.32px]"
-          />
-        </div>
+        <Link href="/" aria-label="Z1P.pro home" className="absolute left-10 top-[50px] flex">
+          <Logo height={33.5} className="text-white" />
+        </Link>
         <div className="absolute left-10 top-[323px] flex w-[420px] flex-col gap-[23px] text-white">
           <p className="text-5xl font-bold leading-[1.08]">
             Turn reflection into forward motion.

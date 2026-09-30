@@ -9,6 +9,7 @@ import {
   journeyMessages,
   journeySteps,
   journeys,
+  legalAcceptances,
   lifeMetrics,
   organizationMembers,
   organizations,
@@ -170,6 +171,13 @@ export async function GET() {
       .where(eq(lifeMetrics.userId, userId))
   );
 
+  const [policyAcceptance] = await optionalRows(
+    db
+      .select({ version: legalAcceptances.version, acceptedAt: legalAcceptances.acceptedAt })
+      .from(legalAcceptances)
+      .where(eq(legalAcceptances.userId, userId))
+  );
+
   const memberships = await db
     .select({ organization: organizations.name, role: organizationMembers.role })
     .from(organizationMembers)
@@ -210,6 +218,7 @@ export async function GET() {
       coaching: forJourney(coachingRows, id),
     })),
     lifeMetrics: metricsRow ?? null,
+    policyAcceptance: policyAcceptance ?? null,
     organizations: memberships,
     payments: paymentRows,
   };

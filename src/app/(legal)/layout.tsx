@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Logo } from "@/components/logo";
 import { LEGAL } from "@/lib/legal";
 
 const LEGAL_LINKS = [
@@ -17,9 +18,8 @@ export default function LegalLayout({
     <div className="h-full overflow-y-auto bg-background text-foreground">
       <header className="border-b border-card-border">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
-          <Link href="/" className="flex items-center gap-2">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo-mark.svg" alt="" className="h-7 w-auto" />
+          <Link href="/" className="flex items-center gap-3" aria-label={`Back to ${LEGAL.productName}`}>
+            <Logo height={26} />
             <span className="font-display text-sm font-semibold">
               Back to {LEGAL.productName}
             </span>

@@ -126,6 +126,19 @@ export const userPasswords = pgTable("user_passwords", {
     .defaultNow(),
 });
 
+// Acceptance of the Terms, Privacy Policy and Cookie Policy — created by
+// scripts/add-legal-acceptance.sql.
+export const legalAcceptances = pgTable("legal_acceptances", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  /** The policies' "Last updated" date that was accepted (LEGAL.lastUpdated). */
+  version: text("version").notNull(),
+  acceptedAt: timestamp("accepted_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 // Two-factor login for password accounts — created by
 // scripts/add-two-factor.sql.
 export const userTwoFactor = pgTable("user_two_factor", {

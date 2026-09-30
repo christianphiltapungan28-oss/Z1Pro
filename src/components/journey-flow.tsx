@@ -538,7 +538,7 @@ export function JourneyFlow({ journeyId }: { journeyId: string }) {
     mobileBody = (
       <>
         <div role="status" className="flex flex-col items-center gap-2 py-4 text-center">
-          <DesignOrb width={130} />
+          <DesignOrb width={130} active />
           <p className="text-[11px] font-bold uppercase text-flow">
             {pendingFile ? "Zip AI · Analyzing your file" : "Zip AI · Planning your steps"}
           </p>
@@ -1195,7 +1195,7 @@ export function JourneyFlow({ journeyId }: { journeyId: string }) {
               </div>
               <form
                 onSubmit={handleSubmit}
-                className={`flex w-full items-center gap-3 rounded-[14px] border border-flow-line bg-flow-bg px-5 py-3 focus-within:ring-2 focus-within:ring-flow ${
+                className={`flex w-full items-center gap-3 rounded-[14px] border border-flow-line bg-flow-bg px-5 py-3 focus-within:border-foreground/30 ${
                   listening ? "opacity-50" : ""
                 }`}
               >

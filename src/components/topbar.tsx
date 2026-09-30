@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { AssetIcon } from "@/components/asset-icon";
+import { useEffect, useRef, useState } from "react";
+import { AssetIcon, IconSetIcon } from "@/components/asset-icon";
+import { CalendarPopover } from "@/components/calendar-popover";
 import { MenuIcon } from "@/components/icons";
 
 // Matches the design's "Monday, September 7 2026" (no comma before the year).
@@ -24,11 +25,30 @@ export function Topbar({
   subtitle?: string;
 }) {
   const [today, setToday] = useState<string | null>(null);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const calendarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- today's date depends on the client's clock, not server-rendered state
     setToday(formatToday(new Date()));
   }, []);
+
+  // The calendar closes on a click outside it or Escape.
+  useEffect(() => {
+    if (!calendarOpen) return;
+    function onPointerDown(e: PointerEvent) {
+      if (!calendarRef.current?.contains(e.target as Node)) setCalendarOpen(false);
+    }
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setCalendarOpen(false);
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [calendarOpen]);
 
   return (
     <header className="flex h-[94px] shrink-0 items-center gap-4 border-b border-divider px-4 sm:pl-[51px] sm:pr-[42px]">
@@ -49,7 +69,7 @@ export function Topbar({
           )}
         </div>
       ) : (
-      <div className="flex w-full max-w-[408px] items-center gap-2.5 rounded-[10px] border border-input-border p-2.5 focus-within:ring-2 focus-within:ring-accent-strong">
+      <div className="flex w-full max-w-[408px] items-center gap-2.5 rounded-[10px] border border-input-border p-2.5 focus-within:border-foreground/30">
         <span className="flex h-6 w-6 shrink-0 items-center justify-center text-search-placeholder">
           <AssetIcon name="search" width={20.207} height={20.207} />
         </span>
@@ -62,11 +82,25 @@ export function Topbar({
       </div>
       )}
 
-      <div className="ml-auto hidden items-center gap-[7px] text-base text-foreground lg:flex">
-        <span className="whitespace-nowrap">{today}</span>
-        <span className="flex h-[27px] w-[27px] shrink-0 items-center justify-center">
-          <AssetIcon name="calendar-clock" width={22.5} height={22.5} />
-        </span>
+      <div ref={calendarRef} className="relative ml-auto hidden lg:block">
+        <button
+          type="button"
+          onClick={() => setCalendarOpen((open) => !open)}
+          aria-expanded={calendarOpen}
+          aria-haspopup="dialog"
+          aria-label={today ? `${today}. Open calendar` : "Open calendar"}
+          className="flex items-center gap-[7px] rounded-lg px-1.5 py-1 text-base text-foreground hover:bg-foreground/5"
+        >
+          <span className="whitespace-nowrap">{today}</span>
+          <span className="flex h-[27px] w-[27px] shrink-0 items-center justify-center">
+            <IconSetIcon name="calendar-clock" size={27} />
+          </span>
+        </button>
+        {calendarOpen && (
+          <div role="dialog" aria-label="Calendar" className="absolute top-full right-0 z-50 mt-3">
+            <CalendarPopover today={new Date()} />
+          </div>
+        )}
       </div>
     </header>
   );

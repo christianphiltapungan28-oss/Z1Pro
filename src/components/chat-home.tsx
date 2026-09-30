@@ -3,11 +3,18 @@
 import { useSession } from "next-auth/react";
 import { useState } from "react";
 import { DesignOrb } from "@/components/design-orb";
-import { PlusIcon, SendIcon } from "@/components/icons";
+import {
+  AttachButton,
+  AttachmentChips,
+  useChatAttachments,
+  type Outgoing,
+} from "@/components/chat-attachments";
+import { SendIcon } from "@/components/icons";
 import { MobileSearchHeader } from "@/components/mobile-search-header";
 import { Orb } from "@/components/orb";
 import type { Appearance } from "@/lib/use-appearance";
 import { useMediaQuery } from "@/lib/use-media-query";
+import { ORB_TRANSITION } from "@/lib/view-transition";
 
 function greetingForHour(hour: number) {
   if (hour < 5) return "Good Night";
@@ -31,7 +38,7 @@ export function ChatHome({
 }: {
   authenticated: boolean;
   onRequireAuth: () => void;
-  onOpenConversation: (id: string, firstMessage: string) => void;
+  onOpenConversation: (id: string, firstMessage: Outgoing) => void;
   onStartVoice: () => void;
   onOpenNotifications: () => void;
   appearance?: Appearance;
@@ -44,11 +51,14 @@ export function ChatHome({
   const [message, setMessage] = useState("");
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const attachments = useChatAttachments();
+  const canSend = !starting && (message.trim() !== "" || attachments.files.length > 0);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const trimmed = message.trim();
-    if (!trimmed || starting) return;
+    const files = attachments.files;
+    if ((!trimmed && files.length === 0) || starting) return;
     if (!authenticated) {
       onRequireAuth();
       return;
@@ -60,7 +70,7 @@ export function ChatHome({
       const res = await fetch("/api/conversations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: trimmed.slice(0, 60) }),
+        body: JSON.stringify({ title: (trimmed || files.map((f) => f.name).join(", ")).slice(0, 60) }),
       });
       if (!res.ok) {
         setError(
@@ -72,7 +82,8 @@ export function ChatHome({
       }
       const conversation: { id: string } = await res.json();
       setMessage("");
-      onOpenConversation(conversation.id, trimmed);
+      attachments.clear();
+      onOpenConversation(conversation.id, { content: trimmed, files });
     } finally {
       setStarting(false);
     }
@@ -105,11 +116,14 @@ export function ChatHome({
               onClick={onStartVoice}
               className="flex w-[248px] flex-col items-center gap-[22px]"
             >
-              {appearance === "light" ? (
-                <DesignOrb width={phone ? 173 : 241} />
-              ) : (
-                <Orb size={140} appearance={appearance} />
-              )}
+              {/* Named so it glides into voice mode's orb (see app-shell). */}
+              <span style={{ viewTransitionName: ORB_TRANSITION }}>
+                {appearance === "light" ? (
+                  <DesignOrb width={phone ? 173 : 241} />
+                ) : (
+                  <Orb size={140} appearance={appearance} />
+                )}
+              </span>
               <span className="w-full text-center text-foreground">
                 <span className="-mb-px block text-2xl font-medium">
                   Speak with Z1p
@@ -123,34 +137,44 @@ export function ChatHome({
         </div>
       </div>
 
-      {/* The mobile design has no text box on Home: typing happens in Convos. */}
-      <div className="hidden md:contents">
-      {error && (
+      {(error || attachments.problem) && (
         <p
           role="alert"
           className="mx-auto mb-2 w-full max-w-xl px-4 text-center text-xs text-red-500 sm:px-8"
         >
-          {error}
+          {attachments.problem ?? error}
         </p>
       )}
 
+      <AttachmentChips
+        files={attachments.files}
+        onRemove={attachments.remove}
+        className="mx-auto mb-2 w-full max-w-xl px-4 sm:px-8"
+      />
+
       <form
         onSubmit={handleSubmit}
-        className="mx-auto flex w-full max-w-xl items-center gap-3 px-4 pb-[max(2rem,calc(env(safe-area-inset-bottom)+1rem))] sm:px-8"
+        // Phones: the tab bar below already clears the home indicator.
+        className="mx-auto flex w-full max-w-xl items-center gap-3 px-4 pb-8 sm:px-8 md:pb-[max(2rem,calc(env(safe-area-inset-bottom)+1rem))]"
       >
-        <div className="flex flex-1 items-center gap-2 rounded-full border border-input-border bg-input px-4 py-3 focus-within:ring-2 focus-within:ring-accent-strong">
-          <PlusIcon className="h-4.5 w-4.5 shrink-0 text-muted" />
+        <div className="flex flex-1 items-center gap-2 rounded-full border border-input-border bg-input py-1.5 pr-4 pl-1.5 focus-within:border-foreground/30">
+          <AttachButton
+            onPick={(picked) => (authenticated ? attachments.add(picked) : onRequireAuth())}
+            disabled={starting}
+            className="size-9"
+          />
           <input
             value={message}
             aria-label="Message Z1P"
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Ask anything"
-            className="w-full bg-transparent text-sm text-foreground placeholder:text-muted focus:outline-none"
+            // 16px on phones, or iOS zooms the page in when the box is tapped.
+            className="w-full bg-transparent text-base text-foreground placeholder:text-muted focus:outline-none md:text-sm"
           />
         </div>
         <button
           type="submit"
-          disabled={starting || !message.trim()}
+          disabled={!canSend}
           aria-label="Send"
           className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-accent text-white shadow-sm transition-opacity hover:opacity-90 disabled:opacity-50"
         >
@@ -160,7 +184,6 @@ export function ChatHome({
       <p className="-mt-5 mb-3 px-4 text-center text-[11px] text-muted sm:-mt-6">
         Z1P can make mistakes. Check important information.
       </p>
-      </div>
     </div>
   );
 }

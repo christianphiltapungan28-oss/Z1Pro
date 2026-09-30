@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Google_Sans_Flex, Parkinsans } from "next/font/google";
 import { headers } from "next/headers";
+import { LegalGate } from "@/components/legal-gate";
 import { AuthSessionProvider } from "@/components/providers/session-provider";
 import "./globals.css";
 
@@ -48,7 +49,10 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <script nonce={nonce} dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body className="h-full font-sans">
-        <AuthSessionProvider>{children}</AuthSessionProvider>
+        <AuthSessionProvider>
+          {children}
+          <LegalGate />
+        </AuthSessionProvider>
       </body>
     </html>
   );
