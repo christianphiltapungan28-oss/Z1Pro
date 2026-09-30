@@ -144,6 +144,10 @@ function JourneyDeck({
     setFront((f) => (f + delta + count) % count);
   }
 
+  // Nothing to stack yet (e.g. while journeys load): with no cards the
+  // deck's height would come out as NaN.
+  if (count === 0) return null;
+
   return (
     <div
       className="relative w-full touch-none select-none"
