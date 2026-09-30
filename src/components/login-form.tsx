@@ -406,7 +406,7 @@ export function LoginForm({
               <Field
                 label="First name"
                 autoComplete="given-name"
-                placeholder="Davy"
+                placeholder="Your first name"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 maxLength={40}
@@ -415,7 +415,7 @@ export function LoginForm({
               <Field
                 label="Last name"
                 autoComplete="family-name"
-                placeholder="Mercado"
+                placeholder="Your last name"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 maxLength={40}
