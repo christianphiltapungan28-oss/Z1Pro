@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { userPasswords, users } from "@/db/schema";
+import { betaAllows, NOT_INVITED } from "@/lib/beta";
 import { isMissingTable } from "@/lib/db-errors";
 import { dummyHash, verifyPassword } from "@/lib/password";
 import { startSession } from "@/lib/password-session";
@@ -17,6 +18,9 @@ export async function POST(request: Request) {
   const password = typeof body?.password === "string" ? body.password : "";
   if (!email || !password || password.length > 200) {
     return NextResponse.json({ error: "Enter your email and password." }, { status: 400 });
+  }
+  if (!betaAllows(email)) {
+    return NextResponse.json({ error: NOT_INVITED }, { status: 403 });
   }
 
   const ipLimit = await rateLimit(`login:ip:${clientIp(request)}`, 20, 15 * 60_000);

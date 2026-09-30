@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
 import { users } from "@/db/schema";
+import { betaAllows, NOT_INVITED } from "@/lib/beta";
 import { emailConfigured, emailLink, sendEmail } from "@/lib/email";
 import { hashPassword, passwordProblem } from "@/lib/password";
 import { issueToken, type PendingSignup } from "@/lib/password-tokens";
@@ -46,6 +47,9 @@ export async function POST(request: Request) {
   }
   if (!EMAIL_RE.test(email) || email.length > 254) {
     return NextResponse.json({ error: "Enter a valid email address." }, { status: 400 });
+  }
+  if (!betaAllows(email)) {
+    return NextResponse.json({ error: NOT_INVITED }, { status: 403 });
   }
   const problem = passwordProblem(password);
   if (problem) {

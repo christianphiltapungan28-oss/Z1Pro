@@ -5,6 +5,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { organizationMembers, organizations, users } from "@/db/schema";
 import { createDbAdapter } from "@/lib/auth-adapter";
+import { betaAllows } from "@/lib/beta";
 import { createPersonalOrg } from "@/lib/personal-org";
 
 function providerProfileImage(profile: unknown) {
@@ -38,6 +39,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     error: "/login",
   },
   callbacks: {
+    // Private beta: runs before an account is created, so uninvited people
+    // never get one (src/lib/beta.ts).
+    signIn({ user }) {
+      return betaAllows(user.email) ? true : "/login?error=NotInvited";
+    },
     async session({ session, user }) {
       session.user.id = user.id;
       session.user.currentOrgId = null;

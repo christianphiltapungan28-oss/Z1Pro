@@ -7,6 +7,9 @@ import type { View } from "@/components/app-shell";
 import type { Journey } from "@/types/journey";
 import { IconSetIcon, type IconSetName } from "@/components/asset-icon";
 import { ChevronRightIcon, CloseIcon, UsersIcon } from "@/components/icons";
+import { BetaBadge } from "@/components/beta-badge";
+import { FeedbackDialog } from "@/components/feedback-dialog";
+import { GuideDialog } from "@/components/guide-dialog";
 import { Logo } from "@/components/logo";
 
 type OrgSummary = {
@@ -113,6 +116,8 @@ export function Sidebar({
   const currentOrgName = session?.user?.currentOrgName;
 
   const [orgMenuOpen, setOrgMenuOpen] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [orgs, setOrgs] = useState<OrgSummary[]>([]);
   const [loadingOrgs, setLoadingOrgs] = useState(true);
   const [switchingOrgId, setSwitchingOrgId] = useState<string | null>(null);
@@ -175,7 +180,7 @@ export function Sidebar({
           open ? "translate-x-0" : ""
         }`}
       >
-        <div className="relative flex h-[94px] shrink-0 items-center justify-center border-b border-divider p-2.5">
+        <div className="relative flex h-[94px] shrink-0 items-center justify-center gap-2 border-b border-divider p-2.5">
           <button
             type="button"
             onClick={onGoHome}
@@ -184,6 +189,7 @@ export function Sidebar({
           >
             <Logo height={33.5} />
           </button>
+          <BetaBadge />
           <button
             type="button"
             onClick={onClose}
@@ -281,10 +287,19 @@ export function Sidebar({
           <div className="mt-auto flex flex-col gap-0.5 pt-3">
             <button
               type="button"
+              onClick={() => setGuideOpen(true)}
               className={navItemClass(false)}
             >
               <NavIcon name="asterisk" />
               AI Assisted Guide
+            </button>
+            <button
+              type="button"
+              onClick={authenticated ? () => setFeedbackOpen(true) : onRequireAuth}
+              className={navItemClass(false)}
+            >
+              <NavIcon name="generate-text" />
+              Send Feedback
             </button>
             <button
               type="button"
@@ -418,6 +433,22 @@ export function Sidebar({
           </div>
         </div>
       </aside>
+
+      {/* Outside the aside: its slide-in transform would otherwise trap
+          these full-screen overlays inside the sidebar on phones. */}
+      <GuideDialog
+        open={guideOpen}
+        onClose={() => setGuideOpen(false)}
+        onSendFeedback={
+          authenticated
+            ? () => {
+                setGuideOpen(false);
+                setFeedbackOpen(true);
+              }
+            : undefined
+        }
+      />
+      <FeedbackDialog open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
     </>
   );
 }

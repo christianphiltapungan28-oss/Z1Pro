@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { LoginScreen } from "@/components/login-screen";
+import { NOT_INVITED } from "@/lib/beta";
 
 export const metadata: Metadata = {
   title: "Sign in — Z1P.pro",
@@ -21,6 +22,7 @@ const ERRORS: Record<string, string> = {
   LinkExpired: "That confirmation link has expired or was already used. Create your account again to get a new one.",
   AccountExists: "There's already an account with that email. Log in instead, or reset your password.",
   PasswordsUnavailable: "Creating an account with email isn't available yet. Use Google or Facebook.",
+  NotInvited: NOT_INVITED,
 };
 
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {

@@ -3,6 +3,8 @@
 import { signOut, useSession } from "next-auth/react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { AssetIcon } from "@/components/asset-icon";
+import { FeedbackDialog } from "@/components/feedback-dialog";
+import { GuideDialog } from "@/components/guide-dialog";
 import { useDialog } from "@/lib/use-dialog";
 import { currentPushSubscription, disablePush, enablePush } from "@/lib/push-client";
 import { useMediaQuery } from "@/lib/use-media-query";
@@ -2100,6 +2102,7 @@ function MobileSettings({
 }) {
   const [screen, setScreen] = useState<MobileScreen>("main");
   const [dialog, setDialog] = useState<EditableField | "photo" | "email" | null>(null);
+  const [betaDialog, setBetaDialog] = useState<"feedback" | "guide" | null>(null);
 
   const p = data?.profile;
   const provider = data?.providers.includes("google")
@@ -2112,6 +2115,12 @@ function MobileSettings({
 
   return (
     <div className="h-full overflow-y-auto bg-background">
+      <FeedbackDialog open={betaDialog === "feedback"} onClose={() => setBetaDialog(null)} />
+      <GuideDialog
+        open={betaDialog === "guide"}
+        onClose={() => setBetaDialog(null)}
+        onSendFeedback={() => setBetaDialog("feedback")}
+      />
       <header className="flex h-[71px] items-center gap-3 border-b border-divider px-5">
         <button
           type="button"
@@ -2198,6 +2207,25 @@ function MobileSettings({
                   detail={appearance === "aurora" ? "Aurora" : "Daylight"}
                   action="›"
                   onClick={onOpenAppearance}
+                  last
+                />
+              </Card>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <SectionTitle>Beta</SectionTitle>
+              <Card className="overflow-hidden">
+                <MobileRow
+                  label="Send feedback"
+                  detail="Report a bug or share an idea"
+                  action="›"
+                  onClick={() => setBetaDialog("feedback")}
+                />
+                <MobileRow
+                  label="AI Assisted Guide"
+                  detail="A quick tour of what Zip can do"
+                  action="›"
+                  onClick={() => setBetaDialog("guide")}
                   last
                 />
               </Card>

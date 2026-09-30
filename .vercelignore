@@ -1,0 +1,7 @@
+# Never upload local secrets or build output with `vercel deploy`; production
+# settings live in the Vercel project's environment variables.
+.env
+.env.*
+.next
+node_modules
+*.tmp.*
