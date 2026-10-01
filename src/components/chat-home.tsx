@@ -179,9 +179,6 @@ export function ChatHome({
         </div>
       </div>
 
-      {/* The mobile design has no text box on Home (Figma 493:6874): phones
-          type in Convos, and the orb opens voice. */}
-      <div className="hidden md:contents">
       {(error || attachments.problem) && (
         <p
           role="alert"
@@ -229,7 +226,6 @@ export function ChatHome({
       <p className="mb-2 shrink-0 px-4 text-center text-[11px] text-muted md:-mt-6 md:mb-3">
         Z1P can make mistakes. Check important information.
       </p>
-      </div>
     </div>
   );
 }
