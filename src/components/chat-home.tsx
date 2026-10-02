@@ -20,8 +20,11 @@ import { ORB_TRANSITION } from "@/lib/view-transition";
 const noSubscription = () => () => {};
 
 // The orb is 1.17× as tall as it is wide (its glow reaches further down), and
-// "Speak with Z1p" plus the gap above it take about 84px.
+// "Speak with Z1p" plus the gap above it take about 84px. Its blurred glow
+// also spills about a third of its width past the top, so phones leave room
+// for that too, or the glow runs into the greeting.
 const ORB_ASPECT = 1.17;
+const ORB_GLOW = 0.34;
 const ORB_LABEL_SPACE = 84;
 
 // The mobile design's orb (Figma 493:6874); it only shrinks on phones too
@@ -30,8 +33,8 @@ const PHONE_ORB = 173;
 
 function phoneOrbWidth(area: { width: number; height: number } | null) {
   if (!area) return PHONE_ORB;
-  const byHeight = (area.height - ORB_LABEL_SPACE) / ORB_ASPECT;
-  return Math.round(Math.max(110, Math.min(PHONE_ORB, byHeight, area.width * 0.64)));
+  const byHeight = (area.height - ORB_LABEL_SPACE) / (ORB_ASPECT + ORB_GLOW);
+  return Math.round(Math.max(96, Math.min(PHONE_ORB, byHeight, area.width * 0.6)));
 }
 
 function greetingForHour(hour: number) {
@@ -155,6 +158,8 @@ export function ChatHome({
             <button
               type="button"
               onClick={onStartVoice}
+              // Clears the glow above the orb (see ORB_GLOW).
+              style={phone ? { marginTop: Math.round(orbWidth * ORB_GLOW) } : undefined}
               className="flex w-full max-w-[248px] flex-col items-center gap-[clamp(10px,2.4vh,22px)]"
             >
               {/* Named so it glides into voice mode's orb (see app-shell). */}
@@ -197,9 +202,10 @@ export function ChatHome({
       <form
         onSubmit={handleSubmit}
         // Phones: the tab bar below already clears the home indicator.
-        className="mx-auto flex w-full max-w-xl shrink-0 items-center gap-2.5 px-[clamp(12px,4vw,16px)] pb-1.5 sm:px-8 md:gap-3 md:pb-[max(2rem,calc(env(safe-area-inset-bottom)+1rem))]"
+        className="mx-auto flex w-full max-w-xl shrink-0 items-center gap-2 px-[clamp(12px,4vw,16px)] pt-1 pb-2 sm:px-8 md:gap-3 md:pt-0 md:pb-[max(2rem,calc(env(safe-area-inset-bottom)+1rem))]"
       >
-        <div className="flex min-w-0 flex-1 items-center gap-1.5 rounded-full border border-input-border bg-input py-1 pr-4 pl-1 focus-within:border-foreground/30 md:gap-2 md:py-1.5 md:pl-1.5">
+        {/* Phones: the field and send button share one 48px height. */}
+        <div className="flex h-12 min-w-0 flex-1 items-center gap-1.5 rounded-full border border-input-border bg-input pr-4 pl-1.5 shadow-[0_1px_6px_rgba(0,0,0,0.06)] focus-within:border-foreground/30 md:h-auto md:gap-2 md:py-1.5 md:shadow-none">
           <AttachButton
             onPick={(picked) => (authenticated ? attachments.add(picked) : onRequireAuth())}
             disabled={starting}
@@ -218,12 +224,12 @@ export function ChatHome({
           type="submit"
           disabled={!canSend}
           aria-label="Send"
-          className="flex size-11 shrink-0 items-center justify-center rounded-full bg-accent text-white shadow-sm transition-opacity hover:opacity-90 disabled:opacity-50 md:size-12"
+          className="flex size-12 shrink-0 items-center justify-center rounded-full bg-accent text-white shadow-sm transition-opacity hover:opacity-90 disabled:opacity-50 md:size-12"
         >
           <SendIcon className="h-5 w-5" />
         </button>
       </form>
-      <p className="mb-2 shrink-0 px-4 text-center text-[11px] text-muted md:-mt-6 md:mb-3">
+      <p className="mb-2.5 shrink-0 px-4 text-center text-[11px] text-muted md:-mt-6 md:mb-3">
         Z1P can make mistakes. Check important information.
       </p>
     </div>
