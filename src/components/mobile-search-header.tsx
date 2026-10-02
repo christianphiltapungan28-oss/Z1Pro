@@ -89,7 +89,7 @@ export function MobileSearchHeader({
               if (e.key === "Escape") setQuery("");
               if (e.key === "Enter" && results[0]) router.push(`/journeys/${results[0].id}`);
             }}
-            className="w-full min-w-0 bg-transparent text-[15px] text-foreground placeholder:text-secondary outline-none! [&::-webkit-search-cancel-button]:hidden"
+            className="w-full min-w-0 bg-transparent text-base text-foreground placeholder:text-secondary outline-none! [&::-webkit-search-cancel-button]:hidden"
           />
         </div>
         {open && (

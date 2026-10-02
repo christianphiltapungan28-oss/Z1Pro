@@ -136,7 +136,7 @@ export function ChatHome({
               Your Workspace
             </p>
             <div className="flex flex-col gap-[7px] md:block">
-              <h1 className="font-display text-[clamp(26px,8.2vw,34px)] leading-[1.05] font-bold text-foreground md:text-5xl md:leading-normal">
+              <h1 className="font-display text-[clamp(28px,8.6vw,36px)] leading-[1.08] font-bold text-foreground md:text-5xl md:leading-normal">
                 {firstName ? (
                   <>
                     {hour === null ? "Hello" : greetingForHour(hour)},{" "}
@@ -148,7 +148,7 @@ export function ChatHome({
                   </>
                 )}
               </h1>
-              <p className="text-[clamp(16px,5vw,20px)] text-foreground md:text-2xl">
+              <p className="text-[clamp(17px,5vw,20px)] text-foreground md:text-2xl">
                 What would you like to do?
               </p>
             </div>
@@ -229,7 +229,7 @@ export function ChatHome({
           <SendIcon className="h-5 w-5" />
         </button>
       </form>
-      <p className="mb-2.5 shrink-0 px-4 text-center text-[11px] text-muted md:-mt-6 md:mb-3">
+      <p className="mb-2.5 shrink-0 px-4 text-center text-[clamp(11px,3vw,12px)] text-muted md:-mt-6 md:mb-3">
         Z1P can make mistakes. Check important information.
       </p>
     </div>

@@ -105,7 +105,7 @@ export function MobileTabBar({
                 tab.requiresAuth && !authenticated ? onRequireAuth : () => onChangeView(tab.target)
               }
               style={{ width: tab.width }}
-              className={`flex h-[58px] shrink-0 flex-col items-center justify-center gap-[5px] text-sm ${
+              className={`flex h-[58px] shrink-0 flex-col items-center justify-center gap-[5px] text-[clamp(12px,3.6vw,14px)] ${
                 active ? "text-accent" : "text-foreground"
               }`}
             >
