@@ -450,7 +450,40 @@ export function VoiceMode({
     }
   }
 
+  // --- Mic button -----------------------------------------------------
+
+  /**
+   * Hands-free: tap instead of saying "Zip". While listening, tap again to
+   * send what was heard (or cancel if nothing was); while Z1p is talking,
+   * tap to cut it off and speak.
+   */
+  function handleHandsFreeMicClick() {
+    prepareAudioContext();
+    setError(null);
+    if (phase === "waiting") {
+      setHeard("");
+      go("hearing");
+      hearFor(HEARING_TIMEOUT_MS);
+      startListening();
+    } else if (phase === "hearing") {
+      if (heard.trim()) {
+        submit(heard.trim());
+      } else {
+        if (hearingTimerRef.current) clearTimeout(hearingTimerRef.current);
+        go("waiting");
+      }
+    } else if (phase === "speaking") {
+      audioRef.current?.pause();
+      setPlayBlocked(null);
+      afterReply();
+    }
+  }
+
   function handleMicClick() {
+    if (handsFree) {
+      handleHandsFreeMicClick();
+      return;
+    }
     if (phase === "recording") {
       mediaRecorderRef.current?.stop();
       return;
@@ -467,18 +500,36 @@ export function VoiceMode({
   const orbActive = busy || phase === "hearing";
   // Before the voice starts there's no level, so the orb keeps its own rhythm.
   const orbLevel = phase === "speaking" ? voiceLevel : undefined;
+  // The mic is live (pulsing) while it's taking down what you say.
+  const micLive = phase === "hearing" || phase === "recording";
+  // Hands-free can interrupt a reply; tap to speak waits for it to finish.
+  const micDisabled = phase === "processing" || (!handsFree && phase === "speaking");
+  const micLabel =
+    phase === "recording"
+      ? "Stop recording"
+      : phase === "hearing"
+        ? heard
+          ? "Send"
+          : "Stop listening"
+        : phase === "speaking" && handsFree
+          ? "Interrupt and speak"
+          : "Start speaking";
   const statusText = micBlocked
     ? "Z1p needs your microphone to hear you"
     : phase === "waiting"
-      ? "Say “Zip” and ask anything"
+      ? "Say “Zip” or tap the mic to speak"
       : phase === "hearing"
-        ? "Listening…"
+        ? heard
+          ? "Listening… tap to send"
+          : "Listening…"
         : phase === "recording"
           ? "Listening… tap to stop"
           : phase === "processing"
             ? "Thinking…"
             : phase === "speaking"
-              ? "Speaking…"
+              ? handsFree
+                ? "Speaking… tap the mic to interrupt"
+                : "Speaking…"
               : "Tap to speak";
 
   // Phones size the orb to the screen's height, leaving room for the headline
@@ -550,41 +601,34 @@ export function VoiceMode({
         </button>
       )}
 
-      {handsFree ? (
-        micBlocked && (
-          <button
-            type="button"
-            onClick={() => {
-              prepareAudioContext();
-              startListening();
-            }}
-            className="mt-6 flex items-center gap-2 rounded-full bg-accent px-5 py-3 text-sm font-bold text-white shadow-md md:mt-10"
-          >
-            <MicIcon className="h-5 w-5" />
-            Turn on microphone
-          </button>
-        )
+      {handsFree && micBlocked ? (
+        <button
+          type="button"
+          onClick={() => {
+            prepareAudioContext();
+            startListening();
+          }}
+          className="mt-6 flex items-center gap-2 rounded-full bg-accent px-5 py-3 text-sm font-bold text-white shadow-md md:mt-10"
+        >
+          <MicIcon className="h-5 w-5" />
+          Turn on microphone
+        </button>
       ) : (
         <button
           type="button"
           onClick={handleMicClick}
-          disabled={busy}
-          aria-pressed={phase === "recording"}
-          aria-label={phase === "recording" ? "Stop recording" : "Start speaking"}
+          disabled={micDisabled}
+          aria-pressed={micLive}
+          aria-label={micLabel}
           className={`mt-6 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-md transition-transform disabled:opacity-60 md:mt-10 ${
-            phase === "recording"
-              ? "scale-105 animate-pulse bg-accent"
-              : "bg-accent/70"
+            micLive ? "scale-105 animate-pulse bg-accent" : "bg-accent/70"
           }`}
         >
           <MicIcon className="h-6 w-6" />
         </button>
       )}
 
-      <p
-        aria-live="polite"
-        className={`${handsFree && !micBlocked ? "mt-5 md:mt-10" : "mt-3"} text-xs text-muted`}
-      >
+      <p aria-live="polite" className="mt-3 text-xs text-muted">
         {statusText}
       </p>
     </div>
