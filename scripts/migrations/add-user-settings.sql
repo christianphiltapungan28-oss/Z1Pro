@@ -2,7 +2,7 @@
 -- Settings → Notifications. Additive only: no existing table or row is
 -- changed, so it is safe to run on the live database, and safe to run twice.
 --
---   psql "$DIRECT_URL" -f scripts/add-user-settings.sql
+--   psql "$DIRECT_URL" -f scripts/migrations/add-user-settings.sql
 -- or paste into the Supabase SQL editor.
 --
 -- Until this has run, the Settings page shows a notice and the other tabs

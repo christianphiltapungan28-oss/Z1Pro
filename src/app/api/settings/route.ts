@@ -56,7 +56,7 @@ async function loadSettings(userId: string) {
       .limit(1);
     return { ready: true as const, row: row ?? null };
   } catch (err) {
-    // The table is created by scripts/add-user-settings.sql; until then the
+    // The table is created by scripts/migrations/add-user-settings.sql; until then the
     // rest of Settings still works.
     if (isMissingTable(err)) return { ready: false as const, row: null };
     throw err;

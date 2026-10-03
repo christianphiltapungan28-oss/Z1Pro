@@ -23,7 +23,7 @@ export async function GET(
   try {
     return NextResponse.json({ ready: true, ...(await loadFlow(id)) });
   } catch (err) {
-    // The flow tables come from scripts/add-journey-flow.sql.
+    // The flow tables come from scripts/migrations/add-journey-flow.sql.
     if (isMissingTable(err)) {
       return NextResponse.json({
         ready: false,

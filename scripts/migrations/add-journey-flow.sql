@@ -2,7 +2,7 @@
 -- breakdown, the files a user uploads, and the coaching conversation.
 -- Additive only (no existing table or row changes), safe to run twice.
 --
---   psql "$DIRECT_URL" -f scripts/add-journey-flow.sql
+--   psql "$DIRECT_URL" -f scripts/migrations/add-journey-flow.sql
 -- or paste into the Supabase SQL editor.
 --
 -- Until this has run, opening a journey shows a notice; nothing else in the

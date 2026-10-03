@@ -10,7 +10,7 @@ import { LEGAL } from "@/lib/legal";
  * Whether the signed-in user has accepted the current Terms and Conditions,
  * Privacy Policy and Cookie Policy (the modal shown after signing in).
  * GET — { ready, accepted, version }; `ready` is false until
- * scripts/add-legal-acceptance.sql has run, and then nothing is asked.
+ * scripts/migrations/add-legal-acceptance.sql has run, and then nothing is asked.
  * POST { version } — records acceptance of that version.
  */
 export async function GET() {

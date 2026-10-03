@@ -2,7 +2,7 @@
 -- areas, worked out from a user's conversations and journeys at most once a
 -- week. Additive only (no existing table or row changes), safe to run twice.
 --
---   psql "$DIRECT_URL" -f scripts/add-life-metrics.sql
+--   psql "$DIRECT_URL" -f scripts/migrations/add-life-metrics.sql
 -- or paste into the Supabase SQL editor.
 --
 -- Scores touch health and faith, which are sensitive personal information,

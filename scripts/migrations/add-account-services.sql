@@ -2,7 +2,7 @@
 -- verified phone numbers need. Additive only: no existing row is changed,
 -- so it is safe to run on the live database, and safe to run twice.
 --
---   psql "$DIRECT_URL" -f scripts/add-account-services.sql
+--   psql "$DIRECT_URL" -f scripts/migrations/add-account-services.sql
 -- or paste into the Supabase SQL editor.
 --
 -- Run it before deploying the code that uses it: the app reads the two

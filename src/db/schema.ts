@@ -92,7 +92,7 @@ export type NotificationPrefs = {
 
 // Profile details and preferences from Settings. Kept out of `users` so the
 // auth adapter's full-row reads never depend on this table existing.
-// Created by scripts/add-user-settings.sql.
+// Created by scripts/migrations/add-user-settings.sql.
 export const userSettings = pgTable("user_settings", {
   userId: uuid("user_id")
     .primaryKey()
@@ -114,7 +114,7 @@ export const userSettings = pgTable("user_settings", {
     .defaultNow(),
 });
 
-// Email + password sign-in — created by scripts/add-password-auth.sql. Kept
+// Email + password sign-in — created by scripts/migrations/add-password-auth.sql. Kept
 // out of `users` so the auth adapter's full-row reads never carry the hash.
 export const userPasswords = pgTable("user_passwords", {
   userId: uuid("user_id")
@@ -127,7 +127,7 @@ export const userPasswords = pgTable("user_passwords", {
 });
 
 // Acceptance of the Terms, Privacy Policy and Cookie Policy — created by
-// scripts/add-legal-acceptance.sql.
+// scripts/migrations/add-legal-acceptance.sql.
 export const legalAcceptances = pgTable("legal_acceptances", {
   userId: uuid("user_id")
     .primaryKey()
@@ -140,7 +140,7 @@ export const legalAcceptances = pgTable("legal_acceptances", {
 });
 
 // Two-factor login for password accounts — created by
-// scripts/add-two-factor.sql.
+// scripts/migrations/add-two-factor.sql.
 export const userTwoFactor = pgTable("user_two_factor", {
   userId: uuid("user_id")
     .primaryKey()
@@ -286,7 +286,7 @@ export const journeys = pgTable("journeys", {
     .defaultNow(),
 });
 
-// Journey Interactive Flow — created by scripts/add-journey-flow.sql.
+// Journey Interactive Flow — created by scripts/migrations/add-journey-flow.sql.
 
 export type JourneyStepStatus = "pending" | "active" | "done";
 
@@ -338,7 +338,7 @@ export const journeyMessages = pgTable("journey_messages", {
     .defaultNow(),
 });
 
-// Profile — Life Metrics — created by scripts/add-life-metrics.sql. A row
+// Profile — Life Metrics — created by scripts/migrations/add-life-metrics.sql. A row
 // exists only while the user has Life Metrics turned on.
 
 export type LifeMetricKey =
@@ -383,7 +383,7 @@ export const lifeMetrics = pgTable("life_metrics", {
     .defaultNow(),
 });
 
-// Web push — created by scripts/add-account-services.sql.
+// Web push — created by scripts/migrations/add-account-services.sql.
 
 export const pushSubscriptions = pgTable("push_subscriptions", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -398,7 +398,7 @@ export const pushSubscriptions = pgTable("push_subscriptions", {
     .defaultNow(),
 });
 
-// In-app notifications — created by scripts/add-notifications.sql.
+// In-app notifications — created by scripts/migrations/add-notifications.sql.
 
 export type NotificationKind =
   | "step"

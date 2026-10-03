@@ -2,7 +2,7 @@
 -- Additive only: no existing table or row is changed, so it is safe to run
 -- on the live database, and safe to run twice.
 --
---   psql "$DIRECT_URL" -f scripts/add-notifications.sql
+--   psql "$DIRECT_URL" -f scripts/migrations/add-notifications.sql
 -- or paste into the Supabase SQL editor.
 --
 -- Until this has run, the Notifications page shows "all caught up" and

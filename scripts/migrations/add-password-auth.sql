@@ -2,7 +2,7 @@
 -- existing is changed, so it is safe to run on the live database, and safe
 -- to run twice.
 --
---   psql "$DIRECT_URL" -f scripts/add-password-auth.sql
+--   psql "$DIRECT_URL" -f scripts/migrations/add-password-auth.sql
 -- or paste into the Supabase SQL editor.
 --
 -- Until this has run, password sign-in and sign-up say they aren't

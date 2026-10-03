@@ -3,7 +3,7 @@
 -- Additive only: a new table, nothing existing is changed, so it is safe to
 -- run on the live database, and safe to run twice.
 --
---   psql "$DIRECT_URL" -f scripts/add-legal-acceptance.sql
+--   psql "$DIRECT_URL" -f scripts/migrations/add-legal-acceptance.sql
 -- or paste into the Supabase SQL editor.
 --
 -- Until this has run, the modal isn't shown (there is nowhere to record the

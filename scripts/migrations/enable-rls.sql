@@ -10,7 +10,7 @@
 --   matching the access it already has (read/write tickets, read users),
 --   so it keeps working.
 --
---   psql "$DIRECT_URL" -f scripts/enable-rls.sql
+--   psql "$DIRECT_URL" -f scripts/migrations/enable-rls.sql
 -- or paste into the Supabase SQL editor.
 
 BEGIN;

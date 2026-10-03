@@ -92,7 +92,7 @@ async function prefs(userId: string): Promise<NotificationPrefs> {
 /**
  * Records an in-app notification. Never throws: a notification failing must
  * not fail the action that caused it, and the table may not exist yet
- * (scripts/add-notifications.sql).
+ * (scripts/migrations/add-notifications.sql).
  */
 export async function notify(userId: string, n: NewNotification) {
   try {

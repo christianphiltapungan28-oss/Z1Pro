@@ -7,7 +7,7 @@
 -- payments.org_id all nullable). Run it interactively — inspect the sanity
 -- SELECTs below before typing COMMIT. If anything looks wrong, ROLLBACK.
 --
---   psql "$DIRECT_URL" -f scripts/backfill-organizations.sql
+--   psql "$DIRECT_URL" -f scripts/migrations/backfill-organizations.sql
 -- or paste into the Supabase SQL editor and run statement-by-statement.
 
 BEGIN;

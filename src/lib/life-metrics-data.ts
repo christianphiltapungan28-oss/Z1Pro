@@ -81,7 +81,7 @@ export async function loadProfile(userId: string) {
       journeys: stats.journeys,
     },
     metrics: {
-      // False until scripts/add-life-metrics.sql has run.
+      // False until scripts/migrations/add-life-metrics.sql has run.
       ready: metrics.ready,
       enabled: !!row,
       eligible: stats.conversations >= MIN_CONVERSATIONS,

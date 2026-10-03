@@ -51,7 +51,7 @@ export async function GET(request: Request) {
       .limit(LIST_LIMIT);
     return NextResponse.json({ ready: true, unread, items });
   } catch (err) {
-    // The table comes from scripts/add-notifications.sql.
+    // The table comes from scripts/migrations/add-notifications.sql.
     if (isMissingTable(err)) return NextResponse.json({ ready: false, unread: 0, items: [] });
     throw err;
   }
