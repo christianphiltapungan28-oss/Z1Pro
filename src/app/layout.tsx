@@ -33,7 +33,7 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-const THEME_INIT_SCRIPT = `(function(){try{var t=localStorage.getItem("theme");document.documentElement.setAttribute("data-theme",t==="aurora"?"aurora":"light")}catch(e){}})()`;
+const THEME_INIT_SCRIPT = `(function(){try{var t=localStorage.getItem("theme");document.documentElement.setAttribute("data-theme",t==="aurora"?"aurora":"light")}catch(e){}try{if(sessionStorage.getItem("z1p-splash"))document.documentElement.setAttribute("data-splash","off")}catch(e){}})()`;
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const nonce = (await headers()).get("x-nonce") ?? undefined;

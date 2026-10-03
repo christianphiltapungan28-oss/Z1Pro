@@ -283,6 +283,90 @@ body {
     animation: none;
   }}
 
+/* Logo intro before Home (src/components/splash-intro.tsx), ~2s: the bracket
+   mark swings in, Z·1·P rise in turn, then the screen fades to the app. */
+[data-splash="off"] .splash-intro {
+  display: none;
+}
+.splash-intro {
+  animation: splash-exit 450ms ease-in 1.6s forwards;
+}
+.splash-glow {
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 22%, transparent), transparent);
+  animation: splash-glow 1.8s ease-out both;
+}
+.splash-logo {
+  animation: splash-logo-out 450ms ease-in 1.6s forwards;
+}
+.splash-mark,
+.splash-letter {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.splash-mark {
+  animation: splash-mark 750ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.splash-letter {
+  animation: splash-letter 600ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.splash-letter:nth-child(2) {
+  animation-delay: 320ms;
+}
+.splash-letter:nth-child(3) {
+  animation-delay: 420ms;
+}
+.splash-letter:nth-child(4) {
+  animation-delay: 520ms;
+}
+@keyframes splash-mark {
+  from {
+    opacity: 0;
+    transform: translateX(-40%) rotate(-90deg) scale(0.5);
+  }
+}
+@keyframes splash-letter {
+  from {
+    opacity: 0;
+    transform: translateY(45%);
+  }
+}
+@keyframes splash-glow {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  50% {
+    opacity: 0.9;
+  }
+  to {
+    opacity: 0.5;
+    transform: scale(1.15);
+  }
+}
+@keyframes splash-logo-out {
+  to {
+    transform: scale(1.08);
+  }
+}
+@keyframes splash-exit {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .splash-glow,
+  .splash-logo,
+  .splash-mark,
+  .splash-letter {
+    animation: none;
+  }
+  .splash-intro {
+    animation-duration: 300ms;
+    animation-delay: 700ms;
+  }
+}
+
 
 /* Long-form text on the legal pages (/privacy, /terms, /cookies, /refunds). */
 .legal-prose {
