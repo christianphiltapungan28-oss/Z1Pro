@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { DesignOrb } from "@/components/design-orb";
 import { MobileSearchHeader } from "@/components/mobile-search-header";
+import { Skeleton, SkeletonGroup } from "@/components/skeleton";
 import type { Journey } from "@/types/journey";
 
 // The empty-state illustration is made of separate vector layers from the
@@ -275,6 +276,53 @@ function MobileJourneys({
   );
 }
 
+/** The headings stay; journey cards are placeholders until the list arrives. */
+function JourneysSkeleton() {
+  const card = (
+    <div className="flex h-[231px] w-full flex-col justify-center gap-5 rounded-[10px] border border-card-border bg-background p-5">
+      <Skeleton className="size-12 rounded-xl" />
+      <div className="flex flex-col gap-2.5">
+        <Skeleton className="h-4 w-1/2" />
+        <Skeleton className="h-3.5 w-4/5" />
+        <Skeleton className="h-3.5 w-3/5" />
+      </div>
+      <Skeleton className="h-[11px] w-full rounded-[10px]" />
+    </div>
+  );
+  return (
+    <SkeletonGroup label="Loading journeys" className="h-full overflow-y-auto">
+      <div className="flex flex-col px-[29px] pt-6 pb-8 md:hidden">
+        <h1 className="text-[36px] leading-[1.05] font-bold text-accent">Your Journeys</h1>
+        <p className="text-base text-foreground">Goals and Plans you&rsquo;ve built with Zip</p>
+        <Skeleton className="mt-[42px] h-3.5 w-36" />
+        <Skeleton className="mt-2 h-3 w-48" />
+        <div className="mx-auto mt-[31px] w-full max-w-[354px]">{card}</div>
+      </div>
+      <div className="hidden px-4 pt-8 pb-10 md:block md:pl-[47px] md:pr-8 md:pt-[50px]">
+        <div className="flex max-w-[1069px] flex-col gap-9">
+          <div className="max-w-[712px]">
+            <h1 className="font-display text-4xl font-bold text-accent sm:text-5xl">Your Journeys</h1>
+            <p className="text-lg text-foreground">Goals and Plans you&rsquo;ve built with Zip</p>
+          </div>
+          <div className="flex flex-col gap-[17px]">
+            <div className="flex flex-col gap-2">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-3.5 w-56" />
+            </div>
+            <div className="grid grid-cols-1 gap-x-[19px] sm:grid-cols-2 lg:grid-cols-3">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="py-2.5">
+                  {card}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </SkeletonGroup>
+  );
+}
+
 export function Journeys({
   journeys,
   loading,
@@ -292,6 +340,8 @@ export function Journeys({
 }) {
   const activeJourneys = journeys.filter((j) => j.progress < 100);
   const unfinished = activeJourneys[0];
+
+  if (loading && journeys.length === 0) return <JourneysSkeleton />;
 
   if (!loading && journeys.length === 0) {
     return (

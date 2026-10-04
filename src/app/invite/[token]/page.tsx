@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
+import { Skeleton, SkeletonGroup } from "@/components/skeleton";
 
 type InviteDetails = {
   orgName: string;
@@ -66,7 +67,13 @@ export default function InvitePage() {
   return (
     <div className="flex min-h-dvh items-center justify-center bg-background p-4">
       <div className="w-full max-w-sm rounded-2xl border border-card-border bg-card p-6 text-center shadow-xl">
-        {loading && <p className="py-10 text-sm text-muted">Loading invite…</p>}
+        {loading && (
+          <SkeletonGroup label="Loading invite" className="flex flex-col items-center gap-3">
+            <Skeleton className="h-5 w-40" />
+            <Skeleton className="h-3.5 w-56" />
+            <Skeleton className="mt-3 h-10 w-full rounded-full" />
+          </SkeletonGroup>
+        )}
 
         {!loading && error && (
           <>

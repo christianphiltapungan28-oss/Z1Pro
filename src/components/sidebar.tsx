@@ -11,6 +11,7 @@ import { BetaBadge } from "@/components/beta-badge";
 import { FeedbackDialog } from "@/components/feedback-dialog";
 import { GuideDialog } from "@/components/guide-dialog";
 import { Logo } from "@/components/logo";
+import { Skeleton, SkeletonGroup } from "@/components/skeleton";
 
 type OrgSummary = {
   id: string;
@@ -342,9 +343,13 @@ export function Sidebar({
               />
               <div className="absolute bottom-full left-4 right-4 z-50 mb-2 flex flex-col gap-0.5 rounded-xl border border-sidebar-border bg-sidebar p-1.5 shadow-lg">
                 {loadingOrgs && (
-                  <p className="px-2 py-1.5 text-xs text-sidebar-muted">
-                    Loading…
-                  </p>
+                  <SkeletonGroup label="Loading organizations" className="flex flex-col">
+                    {["w-3/5", "w-2/5"].map((width) => (
+                      <span key={width} className="px-2 py-2">
+                        <Skeleton className={`h-3.5 ${width}`} />
+                      </span>
+                    ))}
+                  </SkeletonGroup>
                 )}
                 {!loadingOrgs &&
                   orgs.map((org) => (

@@ -5,6 +5,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { AssetIcon } from "@/components/asset-icon";
 import { FeedbackDialog } from "@/components/feedback-dialog";
 import { GuideDialog } from "@/components/guide-dialog";
+import { PlanCardsSkeleton, Skeleton, SkeletonGroup } from "@/components/skeleton";
 import { useDialog } from "@/lib/use-dialog";
 import { currentPushSubscription, disablePush, enablePush } from "@/lib/push-client";
 import { useMediaQuery } from "@/lib/use-media-query";
@@ -132,6 +133,41 @@ function ActionLink({
     >
       {children}
     </button>
+  );
+}
+
+/** In place of a row's value text while it loads. */
+function InlineSkeleton() {
+  return (
+    <span role="status" className="mt-1 block">
+      <span className="sr-only">Loading</span>
+      <Skeleton className="h-3.5 w-40" />
+    </span>
+  );
+}
+
+/** A settings card's rows (label, value, action) while settings load. */
+function SettingsSkeleton() {
+  return (
+    <SkeletonGroup label="Loading settings" className="flex flex-col gap-3">
+      <Skeleton className="h-4 w-28" />
+      <Card>
+        {["w-1/3", "w-1/2", "w-2/5", "w-1/4"].map((width, i, all) => (
+          <div
+            key={i}
+            className={`flex min-h-[68px] items-center justify-between gap-4 px-4 py-3 md:px-8 md:py-5 ${
+              i < all.length - 1 ? "border-b border-divider" : ""
+            }`}
+          >
+            <div className="flex min-w-0 flex-1 flex-col gap-2">
+              <Skeleton className="h-3.5 w-24" />
+              <Skeleton className={`h-3.5 ${width}`} />
+            </div>
+            <Skeleton className="h-3.5 w-12 shrink-0" />
+          </div>
+        ))}
+      </Card>
+    </SkeletonGroup>
   );
 }
 
@@ -888,7 +924,7 @@ function PrivacyTab({
               label="Active Sessions"
               value={
                 sessions === null
-                  ? "Loading…"
+                  ? <InlineSkeleton />
                   : `You have ${count} active ${count === 1 ? "session" : "sessions"}`
               }
             />
@@ -1067,7 +1103,7 @@ function SubscriptionTab() {
       )}
 
       <div className="grid w-full grid-cols-1 gap-6 lg:grid-cols-3">
-        {plans === null && <p className="text-sm text-tertiary">Loading plans…</p>}
+        {plans === null && <PlanCardsSkeleton className="contents" />}
         {plans?.map((plan) => {
           const isCurrent = plan.code === currentPlanCode;
           const price =
@@ -1142,7 +1178,7 @@ function SubscriptionTab() {
             label="Billing History"
             value={
               payments === null
-                ? "Loading…"
+                ? <InlineSkeleton />
                 : succeeded.length === 0
                   ? "No billing history yet"
                   : `${succeeded.length} ${succeeded.length === 1 ? "payment" : "payments"}`
@@ -1186,7 +1222,7 @@ function SubscriptionTab() {
               <p className="text-base font-bold text-foreground">Billing History</p>
               <p className="text-sm text-label">
                 {payments === null
-                  ? "Loading…"
+                  ? <InlineSkeleton />
                   : succeeded.length === 0
                     ? "No billing history yet"
                     : `${succeeded.length} ${succeeded.length === 1 ? "payment" : "payments"}`}
@@ -2231,9 +2267,7 @@ function MobileSettings({
 
       <div className={`flex flex-col gap-6 px-4 pb-8 ${screen === "main" ? "pt-[22px]" : "pt-3.5"}`}>
         {loadError && <LoadProblem kind={loadError} />}
-        {!data && !loadError && screen !== "subscription" && (
-          <p className="text-sm text-tertiary">Loading…</p>
-        )}
+        {!data && !loadError && screen !== "subscription" && <SettingsSkeleton />}
 
         {data && p && screen === "main" && (
           <>
@@ -2476,9 +2510,7 @@ export function SettingsPage({
 
         <div className={tab === "subscription" ? "mt-2.5" : ""}>
           {loadError && tab !== "subscription" && <LoadProblem kind={loadError} />}
-          {!data && !loadError && tab !== "subscription" && (
-            <p className="text-sm text-tertiary">Loading…</p>
-          )}
+          {!data && !loadError && tab !== "subscription" && <SettingsSkeleton />}
           {data && tab === "account" && (
             <AccountTab
               data={data}

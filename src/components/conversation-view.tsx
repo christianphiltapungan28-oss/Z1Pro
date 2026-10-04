@@ -11,6 +11,7 @@ import {
   type Outgoing,
 } from "@/components/chat-attachments";
 import { MarkdownMessage } from "@/components/markdown-message";
+import { Skeleton, SkeletonGroup } from "@/components/skeleton";
 import { splitAttachedLine } from "@/lib/chat-attachments";
 import { useDialog } from "@/lib/use-dialog";
 import { useMediaQuery } from "@/lib/use-media-query";
@@ -496,7 +497,21 @@ export function ConversationView({
             aria-label="Conversation"
             className="flex w-full flex-col gap-3.5 px-3.5 pt-4 pb-[18px] md:gap-6 md:p-0"
           >
-            {!loaded && <p className="text-center text-sm text-tertiary">Loading chat…</p>}
+            {!loaded && (
+              // Alternating bubbles: Zip on the left with an avatar, you on the right.
+              <SkeletonGroup label="Loading chat" className="flex flex-col gap-3.5 md:gap-6">
+                {["w-3/5", "w-2/5", "w-4/5", "w-1/3"].map((width, i) =>
+                  i % 2 === 0 ? (
+                    <div key={i} className="flex items-start gap-3">
+                      <Skeleton className="size-8 shrink-0 rounded-full" />
+                      <Skeleton className={`h-16 rounded-2xl ${width}`} />
+                    </div>
+                  ) : (
+                    <Skeleton key={i} className={`ml-auto h-11 rounded-2xl ${width}`} />
+                  )
+                )}
+              </SkeletonGroup>
+            )}
             {loaded && !meta && (
               <p role="alert" className="text-center text-sm text-tertiary">
                 This conversation couldn&rsquo;t be found.

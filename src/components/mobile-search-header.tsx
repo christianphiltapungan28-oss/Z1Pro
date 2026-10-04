@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useState } from "react";
 import { AssetIcon } from "@/components/asset-icon";
+import { Skeleton } from "@/components/skeleton";
 import type { Journey } from "@/types/journey";
 
 const MAX_RESULTS = 6;
@@ -99,7 +100,15 @@ export function MobileSearchHeader({
             className="absolute inset-x-0 top-[52px] z-30 max-h-[60vh] overflow-y-auto rounded-[14px] border border-divider bg-background py-1 shadow-[0_12px_28px_rgba(0,0,0,0.12)]"
           >
             {journeys === null ? (
-              <li className="px-4 py-3 text-sm text-tertiary">Loading…</li>
+              <li role="status" aria-busy="true" className="flex flex-col">
+                <span className="sr-only">Loading journeys</span>
+                {["w-1/2", "w-2/3", "w-2/5"].map((width) => (
+                  <span key={width} className="flex items-center justify-between gap-3 px-4 py-3">
+                    <Skeleton className={`h-4 ${width}`} />
+                    <Skeleton className="h-3 w-8" />
+                  </span>
+                ))}
+              </li>
             ) : results.length === 0 ? (
               <li className="px-4 py-3 text-sm text-secondary">No journeys match &ldquo;{query.trim()}&rdquo;</li>
             ) : (

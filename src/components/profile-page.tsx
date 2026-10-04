@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { AssetIcon } from "@/components/asset-icon";
+import { Skeleton, SkeletonGroup } from "@/components/skeleton";
 import type { LifeMetricCategory } from "@/db/schema";
 import { LIFE_AREAS } from "@/lib/life-metrics-areas";
 import { formatRelativeTime } from "@/lib/relative-time";
@@ -449,13 +450,13 @@ export function ProfilePage({
         {loadError && <Notice>Couldn&apos;t load your profile. Please refresh the page.</Notice>}
 
         {!data && !loadError && (
-          <div className="flex items-center gap-6" aria-busy="true">
-            <div className="size-[97px] animate-pulse rounded-full bg-flow-line" />
-            <div className="flex flex-col gap-3">
-              <div className="h-7 w-56 animate-pulse rounded bg-flow-line" />
-              <div className="h-4 w-80 max-w-full animate-pulse rounded bg-flow-line" />
+          <SkeletonGroup label="Loading profile" className="flex items-center gap-6">
+            <Skeleton className="size-[97px] shrink-0 rounded-full" />
+            <div className="flex min-w-0 flex-col gap-3">
+              <Skeleton className="h-7 w-56 max-w-full" />
+              <Skeleton className="h-4 w-80 max-w-full" />
             </div>
-          </div>
+          </SkeletonGroup>
         )}
 
         {profile && metrics && (

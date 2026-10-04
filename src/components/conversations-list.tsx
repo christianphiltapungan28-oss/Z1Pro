@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AssetIcon } from "@/components/asset-icon";
+import { Skeleton, SkeletonGroup } from "@/components/skeleton";
 import { formatRelativeTime } from "@/lib/relative-time";
 import { useMediaQuery } from "@/lib/use-media-query";
 
@@ -124,7 +125,21 @@ export function ConversationsList({
             </p>
           )}
           {!error && !data && (
-            <p className="px-6 py-10 text-center text-sm text-tertiary">Loading…</p>
+            <SkeletonGroup label="Loading conversations">
+              {Array.from({ length: 6 }, (_, i) => (
+                <div
+                  key={i}
+                  className="flex flex-col items-start gap-3 border-b border-divider px-4 py-3.5 md:flex-row md:items-center md:gap-4 md:px-6 md:py-5"
+                >
+                  <Skeleton className="size-10 shrink-0 rounded-xl" />
+                  <div className="flex w-full min-w-0 flex-1 flex-col gap-2">
+                    <Skeleton className={`h-4 ${["w-1/2", "w-2/5", "w-3/5"][i % 3]}`} />
+                    <Skeleton className={`h-3 ${["w-4/5", "w-2/3", "w-3/4"][i % 3]}`} />
+                  </div>
+                  <Skeleton className="h-3 w-16 shrink-0 md:w-[60px]" />
+                </div>
+              ))}
+            </SkeletonGroup>
           )}
           {!error && data && data.items.length === 0 && (
             <p className="px-6 py-10 text-center text-sm text-tertiary">

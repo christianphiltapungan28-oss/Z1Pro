@@ -6,6 +6,43 @@ import type { View } from "@/components/app-shell";
 import { DesignOrb } from "@/components/design-orb";
 import { MarkdownMessage } from "@/components/markdown-message";
 import { MobileTabBar } from "@/components/mobile-tab-bar";
+import { Skeleton, SkeletonGroup } from "@/components/skeleton";
+
+/** The journey page's layout (top bar, chat, checklist) while it loads. */
+function JourneyFlowSkeleton() {
+  return (
+    <SkeletonGroup label="Loading journey" className="flex min-h-dvh flex-col bg-flow-bg">
+      <div className="flex items-center justify-between gap-4 border-b border-flow-line bg-background px-[27px] py-4 sm:px-10 sm:py-5">
+        <div className="flex min-w-0 items-center gap-3 sm:gap-5">
+          <Skeleton className="size-10 shrink-0 rounded-full" />
+          <div className="flex flex-col gap-2">
+            <Skeleton className="h-2.5 w-20" />
+            <Skeleton className="h-4 w-44 sm:w-64" />
+          </div>
+        </div>
+        <Skeleton className="hidden h-2 w-40 rounded md:block" />
+      </div>
+      <div className="flex flex-1 flex-col gap-8 p-4 sm:p-10 lg:flex-row">
+        <div className="flex min-h-[420px] min-w-0 flex-1 flex-col gap-6 rounded-3xl border border-flow-line bg-background p-6 sm:min-h-[640px] sm:p-10">
+          <Skeleton className="size-[90px] self-center rounded-full" />
+          <Skeleton className="h-16 w-3/4 rounded-2xl" />
+          <Skeleton className="ml-auto h-11 w-1/2 rounded-2xl" />
+          <Skeleton className="h-20 w-2/3 rounded-2xl" />
+          <Skeleton className="mt-auto h-14 w-full rounded-[28px]" />
+        </div>
+        <div className="hidden w-full shrink-0 flex-col gap-6 rounded-3xl border border-flow-line bg-background p-6 sm:p-10 md:flex lg:w-[480px]">
+          <Skeleton className="h-3 w-28" />
+          {["w-3/5", "w-1/2", "w-2/3", "w-2/5", "w-1/2"].map((width, i) => (
+            <div key={i} className="flex items-center gap-4">
+              <Skeleton className="size-7 shrink-0 rounded-full" />
+              <Skeleton className={`h-4 ${width}`} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </SkeletonGroup>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -486,11 +523,7 @@ export function JourneyFlow({ journeyId }: { journeyId: string }) {
       </div>
     );
   }
-  if (!flow) {
-    return (
-      <div className="flex h-dvh items-center justify-center bg-flow-bg text-flow-muted">Loading journey…</div>
-    );
-  }
+  if (!flow) return <JourneyFlowSkeleton />;
 
   const { journey, steps, files, messages } = flow;
   const hasPlan = steps.length > 0;

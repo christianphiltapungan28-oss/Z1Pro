@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { CheckIcon, CloseIcon } from "@/components/icons";
+import { PlanCardsSkeleton } from "@/components/skeleton";
 import { useDialog } from "@/lib/use-dialog";
 
 type Plan = {
@@ -127,11 +128,7 @@ export function UpgradeDialog({
           </p>
         )}
 
-        {loading && (
-          <p className="py-10 text-center text-sm text-muted">
-            Loading plans…
-          </p>
-        )}
+        {loading && <PlanCardsSkeleton className="grid grid-cols-1 gap-4 sm:grid-cols-3" />}
 
         {error && (
           <p

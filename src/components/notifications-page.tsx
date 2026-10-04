@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AssetIcon } from "@/components/asset-icon";
+import { Skeleton, SkeletonGroup } from "@/components/skeleton";
 
 type Notification = {
   id: string;
@@ -171,7 +172,23 @@ export function NotificationsPage({
             Couldn&rsquo;t load your notifications. Please try again.
           </p>
         )}
-        {items === null && !error && <p className="text-sm text-tertiary">Loading…</p>}
+        {items === null && !error && (
+          <SkeletonGroup label="Loading notifications" className="flex flex-col gap-2">
+            <Skeleton className="mb-1 h-4 w-20" />
+            {["w-1/2", "w-2/3", "w-2/5", "w-3/5"].map((width) => (
+              <div key={width} className="flex items-center gap-3 rounded-[14px] border border-foreground/[0.06] px-3.5 py-[13px]">
+                <Skeleton className="size-[42px] shrink-0 rounded-full" />
+                <div className="flex min-w-0 flex-1 flex-col gap-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <Skeleton className={`h-4 ${width}`} />
+                    <Skeleton className="h-3 w-10" />
+                  </div>
+                  <Skeleton className="h-3 w-4/5" />
+                </div>
+              </div>
+            ))}
+          </SkeletonGroup>
+        )}
 
         {items?.length === 0 && (
           <div className="flex flex-col items-center gap-2 pt-16 text-center">

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { CloseIcon, TrashIcon } from "@/components/icons";
+import { Skeleton, SkeletonGroup } from "@/components/skeleton";
 import { useDialog } from "@/lib/use-dialog";
 
 type Member = {
@@ -239,7 +240,17 @@ export function OrganizationDialog({
         )}
 
         {loading && (
-          <p className="py-10 text-center text-sm text-muted">Loading…</p>
+          <SkeletonGroup className="flex flex-col gap-2">
+            {["w-1/3", "w-2/5", "w-1/4"].map((width) => (
+              <div key={width} className="flex items-center justify-between gap-3 rounded-lg border border-card-border p-3">
+                <div className="flex min-w-0 flex-1 flex-col gap-2">
+                  <Skeleton className={`h-3.5 ${width}`} />
+                  <Skeleton className="h-3 w-1/2" />
+                </div>
+                <Skeleton className="h-5 w-14 shrink-0 rounded-full" />
+              </div>
+            ))}
+          </SkeletonGroup>
         )}
 
         {!loading && tab === "members" && (
