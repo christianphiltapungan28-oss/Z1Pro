@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    # Placeholders so the build can load modules; nothing connects at build time.
+    env:
+      DATABASE_URL: postgres://ci:ci@localhost:5432/ci
+      UPSTASH_REDIS_REST_URL: https://ci.upstash.io
+      UPSTASH_REDIS_REST_TOKEN: ci
+      AUTH_SECRET: ci-only-not-a-real-secret
+      NEXT_TELEMETRY_DISABLED: 1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build

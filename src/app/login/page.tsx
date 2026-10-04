@@ -5,17 +5,11 @@ import { auth } from "@/auth";
 import { LoginScreen } from "@/components/login-screen";
 import { NOT_INVITED } from "@/lib/beta";
 import { OAUTH_TICKET_COOKIE } from "@/lib/oauth-gate";
+import { safeCallback } from "@/lib/safe-callback";
 
 export const metadata: Metadata = {
   title: "Sign in — Z1P.pro",
 };
-
-// Only same-site paths, so a crafted link can't bounce people elsewhere
-// ("//host" and "/\host" are treated as other sites by browsers).
-function safeCallback(value: string | string[] | undefined) {
-  const url = Array.isArray(value) ? value[0] : value;
-  return url && url.startsWith("/") && !url.startsWith("//") && !url.startsWith("/\\") ? url : "/";
-}
 
 const ERRORS: Record<string, string> = {
   OAuthAccountNotLinked:
