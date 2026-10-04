@@ -65,12 +65,14 @@ export async function checkSecondFactor(userId: string, code: string) {
 // Between "password correct" and "code correct": a short-lived ticket, so
 // the second step doesn't need the password again.
 
-type Ticket = { userId: string; attempts: number };
+/** A Google/Facebook account to link once the code is right (src/lib/oauth-gate.ts). */
+export type PendingLink = { provider: string; providerAccountId: string; email: string };
+type Ticket = { userId: string; attempts: number; link?: PendingLink };
 const ticketKey = (ticket: string) => `2fa:ticket:${sha256(ticket)}`;
 
-export async function issueLoginTicket(userId: string) {
+export async function issueLoginTicket(userId: string, link?: PendingLink) {
   const ticket = randomBytes(32).toString("base64url");
-  await redis.set(ticketKey(ticket), { userId, attempts: 0 } satisfies Ticket, { ex: TICKET_SECONDS });
+  await redis.set(ticketKey(ticket), { userId, attempts: 0, link } satisfies Ticket, { ex: TICKET_SECONDS });
   return ticket;
 }
 
@@ -84,7 +86,7 @@ export async function redeemLoginTicket(ticket: string, code: string) {
   if (!data) return { error: "That took too long. Log in again." } as const;
   if (await checkSecondFactor(data.userId, code)) {
     await redis.del(ticketKey(ticket));
-    return { userId: data.userId } as const;
+    return { userId: data.userId, link: data.link } as const;
   }
   const attempts = data.attempts + 1;
   if (attempts >= TICKET_ATTEMPTS) {

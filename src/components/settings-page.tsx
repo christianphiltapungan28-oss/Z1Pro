@@ -1,6 +1,6 @@
 "use client";
 
-import { signOut, useSession } from "next-auth/react";
+import { signIn as nextAuthSignIn, signOut, useSession } from "next-auth/react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { AssetIcon } from "@/components/asset-icon";
 import { FeedbackDialog } from "@/components/feedback-dialog";
@@ -644,6 +644,101 @@ function DeleteAccountDialog({ email, onClose }: { email: string; onClose: () =>
   );
 }
 
+const CONNECTABLE = [
+  { id: "google", label: "Google" },
+  { id: "facebook", label: "Facebook" },
+] as const;
+
+/**
+ * The outcome of connecting an account, from the URL Auth.js returns to
+ * (?connect=google|facebook|taken, set in src/lib/oauth-gate.ts).
+ */
+function readConnectResult() {
+  if (typeof window === "undefined") return null;
+  return new URLSearchParams(window.location.search).get("connect");
+}
+
+function returningFromConnect() {
+  return typeof window !== "undefined" && new URLSearchParams(window.location.search).has("connect");
+}
+
+/** Google and Facebook rows: connect another way to sign in, or disconnect one. */
+function ConnectedAccounts({ data, onChange }: { data: SettingsData; onChange: () => void }) {
+  const [connectResult] = useState(readConnectResult);
+
+  // Drop ?connect= so a reload doesn't show the message again (after render:
+  // changing the URL while rendering updates Next's router mid-render).
+  useEffect(() => {
+    if (!connectResult) return;
+    const params = new URLSearchParams(window.location.search);
+    params.delete("connect");
+    const rest = params.toString();
+    window.history.replaceState({}, "", window.location.pathname + (rest ? `?${rest}` : ""));
+  }, [connectResult]);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(() => {
+    if (connectResult === "taken") return "That account is already used by another Z1P account, so it can't be connected here.";
+    const connected = CONNECTABLE.find((c) => c.id === connectResult);
+    return connected ? `${connected.label} is connected. You can sign in with it now.` : null;
+  });
+
+  function connect(provider: string) {
+    setBusy(provider);
+    void nextAuthSignIn(provider, { redirectTo: `/?view=settings&connect=${provider}` });
+  }
+
+  async function disconnect(provider: string, label: string) {
+    setBusy(provider);
+    setMessage(null);
+    const res = await fetch("/api/settings/connections", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ provider }),
+    });
+    const body = await res.json().catch(() => null);
+    setBusy(null);
+    if (!res.ok) {
+      setMessage(body?.error ?? `Couldn't disconnect ${label}. Please try again.`);
+      return;
+    }
+    setMessage(`${label} is disconnected.`);
+    onChange();
+  }
+
+  return (
+    <div className="min-h-[68px] border-t border-divider px-4 py-3 md:min-h-0 md:border-t-0 md:px-8 md:py-5">
+      <RowText label="Connected Accounts" value="Sign in to Z1P with any account connected here" />
+      <div className="mt-3 flex flex-col gap-2">
+        {CONNECTABLE.map(({ id, label }) => {
+          const connected = data.providers.includes(id);
+          return (
+            <div key={id} className="flex items-center justify-between rounded-lg bg-surface px-4 py-3 text-sm">
+              <span className="text-foreground">
+                {label}
+                <span className="ml-2 text-tertiary">{connected ? "Connected" : "Not connected"}</span>
+              </span>
+              {connected ? (
+                <ActionLink danger onClick={() => disconnect(id, label)} disabled={busy !== null}>
+                  {busy === id ? "Disconnecting…" : "Disconnect"}
+                </ActionLink>
+              ) : (
+                <ActionLink onClick={() => connect(id)} disabled={busy !== null}>
+                  {busy === id ? "Redirecting…" : "Connect"}
+                </ActionLink>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {message && (
+        <p role="status" className="mt-3 text-sm text-label">
+          {message}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function PrivacyTab({
   data,
   onPrivacyChange,
@@ -651,7 +746,7 @@ function PrivacyTab({
 }: {
   data: SettingsData;
   onPrivacyChange: (next: SettingsData["privacy"]) => void;
-  /** Reloads settings after two-factor is turned on or off. */
+  /** Reloads settings after two-factor or a connected account changes. */
   onTwoFactorChange: () => void;
 }) {
   const [sessions, setSessions] = useState<SessionRow[] | null>(null);
@@ -750,7 +845,7 @@ function PrivacyTab({
             label="Two-Factor Authentication"
             value={
               data.twoFactor.enabled
-                ? `On. A code from your authenticator app is asked at every password log-in (${data.twoFactor.backupCodesLeft} backup codes left).`
+                ? `On. A code from your authenticator app is asked every time you log in, including with Google or Facebook (${data.twoFactor.backupCodesLeft} backup codes left).`
                 : data.twoFactor.available
                   ? "Add an extra layer of security to your account"
                   : data.providers.length > 0
@@ -835,6 +930,7 @@ function PrivacyTab({
           )}
         </div>
 
+        <ConnectedAccounts data={data} onChange={onTwoFactorChange} />
       </Card>
 
       <SectionTitle>Privacy</SectionTitle>
@@ -2100,7 +2196,7 @@ function MobileSettings({
   onOpenAppearance: () => void;
   onBack: () => void;
 }) {
-  const [screen, setScreen] = useState<MobileScreen>("main");
+  const [screen, setScreen] = useState<MobileScreen>(() => (returningFromConnect() ? "privacy" : "main"));
   const [dialog, setDialog] = useState<EditableField | "photo" | "email" | null>(null);
   const [betaDialog, setBetaDialog] = useState<"feedback" | "guide" | null>(null);
 
@@ -2305,7 +2401,8 @@ export function SettingsPage({
   onBack: () => void;
 }) {
   const phone = useMediaQuery("(max-width: 767px)");
-  const [tab, setTab] = useState<Tab>("account");
+  // Back from connecting Google/Facebook: open where the result shows.
+  const [tab, setTab] = useState<Tab>(() => (returningFromConnect() ? "privacy" : "account"));
   const [data, setData] = useState<SettingsData | null>(null);
   const [loadError, setLoadError] = useState<LoadError>(null);
 

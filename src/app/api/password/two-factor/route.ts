@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { OAUTH_TICKET_COOKIE } from "@/lib/oauth-gate";
+import { linkOAuthAccount, OAUTH_TICKET_COOKIE } from "@/lib/oauth-gate";
 import { startSession } from "@/lib/password-session";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
 import { redeemLoginTicket } from "@/lib/two-factor";
@@ -24,6 +24,7 @@ export async function POST(request: Request) {
   if ("error" in result) {
     return NextResponse.json({ error: result.error }, { status: 401 });
   }
+  if (result.link) await linkOAuthAccount(result.userId, result.link);
   const response = NextResponse.json({ ok: true });
   if (fromCookie) response.cookies.delete(OAUTH_TICKET_COOKIE);
   return startSession(response, request, result.userId);

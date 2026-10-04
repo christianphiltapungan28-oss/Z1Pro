@@ -118,7 +118,8 @@ export async function GET() {
     // Which outside services are set up, so Settings can say what works.
     channels: { email: emailConfigured(), push: pushConfigured(), sms: smsConfigured() },
     phoneVerified: !!row?.phoneVerifiedAt,
-    // Two-factor protects password log-ins (Google/Facebook have their own).
+    // Two-factor is set up on password accounts; once on, it's also asked
+    // after Google/Facebook sign-in (src/lib/oauth-gate.ts).
     twoFactor: {
       available: twoFactor.ready && hasPassword,
       enabled: !!twoFactor.row,
