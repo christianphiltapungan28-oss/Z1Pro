@@ -184,10 +184,12 @@ export function LoginForm({
   initialView,
   callbackUrl,
   error: initialError,
+  twoFactorPending,
 }: {
   initialView: AuthView;
   callbackUrl: string;
   error: string | null;
+  twoFactorPending: boolean;
 }) {
   const [view, setView] = useState<AuthView>(initialView);
   const [agreed, setAgreed] = useState(false);
@@ -200,8 +202,9 @@ export function LoginForm({
   const [confirm, setConfirm] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  // Set when the password was right but two-factor is on.
-  const [ticket, setTicket] = useState<string | null>(null);
+  // Set when the password was right but two-factor is on. "" after Google/
+  // Facebook: the ticket is then in an httpOnly cookie the server reads.
+  const [ticket, setTicket] = useState<string | null>(twoFactorPending ? "" : null);
   const copy = COPY[view];
 
   function go(next: AuthView) {
@@ -311,7 +314,7 @@ export function LoginForm({
     </p>
   );
 
-  if (ticket) {
+  if (ticket !== null) {
     return (
       <div className="flex w-full flex-col gap-6 md:mx-auto md:max-w-[636px] md:gap-8 md:pt-[206px]">
         <PhoneHeader title="Two-factor login" description="One more step to keep your account safe." />

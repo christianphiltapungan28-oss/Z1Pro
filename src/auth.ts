@@ -6,6 +6,7 @@ import { db } from "@/db";
 import { organizationMembers, organizations, users } from "@/db/schema";
 import { createDbAdapter } from "@/lib/auth-adapter";
 import { betaAllows } from "@/lib/beta";
+import { checkOAuthSignIn } from "@/lib/oauth-gate";
 import { createPersonalOrg } from "@/lib/personal-org";
 
 function providerProfileImage(profile: unknown) {
@@ -41,8 +42,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     // Private beta: runs before an account is created, so uninvited people
     // never get one (src/lib/beta.ts).
-    signIn({ user }) {
-      return betaAllows(user.email) ? true : "/login?error=NotInvited";
+    async signIn({ user, account }) {
+      if (!betaAllows(user.email)) return "/login?error=NotInvited";
+      if (account?.type !== "oauth" && account?.type !== "oidc") return true;
+      return checkOAuthSignIn(user.email, account.provider, account.providerAccountId);
     },
     async session({ session, user }) {
       session.user.id = user.id;
