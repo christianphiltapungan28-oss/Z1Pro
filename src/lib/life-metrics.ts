@@ -1,11 +1,6 @@
 import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "@/db";
-import {
-  aiConversations,
-  aiMessages,
-  journeys,
-  type LifeMetricCategory,
-} from "@/db/schema";
+import { aiConversations, aiMessages, journeys, type LifeMetricCategory } from "@/db/schema";
 import { jsonCompletion } from "@/lib/ai-json";
 import { LIFE_AREAS } from "@/lib/life-metrics-areas";
 
@@ -48,9 +43,12 @@ async function gatherInput(userId: string) {
         .from(aiMessages)
         .where(
           and(
-            inArray(aiMessages.conversationId, conversations.map((c) => c.id)),
-            eq(aiMessages.role, "user")
-          )
+            inArray(
+              aiMessages.conversationId,
+              conversations.map((c) => c.id),
+            ),
+            eq(aiMessages.role, "user"),
+          ),
         )
         .orderBy(asc(aiMessages.createdAt))
     : [];
@@ -64,7 +62,11 @@ async function gatherInput(userId: string) {
   const withText = conversations.filter((c) => said.has(c.id));
 
   const journeyRows = await db
-    .select({ title: journeys.title, description: journeys.description, progress: journeys.progress })
+    .select({
+      title: journeys.title,
+      description: journeys.description,
+      progress: journeys.progress,
+    })
     .from(journeys)
     .where(eq(journeys.userId, userId))
     .orderBy(desc(journeys.updatedAt))
@@ -76,7 +78,7 @@ async function gatherInput(userId: string) {
       (c, i) =>
         `C${i + 1}. ${c.title ? `[${c.title.slice(0, 80)}] ` : ""}${said
           .get(c.id)!
-          .slice(0, MAX_CHARS_PER_CONVERSATION)}`
+          .slice(0, MAX_CHARS_PER_CONVERSATION)}`,
     ),
     "",
     "Journeys:",
@@ -85,7 +87,7 @@ async function gatherInput(userId: string) {
           (j, i) =>
             `J${i + 1}. ${j.title.slice(0, 120)} — ${j.progress}% done${
               j.description ? ` — ${j.description.replace(/\s+/g, " ").slice(0, 200)}` : ""
-            }`
+            }`,
         )
       : ["(none)"]),
   ];
@@ -112,27 +114,36 @@ Reply with JSON only:
    "note": string (1-2 sentences, max 160 characters, specific to what they shared)}}}
 Use exactly those seven keys in "areas".`;
 
-type RawArea = { score?: unknown; direction?: unknown; label?: unknown; sources?: unknown; note?: unknown };
+type RawArea = {
+  score?: unknown;
+  direction?: unknown;
+  label?: unknown;
+  sources?: unknown;
+  note?: unknown;
+};
 
 function clean(value: unknown, max: number) {
   return typeof value === "string" ? value.trim().replace(/\s+/g, " ").slice(0, max) : "";
 }
 
-function normaliseArea(key: LifeMetricCategory["key"], raw: RawArea | undefined, conversationCount: number): LifeMetricCategory {
+function normaliseArea(
+  key: LifeMetricCategory["key"],
+  raw: RawArea | undefined,
+  conversationCount: number,
+): LifeMetricCategory {
   const sources = Array.isArray(raw?.sources)
     ? raw!.sources.filter((s): s is string => typeof s === "string")
     : [];
   const chats = new Set(
     sources
       .map((s) => /^C(\d+)$/i.exec(s.trim())?.[1])
-      .filter((n): n is string => !!n && Number(n) >= 1 && Number(n) <= conversationCount)
+      .filter((n): n is string => !!n && Number(n) >= 1 && Number(n) <= conversationCount),
   ).size;
   const score =
     typeof raw?.score === "number" && Number.isFinite(raw.score) && sources.length > 0
       ? Math.max(1, Math.min(99, Math.round(raw.score)))
       : null;
-  const direction =
-    raw?.direction === "up" || raw?.direction === "down" ? raw.direction : "steady";
+  const direction = raw?.direction === "up" || raw?.direction === "down" ? raw.direction : "steady";
   return {
     key,
     score,
@@ -146,10 +157,7 @@ function normaliseArea(key: LifeMetricCategory["key"], raw: RawArea | undefined,
   };
 }
 
-export async function computeLifeMetrics(
-  userId: string,
-  previous: LifeMetricCategory[] | null
-) {
+export async function computeLifeMetrics(userId: string, previous: LifeMetricCategory[] | null) {
   const input = await gatherInput(userId);
   if (input.conversationCount < MIN_CONVERSATIONS) return null;
 
@@ -164,14 +172,14 @@ export async function computeLifeMetrics(
     Object.entries((raw.areas ?? {}) as Record<string, RawArea>).map(([k, v]) => [
       k.toLowerCase().replace(/[^a-z]/g, ""),
       v,
-    ])
+    ]),
   );
   const categories = LIFE_AREAS.map((a) =>
     normaliseArea(
       a.key,
       areas.get(a.key) ?? areas.get(a.name.toLowerCase().replace(/[^a-z]/g, "")),
-      input.conversationCount
-    )
+      input.conversationCount,
+    ),
   );
 
   return {

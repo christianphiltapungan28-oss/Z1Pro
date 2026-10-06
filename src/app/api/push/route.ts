@@ -11,8 +11,7 @@ const MAX_DEVICES = 10;
 
 function parseSubscription(body: unknown) {
   const sub = (body as { subscription?: unknown })?.subscription as
-    | { endpoint?: unknown; keys?: { p256dh?: unknown; auth?: unknown } }
-    | undefined;
+    { endpoint?: unknown; keys?: { p256dh?: unknown; auth?: unknown } } | undefined;
   const endpoint = sub?.endpoint;
   const p256dh = sub?.keys?.p256dh;
   const authKey = sub?.keys?.auth;
@@ -58,7 +57,7 @@ export async function POST(request: Request) {
     if (existing.length >= MAX_DEVICES) {
       return NextResponse.json(
         { error: `Push is already on for ${MAX_DEVICES} devices. Turn it off on one first.` },
-        { status: 409 }
+        { status: 409 },
       );
     }
     // An endpoint belongs to one browser; if another account used it before,

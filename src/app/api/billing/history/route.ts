@@ -18,9 +18,7 @@ export async function GET() {
 
   const org = await getCurrentOrg();
   const scope =
-    org && org.role !== "member"
-      ? eq(payments.orgId, org.orgId)
-      : eq(payments.userId, userId);
+    org && org.role !== "member" ? eq(payments.orgId, org.orgId) : eq(payments.userId, userId);
 
   const rows = await db
     .select({

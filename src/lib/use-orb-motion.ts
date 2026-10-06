@@ -29,7 +29,7 @@ function idleLevel(now: number) {
 export function useOrbMotion(
   ref: RefObject<HTMLElement | null>,
   active: boolean,
-  getLevel?: LevelSource
+  getLevel?: LevelSource,
 ) {
   const activeRef = useRef(active);
   const getLevelRef = useRef(getLevel);

@@ -45,7 +45,7 @@ export async function GET() {
   if (!limit.ok) {
     return NextResponse.json(
       { error: "You can download your data a few times an hour. Try again later." },
-      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } }
+      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } },
     );
   }
 
@@ -66,7 +66,7 @@ export async function GET() {
     .execute(
       sql`select phone, timezone, about, country, notification_prefs
           from user_settings where user_id = ${userId}
-          and to_regclass('public.user_settings') is not null`
+          and to_regclass('public.user_settings') is not null`,
     )
     .catch(() => []);
 
@@ -124,7 +124,7 @@ export async function GET() {
           })
           .from(journeySteps)
           .where(inArray(journeySteps.journeyId, journeyIds))
-          .orderBy(asc(journeySteps.position))
+          .orderBy(asc(journeySteps.position)),
       )
     : [];
   const fileRows = await optionalRows(
@@ -138,7 +138,7 @@ export async function GET() {
         createdAt: journeyFiles.createdAt,
       })
       .from(journeyFiles)
-      .where(eq(journeyFiles.userId, userId))
+      .where(eq(journeyFiles.userId, userId)),
   );
   const coachingRows = await optionalRows(
     db
@@ -150,7 +150,7 @@ export async function GET() {
       })
       .from(journeyMessages)
       .where(eq(journeyMessages.userId, userId))
-      .orderBy(asc(journeyMessages.createdAt))
+      .orderBy(asc(journeyMessages.createdAt)),
   );
   const forJourney = <T extends { journeyId: string }>(rows: T[], id: string) =>
     rows
@@ -168,14 +168,14 @@ export async function GET() {
         computedAt: lifeMetrics.computedAt,
       })
       .from(lifeMetrics)
-      .where(eq(lifeMetrics.userId, userId))
+      .where(eq(lifeMetrics.userId, userId)),
   );
 
   const [policyAcceptance] = await optionalRows(
     db
       .select({ version: legalAcceptances.version, acceptedAt: legalAcceptances.acceptedAt })
       .from(legalAcceptances)
-      .where(eq(legalAcceptances.userId, userId))
+      .where(eq(legalAcceptances.userId, userId)),
   );
 
   const memberships = await db

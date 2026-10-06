@@ -19,11 +19,7 @@ function addInterval(start: Date, interval: string | null) {
  * double-activating a subscription.
  */
 export async function fulfillPayment(paymentId: string) {
-  const [payment] = await db
-    .select()
-    .from(payments)
-    .where(eq(payments.id, paymentId))
-    .limit(1);
+  const [payment] = await db.select().from(payments).where(eq(payments.id, paymentId)).limit(1);
 
   if (!payment) return { ok: false as const, reason: "not_found" as const };
   if (payment.status === "succeeded") {
@@ -32,20 +28,14 @@ export async function fulfillPayment(paymentId: string) {
   if (!payment.planId) return { ok: false as const, reason: "no_plan" as const };
   if (!payment.orgId) return { ok: false as const, reason: "no_org" as const };
 
-  const [plan] = await db
-    .select()
-    .from(plans)
-    .where(eq(plans.id, payment.planId))
-    .limit(1);
+  const [plan] = await db.select().from(plans).where(eq(plans.id, payment.planId)).limit(1);
 
   if (!plan) return { ok: false as const, reason: "plan_not_found" as const };
 
   await db
     .update(subscriptions)
     .set({ status: "expired" })
-    .where(
-      and(eq(subscriptions.orgId, payment.orgId), eq(subscriptions.status, "active"))
-    );
+    .where(and(eq(subscriptions.orgId, payment.orgId), eq(subscriptions.status, "active")));
 
   const periodStart = new Date();
   const [subscription] = await db

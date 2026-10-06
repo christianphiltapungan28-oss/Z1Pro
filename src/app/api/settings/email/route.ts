@@ -21,7 +21,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   if (!emailConfigured()) {
-    return NextResponse.json({ error: "Changing your email isn't available yet." }, { status: 503 });
+    return NextResponse.json(
+      { error: "Changing your email isn't available yet." },
+      { status: 503 },
+    );
   }
 
   const body = await request.json().catch(() => ({}));
@@ -37,7 +40,10 @@ export async function POST(request: Request) {
       .where(and(sql`lower(${users.email}) = ${email}`, ne(users.id, userId)))
       .limit(1);
     if (taken) {
-      return NextResponse.json({ error: "That email is already used by another account." }, { status: 409 });
+      return NextResponse.json(
+        { error: "That email is already used by another account." },
+        { status: 409 },
+      );
     }
     const otp = await createOtp("email", userId, email);
     if ("error" in otp) {
@@ -51,7 +57,10 @@ export async function POST(request: Request) {
       footer: "You get this because someone asked to use this address for a Z1P account.",
     });
     if (!sent) {
-      return NextResponse.json({ error: "Couldn't send the code. Please try again." }, { status: 502 });
+      return NextResponse.json(
+        { error: "Couldn't send the code. Please try again." },
+        { status: 502 },
+      );
     }
     return NextResponse.json({ ok: true });
   }
@@ -76,7 +85,10 @@ export async function POST(request: Request) {
         .set({ email: result.target, emailVerifiedAt: new Date(), updatedAt: new Date() })
         .where(eq(users.id, userId));
     } catch {
-      return NextResponse.json({ error: "That email is already used by another account." }, { status: 409 });
+      return NextResponse.json(
+        { error: "That email is already used by another account." },
+        { status: 409 },
+      );
     }
     // Tell the old address, in case this wasn't the account owner.
     if (before?.email && before.email !== result.target) {

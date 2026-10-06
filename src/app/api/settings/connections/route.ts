@@ -55,7 +55,7 @@ export async function DELETE(request: Request) {
         error:
           "This is the only way you sign in to Z1P. Connect another account or set a password (Forgot password on the log-in page) first.",
       },
-      { status: 400 }
+      { status: 400 },
     );
   }
 

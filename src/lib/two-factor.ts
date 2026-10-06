@@ -16,7 +16,11 @@ const sha256 = (text: string) => createHash("sha256").update(text).digest("hex")
 /** The user's two-factor row, null when off; `ready` is false before the SQL script. */
 export async function getTwoFactor(userId: string) {
   try {
-    const [row] = await db.select().from(userTwoFactor).where(eq(userTwoFactor.userId, userId)).limit(1);
+    const [row] = await db
+      .select()
+      .from(userTwoFactor)
+      .where(eq(userTwoFactor.userId, userId))
+      .limit(1);
     return { ready: true, row: row ?? null };
   } catch (err) {
     if (isMissingTable(err)) return { ready: false, row: null };
@@ -34,7 +38,12 @@ export function newBackupCodes() {
   return { codes, hashes: codes.map((c) => sha256(c)) };
 }
 
-const normaliseBackup = (code: string) => code.trim().toLowerCase().replace(/[^a-z0-9]/g, "").replace(/^(.{4})(.{4})$/, "$1-$2");
+const normaliseBackup = (code: string) =>
+  code
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "")
+    .replace(/^(.{4})(.{4})$/, "$1-$2");
 
 /**
  * Checks an authenticator code or a backup code for a user with two-factor
@@ -72,7 +81,9 @@ const ticketKey = (ticket: string) => `2fa:ticket:${sha256(ticket)}`;
 
 export async function issueLoginTicket(userId: string, link?: PendingLink) {
   const ticket = randomBytes(32).toString("base64url");
-  await redis.set(ticketKey(ticket), { userId, attempts: 0, link } satisfies Ticket, { ex: TICKET_SECONDS });
+  await redis.set(ticketKey(ticket), { userId, attempts: 0, link } satisfies Ticket, {
+    ex: TICKET_SECONDS,
+  });
   return ticket;
 }
 

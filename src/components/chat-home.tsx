@@ -72,7 +72,7 @@ export function ChatHome({
   const hour = useSyncExternalStore(
     noSubscription,
     () => new Date().getHours(),
-    () => null
+    () => null,
   );
   const phone = useMediaQuery("(max-width: 767px)");
   // Phones size the orb to the room left between the greeting and the chat
@@ -104,13 +104,15 @@ export function ChatHome({
       const res = await fetch("/api/conversations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: (trimmed || files.map((f) => f.name).join(", ")).slice(0, 60) }),
+        body: JSON.stringify({
+          title: (trimmed || files.map((f) => f.name).join(", ")).slice(0, 60),
+        }),
       });
       if (!res.ok) {
         setError(
           res.status === 429
             ? "You're starting chats too quickly. Try again shortly."
-            : "Couldn't start a new chat. Please try again."
+            : "Couldn't start a new chat. Please try again.",
         );
         return;
       }

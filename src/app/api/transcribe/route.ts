@@ -23,60 +23,38 @@ export async function POST(request: Request) {
   if (!daily.ok) {
     return NextResponse.json(
       { error: "Too many transcription requests. Try again later." },
-      { status: 429, headers: { "Retry-After": String(daily.retryAfterSeconds) } }
+      { status: 429, headers: { "Retry-After": String(daily.retryAfterSeconds) } },
     );
   }
 
   if (!process.env.OPENAI_API_KEY) {
-    return NextResponse.json(
-      { error: "AI is not configured" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "AI is not configured" }, { status: 500 });
   }
 
   if (await isOverDailyBudget("transcribeKb")) {
-    return NextResponse.json(
-      { error: "Voice input is temporarily unavailable." },
-      { status: 503 }
-    );
+    return NextResponse.json({ error: "Voice input is temporarily unavailable." }, { status: 503 });
   }
 
   // Reject oversized uploads before reading the body into memory.
   const declaredLength = Number(request.headers.get("content-length"));
   if (declaredLength > MAX_AUDIO_BYTES + 64 * 1024) {
-    return NextResponse.json(
-      { error: "Audio file is too large" },
-      { status: 413 }
-    );
+    return NextResponse.json({ error: "Audio file is too large" }, { status: 413 });
   }
 
   const formData = await request.formData().catch(() => null);
   const audio = formData?.get("audio");
   if (!(audio instanceof Blob)) {
-    return NextResponse.json(
-      { error: "Audio file is required" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Audio file is required" }, { status: 400 });
   }
   if (audio.size > MAX_AUDIO_BYTES) {
-    return NextResponse.json(
-      { error: "Audio file is too large" },
-      { status: 413 }
-    );
+    return NextResponse.json({ error: "Audio file is too large" }, { status: 413 });
   }
   if (!audio.type.startsWith("audio/") && !audio.type.startsWith("video/webm")) {
-    return NextResponse.json(
-      { error: "Unsupported audio format" },
-      { status: 415 }
-    );
+    return NextResponse.json({ error: "Unsupported audio format" }, { status: 415 });
   }
 
   const openaiForm = new FormData();
-  openaiForm.append(
-    "file",
-    audio,
-    audio instanceof File ? audio.name : "audio.webm"
-  );
+  openaiForm.append("file", audio, audio instanceof File ? audio.name : "audio.webm");
   openaiForm.append("model", "gpt-4o-mini-transcribe");
 
   let transcribeRes: Response | null = null;
@@ -84,21 +62,16 @@ export async function POST(request: Request) {
     transcribeRes = await openaiFetch(
       "/audio/transcriptions",
       { method: "POST", body: openaiForm },
-      { timeoutMs: 60_000, maxRetries: 1 }
+      { timeoutMs: 60_000, maxRetries: 1 },
     );
   } catch (err) {
     console.error("Transcription failed", err);
   }
 
   if (!transcribeRes?.ok) {
-    const errorText = transcribeRes
-      ? await transcribeRes.text().catch(() => "")
-      : "";
+    const errorText = transcribeRes ? await transcribeRes.text().catch(() => "") : "";
     console.error("Transcription failed", transcribeRes?.status, errorText);
-    return NextResponse.json(
-      { error: "Transcription failed" },
-      { status: 502 }
-    );
+    return NextResponse.json({ error: "Transcription failed" }, { status: 502 });
   }
 
   await recordUsage("transcribeKb", Math.ceil(audio.size / 1024));

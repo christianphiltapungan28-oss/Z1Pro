@@ -110,7 +110,9 @@ export function MobileSearchHeader({
                 ))}
               </li>
             ) : results.length === 0 ? (
-              <li className="px-4 py-3 text-sm text-secondary">No journeys match &ldquo;{query.trim()}&rdquo;</li>
+              <li className="px-4 py-3 text-sm text-secondary">
+                No journeys match &ldquo;{query.trim()}&rdquo;
+              </li>
             ) : (
               results.map((j) => (
                 <li key={j.id} role="option" aria-selected={false}>
@@ -120,7 +122,9 @@ export function MobileSearchHeader({
                     onClick={() => router.push(`/journeys/${j.id}`)}
                     className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-foreground/5"
                   >
-                    <span className="min-w-0 truncate text-[15px] font-medium text-foreground">{j.title}</span>
+                    <span className="min-w-0 truncate text-[15px] font-medium text-foreground">
+                      {j.title}
+                    </span>
                     <span className="shrink-0 text-xs font-medium text-secondary">
                       {j.completedAt ? "Done" : `${j.progress}%`}
                     </span>

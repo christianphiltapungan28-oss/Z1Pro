@@ -23,12 +23,7 @@ const TABS: { id: Tab; label: string }[] = [
 ];
 
 type NotificationKey =
-  | "email"
-  | "push"
-  | "conversationReminders"
-  | "weeklyReport"
-  | "journeyMilestones"
-  | "marketing";
+  "email" | "push" | "conversationReminders" | "weeklyReport" | "journeyMilestones" | "marketing";
 
 type SettingsData = {
   settingsReady: boolean;
@@ -63,7 +58,15 @@ function Card({ children, className = "" }: { children: React.ReactNode; classNa
   );
 }
 
-function RowText({ label, value, muted }: { label: string; value: React.ReactNode; muted?: boolean }) {
+function RowText({
+  label,
+  value,
+  muted,
+}: {
+  label: string;
+  value: React.ReactNode;
+  muted?: boolean;
+}) {
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-1">
       <p className="text-sm font-medium text-foreground md:text-[13px] md:font-bold">{label}</p>
@@ -213,7 +216,9 @@ function AccountTab({
   function startEdit(field: EditableField, current: string | null) {
     setError(null);
     setEditing(field);
-    setDraft(current ?? (field === "timezone" ? Intl.DateTimeFormat().resolvedOptions().timeZone : ""));
+    setDraft(
+      current ?? (field === "timezone" ? Intl.DateTimeFormat().resolvedOptions().timeZone : ""),
+    );
   }
 
   async function save() {
@@ -266,7 +271,12 @@ function AccountTab({
       "w-full max-w-md rounded-lg border-[1.5px] border-accent bg-background px-3 py-2 text-[15px] text-foreground focus:outline-none";
     if (field === "timezone") {
       return (
-        <select value={draft} onChange={(e) => setDraft(e.target.value)} className={common} aria-label="Timezone">
+        <select
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          className={common}
+          aria-label="Timezone"
+        >
           {timezones.map((tz) => (
             <option key={tz} value={tz}>
               {tz}
@@ -277,7 +287,12 @@ function AccountTab({
     }
     if (field === "locale") {
       return (
-        <select value={draft} onChange={(e) => setDraft(e.target.value)} className={common} aria-label="Language">
+        <select
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          className={common}
+          aria-label="Language"
+        >
           {Object.entries(LANGUAGES).map(([code, label]) => (
             <option key={code} value={code}>
               {label}
@@ -316,11 +331,7 @@ function AccountTab({
       <div className="flex items-center gap-6 border-b border-divider p-8">
         {p.image ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={p.image}
-            alt=""
-            className="h-[95px] w-[96px] rounded-full object-cover"
-          />
+          <img src={p.image} alt="" className="h-[95px] w-[96px] rounded-full object-cover" />
         ) : (
           <div className="flex h-[95px] w-[96px] items-center justify-center rounded-full bg-gradient-to-br from-accent to-accent-strong text-2xl font-semibold text-white">
             {(p.name ?? p.email).slice(0, 1).toUpperCase()}
@@ -343,8 +354,8 @@ function AccountTab({
 
       {!data.settingsReady && (
         <p className="border-b border-divider bg-surface px-8 py-3 text-sm text-label">
-          Phone, timezone, about and country will be editable after the next
-          update. Your name and language can be changed now.
+          Phone, timezone, about and country will be editable after the next update. Your name and
+          language can be changed now.
         </p>
       )}
 
@@ -422,11 +433,31 @@ function AccountTab({
 // Notifications
 
 const NOTIFICATION_ROWS: { key: NotificationKey; label: string; description: string }[] = [
-  { key: "email", label: "Email Notifications", description: "Receive updates and summaries via email" },
-  { key: "push", label: "Push Notifications", description: "Get notified about new messages and reminders" },
-  { key: "conversationReminders", label: "Conversation Reminders", description: "Daily reminder to continue your journeys" },
-  { key: "weeklyReport", label: "Weekly Progress Report", description: "Get a weekly summary of your life metrics" },
-  { key: "journeyMilestones", label: "Journey Milestones", description: "Be notified when you reach journey milestones" },
+  {
+    key: "email",
+    label: "Email Notifications",
+    description: "Receive updates and summaries via email",
+  },
+  {
+    key: "push",
+    label: "Push Notifications",
+    description: "Get notified about new messages and reminders",
+  },
+  {
+    key: "conversationReminders",
+    label: "Conversation Reminders",
+    description: "Daily reminder to continue your journeys",
+  },
+  {
+    key: "weeklyReport",
+    label: "Weekly Progress Report",
+    description: "Get a weekly summary of your life metrics",
+  },
+  {
+    key: "journeyMilestones",
+    label: "Journey Milestones",
+    description: "Be notified when you reach journey milestones",
+  },
   { key: "marketing", label: "Marketing & Tips", description: "Receive tips and product updates" },
 ];
 
@@ -514,8 +545,8 @@ function NotificationsTab({
     <div className="flex w-full flex-col gap-3">
       {notSetUp.length > 0 && (
         <p className="text-sm text-tertiary">
-          Z1P can&rsquo;t send {notSetUp.join(" or ")} yet. You&rsquo;ll still see every
-          update under Notifications in the app.
+          Z1P can&rsquo;t send {notSetUp.join(" or ")} yet. You&rsquo;ll still see every update
+          under Notifications in the app.
         </p>
       )}
       {error && (
@@ -635,12 +666,12 @@ function DeleteAccountDialog({ email, onClose }: { email: string; onClose: () =>
         </h2>
         <div className="flex flex-col gap-2 text-[15px] leading-[22px] text-label">
           <p>
-            This permanently deletes your conversations, journeys, settings and
-            sign-in, and signs you out everywhere. It can&rsquo;t be undone.
+            This permanently deletes your conversations, journeys, settings and sign-in, and signs
+            you out everywhere. It can&rsquo;t be undone.
           </p>
           <p>
-            Payment records are kept as required by Philippine tax law. You can
-            download your data first from this page.
+            Payment records are kept as required by Philippine tax law. You can download your data
+            first from this page.
           </p>
         </div>
         <label className="flex flex-col gap-2">
@@ -695,7 +726,9 @@ function readConnectResult() {
 }
 
 function returningFromConnect() {
-  return typeof window !== "undefined" && new URLSearchParams(window.location.search).has("connect");
+  return (
+    typeof window !== "undefined" && new URLSearchParams(window.location.search).has("connect")
+  );
 }
 
 /** Google and Facebook rows: connect another way to sign in, or disconnect one. */
@@ -713,7 +746,8 @@ function ConnectedAccounts({ data, onChange }: { data: SettingsData; onChange: (
   }, [connectResult]);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(() => {
-    if (connectResult === "taken") return "That account is already used by another Z1P account, so it can't be connected here.";
+    if (connectResult === "taken")
+      return "That account is already used by another Z1P account, so it can't be connected here.";
     const connected = CONNECTABLE.find((c) => c.id === connectResult);
     return connected ? `${connected.label} is connected. You can sign in with it now.` : null;
   });
@@ -748,10 +782,15 @@ function ConnectedAccounts({ data, onChange }: { data: SettingsData; onChange: (
         {CONNECTABLE.map(({ id, label }) => {
           const connected = data.providers.includes(id);
           return (
-            <div key={id} className="flex items-center justify-between rounded-lg bg-surface px-4 py-3 text-sm">
+            <div
+              key={id}
+              className="flex items-center justify-between rounded-lg bg-surface px-4 py-3 text-sm"
+            >
               <span className="text-foreground">
                 {label}
-                <span className="ml-2 text-tertiary">{connected ? "Connected" : "Not connected"}</span>
+                <span className="ml-2 text-tertiary">
+                  {connected ? "Connected" : "Not connected"}
+                </span>
               </span>
               {connected ? (
                 <ActionLink danger onClick={() => disconnect(id, label)} disabled={busy !== null}>
@@ -830,7 +869,7 @@ function PrivacyTab({
       setMessage(
         revoked > 0
           ? `Signed out of ${revoked} other ${revoked === 1 ? "device" : "devices"}.`
-          : "No other devices were signed in."
+          : "No other devices were signed in.",
       );
       await loadSessions();
     } else {
@@ -923,9 +962,11 @@ function PrivacyTab({
             <RowText
               label="Active Sessions"
               value={
-                sessions === null
-                  ? <InlineSkeleton />
-                  : `You have ${count} active ${count === 1 ? "session" : "sessions"}`
+                sessions === null ? (
+                  <InlineSkeleton />
+                ) : (
+                  `You have ${count} active ${count === 1 ? "session" : "sessions"}`
+                )
               }
             />
             <ActionLink onClick={() => setShowSessions((v) => !v)} disabled={sessions === null}>
@@ -948,7 +989,11 @@ function PrivacyTab({
                     )}
                   </span>
                   <span className="text-tertiary">
-                    Expires {new Date(s.expiresAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                    Expires{" "}
+                    {new Date(s.expiresAt).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                    })}
                   </span>
                 </div>
               ))}
@@ -988,7 +1033,10 @@ function PrivacyTab({
       <SectionTitle>Your data</SectionTitle>
       <Card className="md:-mt-3 md:rounded-t-none md:border-t-0">
         <div className="flex items-center justify-between gap-4 border-b border-divider min-h-[68px] px-4 py-3 md:min-h-0 md:px-8 md:py-5">
-          <RowText label="Download Your Data" value="Export all your conversations and journey data" />
+          <RowText
+            label="Download Your Data"
+            value="Export all your conversations and journey data"
+          />
           <ActionLink onClick={downloadData} disabled={busy}>
             Download
           </ActionLink>
@@ -1099,7 +1147,9 @@ function SubscriptionTab() {
         </p>
       )}
       {!canManageBilling && (
-        <p className="text-sm text-label">Only organization owners or admins can change the plan.</p>
+        <p className="text-sm text-label">
+          Only organization owners or admins can change the plan.
+        </p>
       )}
 
       <div className="grid w-full grid-cols-1 gap-6 lg:grid-cols-3">
@@ -1113,7 +1163,10 @@ function SubscriptionTab() {
                 ? `${formatMoney(0, plan.currency)}/mo`
                 : `${formatMoney(plan.priceMinorUnits, plan.currency)}/${plan.billingInterval === "year" ? "yr" : "mo"}`;
           const canBuy =
-            !isCurrent && canManageBilling && plan.priceMinorUnits !== null && plan.priceMinorUnits > 0;
+            !isCurrent &&
+            canManageBilling &&
+            plan.priceMinorUnits !== null &&
+            plan.priceMinorUnits > 0;
           return (
             <div
               key={plan.code}
@@ -1122,7 +1175,9 @@ function SubscriptionTab() {
               }`}
             >
               <div className="flex items-baseline justify-between gap-2 md:flex-col md:items-start md:gap-1">
-                <p className="text-base font-medium text-foreground md:text-xl md:font-bold">{plan.name}</p>
+                <p className="text-base font-medium text-foreground md:text-xl md:font-bold">
+                  {plan.name}
+                </p>
                 <p
                   className={`text-xl font-medium md:text-[28px] md:font-extrabold ${
                     isCurrent ? "text-accent" : "text-foreground"
@@ -1157,7 +1212,9 @@ function SubscriptionTab() {
                   disabled={!canBuy || checkingOut !== null}
                   className="w-full rounded-[10px] bg-accent px-4 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
                 >
-                  {checkingOut === plan.code ? "Redirecting…" : `Upgrade to ${plan.name.replace(/ plan$/i, "")}`}
+                  {checkingOut === plan.code
+                    ? "Redirecting…"
+                    : `Upgrade to ${plan.name.replace(/ plan$/i, "")}`}
                 </button>
               )}
             </div>
@@ -1177,28 +1234,40 @@ function SubscriptionTab() {
           <RowText
             label="Billing History"
             value={
-              payments === null
-                ? <InlineSkeleton />
-                : succeeded.length === 0
-                  ? "No billing history yet"
-                  : `${succeeded.length} ${succeeded.length === 1 ? "payment" : "payments"}`
+              payments === null ? (
+                <InlineSkeleton />
+              ) : succeeded.length === 0 ? (
+                "No billing history yet"
+              ) : (
+                `${succeeded.length} ${succeeded.length === 1 ? "payment" : "payments"}`
+              )
             }
           />
           {payments && payments.length > 0 && (
-            <ActionLink onClick={() => setShowHistory((v) => !v)}>{showHistory ? "Hide" : "View"}</ActionLink>
+            <ActionLink onClick={() => setShowHistory((v) => !v)}>
+              {showHistory ? "Hide" : "View"}
+            </ActionLink>
           )}
         </div>
         {showHistory && payments && (
           <ul className="border-t border-divider">
             {payments.map((p) => (
-              <li key={p.id} className="flex items-center justify-between gap-3 px-4 py-2.5 text-xs">
+              <li
+                key={p.id}
+                className="flex items-center justify-between gap-3 px-4 py-2.5 text-xs"
+              >
                 <span className="text-foreground">
-                  {new Date(p.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                  {new Date(p.date).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
                   {" · "}
                   {p.plan ?? "—"}
                 </span>
                 <span className="text-secondary">
-                  {formatMoney(p.amountMinorUnits, p.currency)} · <span className="capitalize">{p.status}</span>
+                  {formatMoney(p.amountMinorUnits, p.currency)} ·{" "}
+                  <span className="capitalize">{p.status}</span>
                 </span>
               </li>
             ))}
@@ -1210,8 +1279,8 @@ function SubscriptionTab() {
           <div className="flex flex-col gap-1">
             <p className="text-base font-bold text-foreground">Payment Method</p>
             <p className="text-sm text-label">
-              You pay for each period with GCash, Maya or card through PayMongo.
-              Nothing is stored on file.
+              You pay for each period with GCash, Maya or card through PayMongo. Nothing is stored
+              on file.
             </p>
           </div>
         </div>
@@ -1221,11 +1290,13 @@ function SubscriptionTab() {
             <div className="flex flex-col gap-1">
               <p className="text-base font-bold text-foreground">Billing History</p>
               <p className="text-sm text-label">
-                {payments === null
-                  ? <InlineSkeleton />
-                  : succeeded.length === 0
-                    ? "No billing history yet"
-                    : `${succeeded.length} ${succeeded.length === 1 ? "payment" : "payments"}`}
+                {payments === null ? (
+                  <InlineSkeleton />
+                ) : succeeded.length === 0 ? (
+                  "No billing history yet"
+                ) : (
+                  `${succeeded.length} ${succeeded.length === 1 ? "payment" : "payments"}`
+                )}
               </p>
             </div>
             <button
@@ -1259,7 +1330,9 @@ function SubscriptionTab() {
                         })}
                       </td>
                       <td className="py-2 pr-4 text-foreground">{p.plan ?? "—"}</td>
-                      <td className="py-2 pr-4 text-foreground">{formatMoney(p.amountMinorUnits, p.currency)}</td>
+                      <td className="py-2 pr-4 text-foreground">
+                        {formatMoney(p.amountMinorUnits, p.currency)}
+                      </td>
                       <td className="py-2 capitalize text-label">{p.status}</td>
                     </tr>
                   ))}
@@ -1303,7 +1376,9 @@ function SheetDialog({
           <h2 id={titleId} className="text-[22px] font-bold text-foreground">
             {title}
           </h2>
-          {description && <div className="text-[13px] leading-[19px] text-secondary">{description}</div>}
+          {description && (
+            <div className="text-[13px] leading-[19px] text-secondary">{description}</div>
+          )}
         </div>
         {children}
       </div>
@@ -1364,9 +1439,21 @@ const FIELD_COPY: Record<
   Exclude<EditableField, "phone">,
   { title: string; description: string; label: string }
 > = {
-  name: { title: "Edit name", description: "Update the name shown on your Personal Profile.", label: "Name" },
-  about: { title: "Edit about", description: "Share a little about yourself on your Personal Profile.", label: "About" },
-  timezone: { title: "Timezone", description: "Used for reminders and your weekly report.", label: "Timezone" },
+  name: {
+    title: "Edit name",
+    description: "Update the name shown on your Personal Profile.",
+    label: "Name",
+  },
+  about: {
+    title: "Edit about",
+    description: "Share a little about yourself on your Personal Profile.",
+    label: "About",
+  },
+  timezone: {
+    title: "Timezone",
+    description: "Used for reminders and your weekly report.",
+    label: "Timezone",
+  },
   locale: { title: "Language", description: "The language Z1P uses with you.", label: "Language" },
   country: { title: "Country", description: "Where you're based.", label: "Country" },
 };
@@ -1386,7 +1473,7 @@ function EditFieldDialog({
 }) {
   const { update: updateSession } = useSession();
   const [draft, setDraft] = useState(
-    initial ?? (field === "timezone" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "")
+    initial ?? (field === "timezone" ? Intl.DateTimeFormat().resolvedOptions().timeZone : ""),
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -1417,7 +1504,12 @@ function EditFieldDialog({
   let control: React.ReactNode;
   if (field === "timezone" || field === "locale") {
     control = (
-      <select value={draft} onChange={(e) => setDraft(e.target.value)} aria-label={copy.label} className={FIELD_INPUT}>
+      <select
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        aria-label={copy.label}
+        className={FIELD_INPUT}
+      >
         {field === "timezone"
           ? timezones.map((tz) => (
               <option key={tz} value={tz}>
@@ -1472,7 +1564,12 @@ function EditFieldDialog({
             {error}
           </p>
         )}
-        <DialogButtons label="Save changes" busy={saving} disabled={field === "name" && !draft.trim()} onCancel={onClose} />
+        <DialogButtons
+          label="Save changes"
+          busy={saving}
+          disabled={field === "name" && !draft.trim()}
+          onCancel={onClose}
+        />
       </form>
     </SheetDialog>
   );
@@ -1534,7 +1631,10 @@ async function codeStep(url: string, body: Record<string, unknown>) {
   const data = await res.json().catch(() => null);
   return res.ok
     ? { ok: true as const, data }
-    : { ok: false as const, error: (data?.error as string | undefined) ?? "Something went wrong. Please try again." };
+    : {
+        ok: false as const,
+        error: (data?.error as string | undefined) ?? "Something went wrong. Please try again.",
+      };
 }
 
 /**
@@ -1628,7 +1728,13 @@ function TwoFactorSetupDialog({ onClose, onDone }: { onClose: () => void; onDone
         {setup ? (
           <div className="flex flex-col items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={setup.qr} alt="QR code for your authenticator app" width={180} height={180} className="rounded-lg bg-white p-1" />
+            <img
+              src={setup.qr}
+              alt="QR code for your authenticator app"
+              width={180}
+              height={180}
+              className="rounded-lg bg-white p-1"
+            />
             <p className="text-center text-xs text-secondary">
               Can&rsquo;t scan? Enter this key instead:
               <span className="mt-1 block font-mono text-sm tracking-wider break-all text-foreground select-all">
@@ -1702,7 +1808,13 @@ function TwoFactorOffDialog({ onClose, onDone }: { onClose: () => void; onDone: 
             {error}
           </p>
         )}
-        <DialogButtons label="Turn off" busyLabel="Turning off…" busy={busy} disabled={code.trim().length < 6} onCancel={onClose} />
+        <DialogButtons
+          label="Turn off"
+          busyLabel="Turning off…"
+          busy={busy}
+          disabled={code.trim().length < 6}
+          onCancel={onClose}
+        />
       </form>
     </SheetDialog>
   );
@@ -1875,7 +1987,11 @@ function PhoneDialog({
 
   if (step === "code") {
     return (
-      <SheetDialog title="Verify Your Phone Number" description={`We texted a 6-digit code to +63 ${digits}.`} onClose={onClose}>
+      <SheetDialog
+        title="Verify Your Phone Number"
+        description={`We texted a 6-digit code to +63 ${digits}.`}
+        onClose={onClose}
+      >
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -1891,7 +2007,12 @@ function PhoneDialog({
             </p>
           )}
           <div className="flex flex-col gap-2">
-            <DialogButtons label="Verify & update" busyLabel="Verifying…" busy={saving} disabled={code.length !== 6} />
+            <DialogButtons
+              label="Verify & update"
+              busyLabel="Verifying…"
+              busy={saving}
+              disabled={code.length !== 6}
+            />
             <button
               type="button"
               onClick={send}
@@ -1921,7 +2042,9 @@ function PhoneDialog({
           <>
             <span className="block">Current mobile number</span>
             <span className="block text-[15px] font-medium text-foreground">{current}</span>
-            <span className="mt-2 block">Your new mobile number must be verified before it replaces the current one.</span>
+            <span className="mt-2 block">
+              Your new mobile number must be verified before it replaces the current one.
+            </span>
           </>
         ) : (
           "We’ll send a one-time code to verify your mobile number."
@@ -1941,7 +2064,12 @@ function PhoneDialog({
             <span className="text-base text-foreground">
               Country code <span className="text-xs">(Current Available Country)</span>
             </span>
-            <select className={FIELD_INPUT} value="+63" onChange={() => {}} aria-label="Country code">
+            <select
+              className={FIELD_INPUT}
+              value="+63"
+              onChange={() => {}}
+              aria-label="Country code"
+            >
               <option value="+63">+63 · Philippines</option>
             </select>
           </label>
@@ -1949,7 +2077,9 @@ function PhoneDialog({
             <span className="text-base text-foreground">Mobile number</span>
             <input
               value={digits}
-              onChange={(e) => setDigits(e.target.value.replace(/\D/g, "").replace(/^0/, "").slice(0, 10))}
+              onChange={(e) =>
+                setDigits(e.target.value.replace(/\D/g, "").replace(/^0/, "").slice(0, 10))
+              }
               inputMode="numeric"
               autoComplete="tel-national"
               placeholder="912 345 6789"
@@ -1958,7 +2088,9 @@ function PhoneDialog({
             />
           </label>
           {digits && !valid && (
-            <p className="text-xs text-secondary">Enter the 10 digits after +63, starting with 9.</p>
+            <p className="text-xs text-secondary">
+              Enter the 10 digits after +63, starting with 9.
+            </p>
           )}
         </div>
         {error && (
@@ -1966,7 +2098,13 @@ function PhoneDialog({
             {error}
           </p>
         )}
-        <DialogButtons label="Send code" busyLabel="Sending…" busy={saving} disabled={!valid} onCancel={onClose} />
+        <DialogButtons
+          label="Send code"
+          busyLabel="Sending…"
+          busy={saving}
+          disabled={!valid}
+          onCancel={onClose}
+        />
         {current && (
           <button
             type="button"
@@ -2004,7 +2142,7 @@ async function resizePhoto(file: File) {
     0,
     0,
     PHOTO_SIZE,
-    PHOTO_SIZE
+    PHOTO_SIZE,
   );
   bitmap.close();
   return canvas.toDataURL("image/jpeg", 0.85);
@@ -2134,7 +2272,11 @@ function PhotoDialog({
           </p>
         )}
         <div className="w-full">
-          <DialogButtons label={preview ? "Save Changes" : "Update photo"} busy={saving} onCancel={onClose} />
+          <DialogButtons
+            label={preview ? "Save Changes" : "Update photo"}
+            busy={saving}
+            onCancel={onClose}
+          />
         </div>
       </form>
     </SheetDialog>
@@ -2160,7 +2302,9 @@ function LoadProblem({ kind }: { kind: Exclude<LoadError, null> }) {
   if (kind === "signin") {
     return (
       <div className="flex flex-col items-start gap-3 rounded-2xl border border-divider bg-background p-5">
-        <p className="text-sm text-foreground">You&rsquo;re signed out. Sign in to see and change your settings.</p>
+        <p className="text-sm text-foreground">
+          You&rsquo;re signed out. Sign in to see and change your settings.
+        </p>
         <a
           href="/login?callbackUrl=%2F%3Fview%3Dsettings"
           className="rounded-[10px] bg-accent px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90"
@@ -2205,7 +2349,12 @@ function MobileRow({
     last ? "" : "border-b border-divider"
   }`;
   return onClick ? (
-    <button type="button" onClick={onClick} disabled={disabled} className={`${className} disabled:opacity-50`}>
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`${className} disabled:opacity-50`}
+    >
       {content}
     </button>
   ) : (
@@ -2232,7 +2381,9 @@ function MobileSettings({
   onOpenAppearance: () => void;
   onBack: () => void;
 }) {
-  const [screen, setScreen] = useState<MobileScreen>(() => (returningFromConnect() ? "privacy" : "main"));
+  const [screen, setScreen] = useState<MobileScreen>(() =>
+    returningFromConnect() ? "privacy" : "main",
+  );
   const [dialog, setDialog] = useState<EditableField | "photo" | "email" | null>(null);
   const [betaDialog, setBetaDialog] = useState<"feedback" | "guide" | null>(null);
 
@@ -2265,7 +2416,9 @@ function MobileSettings({
         <h1 className="truncate text-base font-bold text-foreground">{SCREEN_TITLES[screen]}</h1>
       </header>
 
-      <div className={`flex flex-col gap-6 px-4 pb-8 ${screen === "main" ? "pt-[22px]" : "pt-3.5"}`}>
+      <div
+        className={`flex flex-col gap-6 px-4 pb-8 ${screen === "main" ? "pt-[22px]" : "pt-3.5"}`}
+      >
         {loadError && <LoadProblem kind={loadError} />}
         {!data && !loadError && screen !== "subscription" && <SettingsSkeleton />}
 
@@ -2274,7 +2427,11 @@ function MobileSettings({
             <div className="flex items-center gap-4 px-2">
               {p.image ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={p.image} alt="" className="size-[66px] shrink-0 rounded-full object-cover" />
+                <img
+                  src={p.image}
+                  alt=""
+                  className="size-[66px] shrink-0 rounded-full object-cover"
+                />
               ) : (
                 <span className="flex size-[66px] shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-accent to-accent-strong text-xl font-semibold text-white">
                   {name.slice(0, 1).toUpperCase()}
@@ -2284,7 +2441,11 @@ function MobileSettings({
                 <p className="truncate text-xl font-bold text-foreground">{name}</p>
                 <p className="text-sm text-secondary">Personal Profile</p>
               </div>
-              <button type="button" onClick={() => setDialog("photo")} className="shrink-0 text-sm font-medium text-accent">
+              <button
+                type="button"
+                onClick={() => setDialog("photo")}
+                className="shrink-0 text-sm font-medium text-accent"
+              >
                 Change
               </button>
             </div>
@@ -2298,11 +2459,25 @@ function MobileSettings({
             <div className="flex flex-col gap-2">
               <SectionTitle>Profile details</SectionTitle>
               <Card className="overflow-hidden">
-                <MobileRow label="Name" detail={p.name ?? "N/A"} action="Edit" onClick={() => setDialog("name")} />
+                <MobileRow
+                  label="Name"
+                  detail={p.name ?? "N/A"}
+                  action="Edit"
+                  onClick={() => setDialog("name")}
+                />
                 {data.channels.email ? (
-                  <MobileRow label="Email" detail={p.email} action="Edit" onClick={() => setDialog("email")} />
+                  <MobileRow
+                    label="Email"
+                    detail={p.email}
+                    action="Edit"
+                    onClick={() => setDialog("email")}
+                  />
                 ) : (
-                  <MobileRow label="Email" detail={p.email} action={<span className="text-xs text-tertiary">Managed by {provider}</span>} />
+                  <MobileRow
+                    label="Email"
+                    detail={p.email}
+                    action={<span className="text-xs text-tertiary">Managed by {provider}</span>}
+                  />
                 )}
                 <MobileRow
                   label="Phone"
@@ -2311,27 +2486,62 @@ function MobileSettings({
                   onClick={() => setDialog("phone")}
                   disabled={locked || !data.channels.sms}
                 />
-                <MobileRow label="About" detail={p.about ?? "N/A"} action="Edit" onClick={() => setDialog("about")} disabled={locked} last />
+                <MobileRow
+                  label="About"
+                  detail={p.about ?? "N/A"}
+                  action="Edit"
+                  onClick={() => setDialog("about")}
+                  disabled={locked}
+                  last
+                />
               </Card>
             </div>
 
             <Card className="overflow-hidden">
-              <MobileRow label="Notifications" detail="Manage your notification preferences" action="›" onClick={() => setScreen("notifications")} />
-              <MobileRow label="Subscription" detail="Manage your plan and billing" action="›" onClick={() => setScreen("subscription")} />
-              <MobileRow label="Privacy and Policy" detail="Review privacy, security, and policies" action="›" onClick={() => setScreen("privacy")} last />
+              <MobileRow
+                label="Notifications"
+                detail="Manage your notification preferences"
+                action="›"
+                onClick={() => setScreen("notifications")}
+              />
+              <MobileRow
+                label="Subscription"
+                detail="Manage your plan and billing"
+                action="›"
+                onClick={() => setScreen("subscription")}
+              />
+              <MobileRow
+                label="Privacy and Policy"
+                detail="Review privacy, security, and policies"
+                action="›"
+                onClick={() => setScreen("privacy")}
+                last
+              />
             </Card>
 
             <div className="flex flex-col gap-2">
               <SectionTitle>Preferences</SectionTitle>
               <Card className="overflow-hidden">
-                <MobileRow label="Timezone" detail={p.timezone ?? "Not set"} action="›" onClick={() => setDialog("timezone")} disabled={locked} />
+                <MobileRow
+                  label="Timezone"
+                  detail={p.timezone ?? "Not set"}
+                  action="›"
+                  onClick={() => setDialog("timezone")}
+                  disabled={locked}
+                />
                 <MobileRow
                   label="Language"
                   detail={LANGUAGES[p.locale as keyof typeof LANGUAGES] ?? p.locale}
                   action="›"
                   onClick={() => setDialog("locale")}
                 />
-                <MobileRow label="Country" detail={p.country ?? "Not set"} action="›" onClick={() => setDialog("country")} disabled={locked} />
+                <MobileRow
+                  label="Country"
+                  detail={p.country ?? "Not set"}
+                  action="›"
+                  onClick={() => setDialog("country")}
+                  disabled={locked}
+                />
                 <MobileRow
                   label="Appearance"
                   detail={appearance === "aurora" ? "Aurora" : "Daylight"}
@@ -2364,7 +2574,12 @@ function MobileSettings({
             <div className="flex flex-col gap-2">
               <SectionTitle>Account</SectionTitle>
               <Card className="overflow-hidden">
-                <MobileRow label="Logout" detail="Sign out of your account" onClick={() => signOut({ redirectTo: "/" })} last />
+                <MobileRow
+                  label="Logout"
+                  detail="Sign out of your account"
+                  onClick={() => signOut({ redirectTo: "/" })}
+                  last
+                />
               </Card>
             </div>
           </>
@@ -2375,7 +2590,11 @@ function MobileSettings({
         )}
         {data && screen === "privacy" && (
           <>
-            <PrivacyTab data={data} onPrivacyChange={onPrivacyChange} onTwoFactorChange={() => void reload()} />
+            <PrivacyTab
+              data={data}
+              onPrivacyChange={onPrivacyChange}
+              onTwoFactorChange={() => void reload()}
+            />
             <div className="flex flex-col gap-2">
               <SectionTitle>Policies</SectionTitle>
               <Card className="overflow-hidden">
@@ -2409,7 +2628,9 @@ function MobileSettings({
       {data && p && dialog === "phone" && (
         <PhoneDialog current={p.phone} onClose={() => setDialog(null)} onSaved={reload} />
       )}
-      {data && p && dialog === "email" && <EmailDialog onClose={() => setDialog(null)} onSaved={reload} />}
+      {data && p && dialog === "email" && (
+        <EmailDialog onClose={() => setDialog(null)} onSaved={reload} />
+      )}
       {data && p && dialog && dialog !== "photo" && dialog !== "phone" && dialog !== "email" && (
         <EditFieldDialog
           field={dialog}
@@ -2483,7 +2704,11 @@ export function SettingsPage({
   return (
     <div className="h-full overflow-y-auto bg-surface">
       <div className="flex flex-col gap-3.5 p-4 sm:p-10">
-        <div role="tablist" aria-label="Settings" className="flex items-end overflow-x-auto border-b border-divider">
+        <div
+          role="tablist"
+          aria-label="Settings"
+          className="flex items-end overflow-x-auto border-b border-divider"
+        >
           {TABS.map((t) => {
             const active = t.id === tab;
             return (
@@ -2497,12 +2722,16 @@ export function SettingsPage({
               >
                 <span
                   className={`whitespace-nowrap text-[15px] ${
-                    active ? "font-semibold text-accent" : "font-medium text-tertiary hover:text-label"
+                    active
+                      ? "font-semibold text-accent"
+                      : "font-medium text-tertiary hover:text-label"
                   }`}
                 >
                   {t.label}
                 </span>
-                <span className={`h-0.5 w-full rounded-sm ${active ? "bg-accent" : "bg-transparent"}`} />
+                <span
+                  className={`h-0.5 w-full rounded-sm ${active ? "bg-accent" : "bg-transparent"}`}
+                />
               </button>
             );
           })}

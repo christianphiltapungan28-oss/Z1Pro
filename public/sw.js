@@ -14,7 +14,7 @@ self.addEventListener("push", (event) => {
       icon: "/icon.svg",
       badge: "/icon.svg",
       data: { url: typeof data.url === "string" && data.url.startsWith("/") ? data.url : "/" },
-    })
+    }),
   );
 });
 
@@ -29,6 +29,6 @@ self.addEventListener("notificationclick", (event) => {
         }
       }
       return self.clients.openWindow(url);
-    })
+    }),
   );
 });

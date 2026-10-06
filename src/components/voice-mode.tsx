@@ -41,12 +41,7 @@ const HEARING_TIMEOUT_MS = 8_000;
 const MAX_RECORDING_MS = 60_000;
 
 function pickRecorderMimeType() {
-  const candidates = [
-    "audio/webm;codecs=opus",
-    "audio/webm",
-    "audio/mp4",
-    "audio/ogg",
-  ];
+  const candidates = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg"];
   if (typeof MediaRecorder === "undefined") return "";
   return candidates.find((type) => MediaRecorder.isTypeSupported(type)) ?? "";
 }
@@ -195,9 +190,12 @@ export function VoiceMode({
     recognition.onend = () => {
       if (recognitionRef.current === recognition) recognitionRef.current = null;
       if (!listeningRef.current) return;
-      setTimeout(() => {
-        if (listeningRef.current) startListening();
-      }, failed ? 2_000 : 250);
+      setTimeout(
+        () => {
+          if (listeningRef.current) startListening();
+        },
+        failed ? 2_000 : 250,
+      );
     };
 
     recognitionRef.current = recognition;
@@ -293,21 +291,18 @@ export function VoiceMode({
         onConversationCreated(conversation.id);
       }
 
-      const messageRes = await fetch(
-        `/api/conversations/${activeId}/messages`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content: spoken, mode: "voice" }),
-        }
-      );
+      const messageRes = await fetch(`/api/conversations/${activeId}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: spoken, mode: "voice" }),
+      });
       if (!messageRes.ok) {
         if (messageRes.status === 429) {
           const data = await messageRes.json().catch(() => null);
           setError(
             data?.dailyLimit
               ? `You've hit today's ${data.dailyLimit}-message limit on the ${data.planCode} plan. Upgrade for more.`
-              : "You've hit today's message limit. Upgrade for more."
+              : "You've hit today's message limit. Upgrade for more.",
           );
         } else {
           setError("Something went wrong. Please try again.");
@@ -317,8 +312,7 @@ export function VoiceMode({
       }
       const messageData: {
         assistantMessage?: { id?: string; content?: string };
-      } =
-        await messageRes.json();
+      } = await messageRes.json();
       const replyText = messageData.assistantMessage?.content ?? "";
       setReply(replyText);
 
@@ -411,10 +405,7 @@ export function VoiceMode({
 
   async function startRecording() {
     setError(null);
-    if (
-      typeof navigator === "undefined" ||
-      !navigator.mediaDevices?.getUserMedia
-    ) {
+    if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
       setError("Microphone access isn't supported in this browser.");
       return;
     }
@@ -423,10 +414,7 @@ export function VoiceMode({
         audio: true,
       });
       const mimeType = pickRecorderMimeType();
-      const recorder = new MediaRecorder(
-        stream,
-        mimeType ? { mimeType } : undefined
-      );
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
       chunksRef.current = [];
       recorder.ondataavailable = (e) => {
         if (e.data.size > 0) chunksRef.current.push(e.data);
@@ -444,9 +432,7 @@ export function VoiceMode({
       }, MAX_RECORDING_MS);
       go("recording");
     } catch {
-      setError(
-        "Couldn't access your microphone. Check permissions and try again."
-      );
+      setError("Couldn't access your microphone. Check permissions and try again.");
     }
   }
 
@@ -534,7 +520,9 @@ export function VoiceMode({
 
   // Phones size the orb to the screen's height, leaving room for the headline
   // and status below it (short phones get a smaller orb, tall ones a bigger).
-  const orbWidth = phone ? Math.round(Math.max(120, Math.min(230, ((stage?.height ?? 600) - 230) / 1.17))) : 241;
+  const orbWidth = phone
+    ? Math.round(Math.max(120, Math.min(230, ((stage?.height ?? 600) - 230) / 1.17)))
+    : 241;
 
   return (
     <div className="flex h-full flex-col">
@@ -552,86 +540,88 @@ export function VoiceMode({
         <p className="text-base font-bold text-foreground">Voice</p>
       </header>
 
-    <div
-      ref={stageRef}
-      className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto px-4 py-4 sm:px-8 md:py-8"
-    >
-      {/* Shares Home's orb transition name, so the orb glides in from Home. */}
-      <span style={{ viewTransitionName: ORB_TRANSITION }}>
-        {appearance === "light" ? (
-          <DesignOrb width={orbWidth} active={orbActive} getLevel={orbLevel} />
+      <div
+        ref={stageRef}
+        className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto px-4 py-4 sm:px-8 md:py-8"
+      >
+        {/* Shares Home's orb transition name, so the orb glides in from Home. */}
+        <span style={{ viewTransitionName: ORB_TRANSITION }}>
+          {appearance === "light" ? (
+            <DesignOrb width={orbWidth} active={orbActive} getLevel={orbLevel} />
+          ) : (
+            <Orb
+              size={Math.round(orbWidth * 0.75)}
+              appearance={appearance}
+              active={orbActive}
+              getLevel={orbLevel}
+            />
+          )}
+        </span>
+
+        <div className="mt-[clamp(12px,3vh,32px)] max-w-md text-center">
+          <h1 className="font-display text-[clamp(20px,6vw,24px)] leading-tight font-medium text-foreground sm:text-3xl">
+            {HEADLINE[appearance]}
+          </h1>
+        </div>
+
+        {phase === "hearing" && heard ? (
+          <p className="mt-6 max-w-md text-center text-sm text-muted">&ldquo;{heard}&rdquo;</p>
         ) : (
-          <Orb size={Math.round(orbWidth * 0.75)} appearance={appearance} active={orbActive} getLevel={orbLevel} />
+          (transcript || reply) && (
+            <div className="mt-6 flex w-full max-w-md flex-col gap-2 text-center text-sm">
+              {transcript && <p className="text-muted">&ldquo;{transcript}&rdquo;</p>}
+              {reply && <p className="text-foreground">{reply}</p>}
+            </div>
+          )
         )}
-      </span>
 
-      <div className="mt-[clamp(12px,3vh,32px)] max-w-md text-center">
-        <h1 className="font-display text-[clamp(20px,6vw,24px)] leading-tight font-medium text-foreground sm:text-3xl">
-          {HEADLINE[appearance]}
-        </h1>
-      </div>
+        {error && (
+          <p role="alert" className="mt-4 max-w-md text-center text-xs text-red-500">
+            {error}
+          </p>
+        )}
 
-      {phase === "hearing" && heard ? (
-        <p className="mt-6 max-w-md text-center text-sm text-muted">&ldquo;{heard}&rdquo;</p>
-      ) : (
-        (transcript || reply) && (
-          <div className="mt-6 flex w-full max-w-md flex-col gap-2 text-center text-sm">
-            {transcript && <p className="text-muted">&ldquo;{transcript}&rdquo;</p>}
-            {reply && <p className="text-foreground">{reply}</p>}
-          </div>
-        )
-      )}
+        {playBlocked && (
+          <button
+            type="button"
+            onClick={playBlockedReply}
+            className="mt-6 rounded-full bg-accent px-5 py-2.5 text-sm font-bold text-white shadow-md"
+          >
+            Play Z1p&rsquo;s reply
+          </button>
+        )}
 
-      {error && (
-        <p
-          role="alert"
-          className="mt-4 max-w-md text-center text-xs text-red-500"
-        >
-          {error}
+        {handsFree && micBlocked ? (
+          <button
+            type="button"
+            onClick={() => {
+              prepareAudioContext();
+              startListening();
+            }}
+            className="mt-6 flex items-center gap-2 rounded-full bg-accent px-5 py-3 text-sm font-bold text-white shadow-md md:mt-10"
+          >
+            <MicIcon className="h-5 w-5" />
+            Turn on microphone
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={handleMicClick}
+            disabled={micDisabled}
+            aria-pressed={micLive}
+            aria-label={micLabel}
+            className={`mt-6 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-md transition-transform disabled:opacity-60 md:mt-10 ${
+              micLive ? "scale-105 animate-pulse bg-accent" : "bg-accent/70"
+            }`}
+          >
+            <MicIcon className="h-6 w-6" />
+          </button>
+        )}
+
+        <p aria-live="polite" className="mt-3 text-xs text-muted">
+          {statusText}
         </p>
-      )}
-
-      {playBlocked && (
-        <button
-          type="button"
-          onClick={playBlockedReply}
-          className="mt-6 rounded-full bg-accent px-5 py-2.5 text-sm font-bold text-white shadow-md"
-        >
-          Play Z1p&rsquo;s reply
-        </button>
-      )}
-
-      {handsFree && micBlocked ? (
-        <button
-          type="button"
-          onClick={() => {
-            prepareAudioContext();
-            startListening();
-          }}
-          className="mt-6 flex items-center gap-2 rounded-full bg-accent px-5 py-3 text-sm font-bold text-white shadow-md md:mt-10"
-        >
-          <MicIcon className="h-5 w-5" />
-          Turn on microphone
-        </button>
-      ) : (
-        <button
-          type="button"
-          onClick={handleMicClick}
-          disabled={micDisabled}
-          aria-pressed={micLive}
-          aria-label={micLabel}
-          className={`mt-6 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-md transition-transform disabled:opacity-60 md:mt-10 ${
-            micLive ? "scale-105 animate-pulse bg-accent" : "bg-accent/70"
-          }`}
-        >
-          <MicIcon className="h-6 w-6" />
-        </button>
-      )}
-
-      <p aria-live="polite" className="mt-3 text-xs text-muted">
-        {statusText}
-      </p>
-    </div>
+      </div>
     </div>
   );
 }

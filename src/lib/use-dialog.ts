@@ -10,7 +10,7 @@ import { useEffect, useRef } from "react";
  */
 export function useDialog<T extends HTMLElement = HTMLDivElement>(
   open: boolean,
-  onClose: () => void
+  onClose: () => void,
 ) {
   const panelRef = useRef<T>(null);
   // Callers usually pass an inline arrow; keeping it in a ref stops every
@@ -22,10 +22,7 @@ export function useDialog<T extends HTMLElement = HTMLDivElement>(
 
   useEffect(() => {
     if (!open) return;
-    const opener =
-      document.activeElement instanceof HTMLElement
-        ? document.activeElement
-        : null;
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     panelRef.current?.focus();
 
     function onKeyDown(e: KeyboardEvent) {

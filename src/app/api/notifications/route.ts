@@ -31,8 +31,8 @@ export async function GET(request: Request) {
       .where(
         and(
           eq(notifications.userId, userId),
-          lt(notifications.createdAt, new Date(Date.now() - KEEP_DAYS * 86_400_000))
-        )
+          lt(notifications.createdAt, new Date(Date.now() - KEEP_DAYS * 86_400_000)),
+        ),
       );
     const items = await db
       .select({
@@ -82,8 +82,8 @@ export async function PATCH(request: Request) {
         and(
           eq(notifications.userId, userId),
           isNull(notifications.readAt),
-          ...(id ? [eq(notifications.id, id)] : [])
-        )
+          ...(id ? [eq(notifications.id, id)] : []),
+        ),
       );
   } catch (err) {
     if (!isMissingTable(err)) throw err;

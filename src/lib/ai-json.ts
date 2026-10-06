@@ -15,7 +15,7 @@ export type Content =
 export async function jsonCompletion(
   system: string,
   content: Content[],
-  maxTokens: number
+  maxTokens: number,
 ): Promise<Record<string, unknown>> {
   const res = await openaiFetch(
     "/chat/completions",
@@ -32,7 +32,7 @@ export async function jsonCompletion(
         ],
       }),
     },
-    { timeoutMs: 90_000, maxRetries: 1 }
+    { timeoutMs: 90_000, maxRetries: 1 },
   );
   if (!res.ok) {
     throw new Error(`OpenAI ${res.status}: ${await res.text().catch(() => "")}`);

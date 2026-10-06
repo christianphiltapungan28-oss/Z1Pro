@@ -10,17 +10,14 @@ function hashToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
 
-export async function GET(
-  request: Request,
-  ctx: RouteContext<"/api/invites/[token]">
-) {
+export async function GET(request: Request, ctx: RouteContext<"/api/invites/[token]">) {
   // Works without signing in, so limit by IP to stop bots from hammering
   // the database with guessed tokens.
   const limit = await rateLimit(`invites:lookup:${clientIp(request)}`, 30, 10 * 60_000);
   if (!limit.ok) {
     return NextResponse.json(
       { error: "Too many requests. Try again shortly." },
-      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } }
+      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } },
     );
   }
 
@@ -43,10 +40,7 @@ export async function GET(
       orgName: organizations.name,
     })
     .from(organizationInvites)
-    .innerJoin(
-      organizations,
-      eq(organizationInvites.organizationId, organizations.id)
-    )
+    .innerJoin(organizations, eq(organizationInvites.organizationId, organizations.id))
     .where(eq(organizationInvites.tokenHash, hashToken(token)))
     .limit(1);
 

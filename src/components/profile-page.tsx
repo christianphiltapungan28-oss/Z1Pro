@@ -112,7 +112,7 @@ function HighlightedSummary({ text }: { text: string }) {
           </span>
         ) : (
           <span key={i}>{part}</span>
-        )
+        ),
       )}
     </>
   );
@@ -199,7 +199,13 @@ function MobileMetricCard({ category, index }: { category: LifeMetricCategory; i
   const fill = useCategoryFill(category.score, index);
   const positive = category.score !== null && category.direction !== "down";
   const arrow =
-    category.score === null ? "" : category.direction === "up" ? "↑ " : category.direction === "down" ? "↓ " : "→ ";
+    category.score === null
+      ? ""
+      : category.direction === "up"
+        ? "↑ "
+        : category.direction === "down"
+          ? "↓ "
+          : "→ ";
   return (
     <div className="flex w-full flex-col gap-3 rounded-[18px] border border-flow-line bg-background p-4 shadow-[0_5px_18px_rgba(26,27,31,0.05)]">
       <div className="flex items-center gap-3">
@@ -245,20 +251,18 @@ function MobileMetricCard({ category, index }: { category: LifeMetricCategory; i
 }
 
 /** Phones: the category cards, under the harmony card (mobile Figma 519:3529). */
-function MobileCategories({
-  categories,
-}: {
-  categories: LifeMetricCategory[];
-}) {
+function MobileCategories({ categories }: { categories: LifeMetricCategory[] }) {
   const strongest = categories.reduce<LifeMetricCategory | null>(
     (best, c) => (c.score !== null && (best === null || (best.score ?? -1) < c.score) ? c : best),
-    null
+    null,
   );
   return (
     <div className="flex flex-col gap-5 md:hidden">
       {strongest && (
         <section className="flex flex-col gap-2">
-          <h2 className="text-xs font-bold tracking-[0.8px] text-flow-muted uppercase">Strongest signal</h2>
+          <h2 className="text-xs font-bold tracking-[0.8px] text-flow-muted uppercase">
+            Strongest signal
+          </h2>
           <MobileMetricCard category={strongest} index={0} />
         </section>
       )}
@@ -294,23 +298,21 @@ function EnableCard({ busy, onEnable }: { busy: boolean; onEnable: () => void })
       <div className="flex flex-col gap-2">
         <p className="text-lg font-bold text-flow-ink">Turn on Life Metrics</p>
         <p className="text-sm leading-[22px] text-flow-muted">
-          Z1p can read what you&apos;ve shared in your conversations and journeys and
-          give you a score for seven areas of your life — Purpose, Finances,
-          Family, Health, Personal Growth, Faith and Community — plus an overall
-          Life Harmony score.
+          Z1p can read what you&apos;ve shared in your conversations and journeys and give you a
+          score for seven areas of your life — Purpose, Finances, Family, Health, Personal Growth,
+          Faith and Community — plus an overall Life Harmony score.
         </p>
       </div>
       <ul className="flex list-disc flex-col gap-1.5 pl-5 text-sm leading-[22px] text-flow-muted">
         <li>Only your own messages and journeys are read, not Z1p&apos;s replies.</li>
         <li>
-          Health and Faith are sensitive topics. The scores are estimates to help
-          you reflect, not a diagnosis or a judgement.
+          Health and Faith are sensitive topics. The scores are estimates to help you reflect, not a
+          diagnosis or a judgement.
         </li>
+        <li>Scores are worked out by our AI provider, OpenAI, and updated at most once a week.</li>
         <li>
-          Scores are worked out by our AI provider, OpenAI, and updated at most once
-          a week.
+          Only you can see them. You can turn this off at any time, which deletes every score.
         </li>
-        <li>Only you can see them. You can turn this off at any time, which deletes every score.</li>
       </ul>
       <label className="flex cursor-pointer items-start gap-3 text-sm leading-[22px] text-flow-ink">
         <input
@@ -320,8 +322,8 @@ function EnableCard({ busy, onEnable }: { busy: boolean; onEnable: () => void })
           className="mt-1 size-4 shrink-0 accent-accent"
         />
         <span>
-          I agree to Z1p analysing my conversations and journeys, including anything
-          about my health and faith, to create these scores. See the{" "}
+          I agree to Z1p analysing my conversations and journeys, including anything about my health
+          and faith, to create these scores. See the{" "}
           <Link href="/privacy#life-metrics" className="font-semibold text-accent underline">
             Privacy Policy
           </Link>
@@ -478,8 +480,7 @@ export function ProfilePage({
                     "Your life-coaching profile with Z1p"}
                 </p>
                 <p className="hidden text-xs text-flow-faint md:block">
-                  Member since {memberSince(profile.memberSince)} •{" "}
-                  {profile.conversations}{" "}
+                  Member since {memberSince(profile.memberSince)} • {profile.conversations}{" "}
                   {profile.conversations === 1 ? "Conversation" : "Conversations"} Guided
                 </p>
               </div>
@@ -518,9 +519,8 @@ export function ProfilePage({
               <Notice>
                 <p className="font-bold text-flow-ink">Your scores are on their way</p>
                 <p>
-                  Have at least {metrics.minConversations} conversations with Z1p and your
-                  first Life Metrics will appear here. You&apos;ve had{" "}
-                  {profile.conversations} so far.
+                  Have at least {metrics.minConversations} conversations with Z1p and your first
+                  Life Metrics will appear here. You&apos;ve had {profile.conversations} so far.
                 </p>
                 <button
                   type="button"
@@ -533,7 +533,9 @@ export function ProfilePage({
             ) : firstRun && !scored ? (
               <Notice>
                 <p className="font-bold text-flow-ink">
-                  {updating ? "Working out your first scores…" : "Your first scores aren't ready yet"}
+                  {updating
+                    ? "Working out your first scores…"
+                    : "Your first scores aren't ready yet"}
                 </p>
                 {!updating && (
                   <button
@@ -567,22 +569,27 @@ export function ProfilePage({
                     <MobileCategories categories={metrics.categories} />
                   </>
                 ) : (
-                <Card className="flex flex-col items-center gap-8 p-8 sm:flex-row">
-                  <HarmonyGauge value={metrics.harmony} />
-                  <div className="flex min-w-0 flex-1 flex-col gap-2">
-                    <p className="text-lg font-bold text-flow-ink">Overall Life Harmony Summary</p>
-                    <p className="text-sm leading-[22px] text-flow-muted">
-                      {metrics.summary ? (
-                        <HighlightedSummary text={metrics.summary} />
-                      ) : (
-                        "Keep talking with Z1p and your summary will fill in."
-                      )}
-                    </p>
-                  </div>
-                </Card>
+                  <Card className="flex flex-col items-center gap-8 p-8 sm:flex-row">
+                    <HarmonyGauge value={metrics.harmony} />
+                    <div className="flex min-w-0 flex-1 flex-col gap-2">
+                      <p className="text-lg font-bold text-flow-ink">
+                        Overall Life Harmony Summary
+                      </p>
+                      <p className="text-sm leading-[22px] text-flow-muted">
+                        {metrics.summary ? (
+                          <HighlightedSummary text={metrics.summary} />
+                        ) : (
+                          "Keep talking with Z1p and your summary will fill in."
+                        )}
+                      </p>
+                    </div>
+                  </Card>
                 )}
 
-                <section className="hidden flex-col gap-6 md:flex" aria-labelledby="categories-heading">
+                <section
+                  className="hidden flex-col gap-6 md:flex"
+                  aria-labelledby="categories-heading"
+                >
                   <h2 id="categories-heading" className="text-lg font-bold text-flow-ink">
                     Holistic Categories Breakdown
                   </h2>
@@ -615,7 +622,11 @@ export function ProfilePage({
                     <button type="button" onClick={turnOff} className="font-semibold text-accent">
                       Yes, turn off
                     </button>
-                    <button type="button" onClick={() => setConfirmOff(false)} className="font-semibold text-flow-muted">
+                    <button
+                      type="button"
+                      onClick={() => setConfirmOff(false)}
+                      className="font-semibold text-flow-muted"
+                    >
                       Cancel
                     </button>
                   </span>

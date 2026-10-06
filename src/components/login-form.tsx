@@ -9,7 +9,10 @@ import { LEGAL } from "@/lib/legal";
 
 export type AuthView = "signin" | "signup" | "forgot";
 
-const COPY: Record<AuthView, { title: string; description: string; phoneTitle: string; phoneDescription: string }> = {
+const COPY: Record<
+  AuthView,
+  { title: string; description: string; phoneTitle: string; phoneDescription: string }
+> = {
   signin: {
     title: "Welcome back",
     description: "Continue your journeys and conversations with Zip.",
@@ -86,7 +89,10 @@ function Divider() {
 
 function Alert({ children }: { children: React.ReactNode }) {
   return (
-    <p role="alert" className="rounded-[10px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+    <p
+      role="alert"
+      className="rounded-[10px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+    >
       {children}
     </p>
   );
@@ -94,7 +100,10 @@ function Alert({ children }: { children: React.ReactNode }) {
 
 function Notice({ children }: { children: React.ReactNode }) {
   return (
-    <p role="status" className="rounded-[10px] border border-field-border bg-surface px-4 py-3 text-sm text-foreground">
+    <p
+      role="status"
+      className="rounded-[10px] border border-field-border bg-surface px-4 py-3 text-sm text-foreground"
+    >
       {children}
     </p>
   );
@@ -136,8 +145,8 @@ export function TwoFactorStep({
       <div className="flex flex-col gap-2">
         <h2 className="text-xl font-bold text-foreground">Enter your code</h2>
         <p className="text-sm text-subtle">
-          Open your authenticator app and enter the 6-digit code for Z1P. Lost your phone? Use one of your
-          backup codes.
+          Open your authenticator app and enter the 6-digit code for Z1P. Lost your phone? Use one
+          of your backup codes.
         </p>
       </div>
       <label className="flex flex-col gap-[9px]">
@@ -154,10 +163,18 @@ export function TwoFactorStep({
         />
       </label>
       {error && <Alert>{error}</Alert>}
-      <button type="submit" disabled={busy || code.trim().length < 6} className={`${OUTLINE_BUTTON} text-foreground`}>
+      <button
+        type="submit"
+        disabled={busy || code.trim().length < 6}
+        className={`${OUTLINE_BUTTON} text-foreground`}
+      >
         {busy ? "Checking…" : "Verify and log in"}
       </button>
-      <button type="button" onClick={onCancel} className="self-center text-sm font-semibold text-foreground hover:underline">
+      <button
+        type="button"
+        onClick={onCancel}
+        className="self-center text-sm font-semibold text-foreground hover:underline"
+      >
         ← Back to login
       </button>
     </form>
@@ -171,7 +188,9 @@ async function post(url: string, body: Record<string, unknown>) {
     body: JSON.stringify(body),
   });
   const data = await res.json().catch(() => null);
-  return res.ok ? null : ((data?.error as string | undefined) ?? "Something went wrong. Please try again.");
+  return res.ok
+    ? null
+    : ((data?.error as string | undefined) ?? "Something went wrong. Please try again.");
 }
 
 /**
@@ -249,7 +268,13 @@ export function LoginForm({
         return;
       }
       if (view === "signup") {
-        const failed = await post("/api/password/signup", { firstName, lastName, email, password, agreed });
+        const failed = await post("/api/password/signup", {
+          firstName,
+          lastName,
+          email,
+          password,
+          agreed,
+        });
         if (failed) return setError(failed);
         setNotice(`We sent a link to ${email.trim()}. Open it to finish creating your account.`);
         setPassword("");
@@ -258,7 +283,9 @@ export function LoginForm({
       }
       const failed = await post("/api/password/forgot", { email });
       if (failed) return setError(failed);
-      setNotice(`If ${email.trim()} has a Zip account, a reset link is on its way. It expires in 1 hour.`);
+      setNotice(
+        `If ${email.trim()} has a Zip account, a reset link is on its way. It expires in 1 hour.`,
+      );
     } finally {
       setPending((p) => (p === "form" ? null : p));
     }
@@ -267,13 +294,31 @@ export function LoginForm({
   const socialButtons = (
     <>
       <Divider />
-      <button type="button" onClick={() => social("google")} disabled={!agreed || pending !== null} className={OUTLINE_BUTTON}>
+      <button
+        type="button"
+        onClick={() => social("google")}
+        disabled={!agreed || pending !== null}
+        className={OUTLINE_BUTTON}
+      >
         <Image src="/ui/google-g.png" alt="" width={24} height={24} />
-        {pending === "google" ? "Redirecting…" : view === "signup" ? "Sign Up With Google" : "Sign In With Google"}
+        {pending === "google"
+          ? "Redirecting…"
+          : view === "signup"
+            ? "Sign Up With Google"
+            : "Sign In With Google"}
       </button>
-      <button type="button" onClick={() => social("facebook")} disabled={!agreed || pending !== null} className={OUTLINE_BUTTON}>
+      <button
+        type="button"
+        onClick={() => social("facebook")}
+        disabled={!agreed || pending !== null}
+        className={OUTLINE_BUTTON}
+      >
         <FacebookIcon />
-        {pending === "facebook" ? "Redirecting…" : view === "signup" ? "Sign Up With Facebook" : "Sign In With Facebook"}
+        {pending === "facebook"
+          ? "Redirecting…"
+          : view === "signup"
+            ? "Sign Up With Facebook"
+            : "Sign In With Facebook"}
       </button>
     </>
   );
@@ -295,8 +340,9 @@ export function LoginForm({
         <Link href="/privacy" target="_blank" className="font-semibold text-foreground underline">
           Privacy Policy
         </Link>
-        , including my messages and voice recordings being processed by our AI provider (OpenAI) outside the
-        Philippines. I am 18 or older, or I am 15 to 17 and my parent or guardian has also agreed to them.
+        , including my messages and voice recordings being processed by our AI provider (OpenAI)
+        outside the Philippines. I am 18 or older, or I am 15 to 17 and my parent or guardian has
+        also agreed to them.
       </span>
     </label>
   );
@@ -317,9 +363,16 @@ export function LoginForm({
   if (ticket !== null) {
     return (
       <div className="flex w-full flex-col gap-6 md:mx-auto md:max-w-[636px] md:gap-8 md:pt-[206px]">
-        <PhoneHeader title="Two-factor login" description="One more step to keep your account safe." />
+        <PhoneHeader
+          title="Two-factor login"
+          description="One more step to keep your account safe."
+        />
         <div className="mx-[31px] rounded-2xl border border-divider bg-background p-5 shadow-[0_8px_24px_rgba(17,24,39,0.06)] md:mx-0 md:p-10">
-          <TwoFactorStep ticket={ticket} redirectTo={callbackUrl} onCancel={() => setTicket(null)} />
+          <TwoFactorStep
+            ticket={ticket}
+            redirectTo={callbackUrl}
+            onCancel={() => setTicket(null)}
+          />
         </div>
       </div>
     );
@@ -358,7 +411,11 @@ export function LoginForm({
               {pending === "form" ? "Sending…" : "Send reset link"}
             </button>
           </form>
-          <button type="button" onClick={() => go("signin")} className="self-center text-sm font-semibold text-foreground hover:underline">
+          <button
+            type="button"
+            onClick={() => go("signin")}
+            className="self-center text-sm font-semibold text-foreground hover:underline"
+          >
             ← Back to login
           </button>
         </div>
@@ -370,7 +427,11 @@ export function LoginForm({
   return (
     <div className="flex w-full flex-col gap-6 md:mx-auto md:max-w-[636px] md:gap-8">
       <PhoneHeader title={copy.phoneTitle} description={copy.phoneDescription} />
-      <div role="tablist" aria-label="Sign in or create an account" className="relative hidden w-[292px] pb-[5px] md:block">
+      <div
+        role="tablist"
+        aria-label="Sign in or create an account"
+        className="relative hidden w-[292px] pb-[5px] md:block"
+      >
         <div className="flex items-center gap-8 text-xl">
           {(["signin", "signup"] as const).map((t) => (
             <button
@@ -379,13 +440,18 @@ export function LoginForm({
               role="tab"
               aria-selected={view === t}
               onClick={() => go(t)}
-              className={view === t ? "font-medium text-foreground" : "text-subtle hover:text-foreground"}
+              className={
+                view === t ? "font-medium text-foreground" : "text-subtle hover:text-foreground"
+              }
             >
               {t === "signin" ? "Sign In" : "Create an Account"}
             </button>
           ))}
         </div>
-        <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-[5px] rounded-[10px] bg-field-border" />
+        <span
+          aria-hidden="true"
+          className="absolute inset-x-0 bottom-0 h-[5px] rounded-[10px] bg-field-border"
+        />
         <span
           aria-hidden="true"
           className={`absolute bottom-0 h-[5px] rounded-[10px] bg-accent transition-all ${
@@ -445,7 +511,11 @@ export function LoginForm({
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
-              <button type="button" onClick={() => go("forgot")} className="self-end text-base text-subtle hover:text-foreground">
+              <button
+                type="button"
+                onClick={() => go("forgot")}
+                className="self-end text-base text-subtle hover:text-foreground"
+              >
                 Forgot Password?
               </button>
             </>
@@ -496,8 +566,8 @@ export function LoginForm({
           {socialButtons}
           {!agreed && (
             <p className="text-center text-xs text-faint">
-              Tick the box {view === "signin" ? "above" : "above the Create account button"} to use Google or
-              Facebook.
+              Tick the box {view === "signin" ? "above" : "above the Create account button"} to use
+              Google or Facebook.
             </p>
           )}
         </div>
@@ -517,7 +587,11 @@ export function LoginForm({
           ) : (
             <>
               Already have an account?{" "}
-              <button type="button" onClick={() => go("signin")} className="font-semibold text-accent hover:underline">
+              <button
+                type="button"
+                onClick={() => go("signin")}
+                className="font-semibold text-accent hover:underline"
+              >
                 Log in
               </button>
             </>

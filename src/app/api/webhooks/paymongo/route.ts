@@ -50,9 +50,7 @@ export async function POST(request: Request) {
   const eventLivemode = attributes?.livemode;
   const sessionId = attributes?.data?.id;
 
-  const expectedLivemode = Boolean(
-    process.env.PAYMONGO_SECRET_KEY?.startsWith("sk_live_")
-  );
+  const expectedLivemode = Boolean(process.env.PAYMONGO_SECRET_KEY?.startsWith("sk_live_"));
   if (typeof eventLivemode === "boolean" && eventLivemode !== expectedLivemode) {
     // Wrong mode for this environment (test event hitting a live deployment,
     // or vice versa) — acknowledge without acting on it.

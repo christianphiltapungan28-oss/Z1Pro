@@ -11,7 +11,8 @@ import { createPersonalOrg } from "@/lib/personal-org";
 /** The link in the sign-up email: creates the account and signs in. */
 export async function GET(request: Request) {
   const origin = getAppOrigin(request);
-  const back = (error: string) => NextResponse.redirect(new URL(`/login?tab=signup&error=${error}`, origin));
+  const back = (error: string) =>
+    NextResponse.redirect(new URL(`/login?tab=signup&error=${error}`, origin));
 
   const token = new URL(request.url).searchParams.get("token") ?? "";
   const pending = await redeemToken<PendingSignup>("signup", token);
@@ -31,7 +32,9 @@ export async function GET(request: Request) {
         .insert(users)
         .values({ email: pending.email, emailVerifiedAt: new Date(), displayName: pending.name })
         .returning({ id: users.id });
-      await tx.insert(userPasswords).values({ userId: user.id, passwordHash: pending.passwordHash });
+      await tx
+        .insert(userPasswords)
+        .values({ userId: user.id, passwordHash: pending.passwordHash });
       return user.id;
     });
   } catch (err) {

@@ -23,10 +23,7 @@ function speakablePart(text: string) {
     spoken += sentence;
   }
   // One very long sentence: fall back to cutting at the last word.
-  return (
-    spoken.trim() ||
-    text.slice(0, MAX_SPEECH_CHARS).replace(/\s+\S*$/, "") + "…"
-  );
+  return spoken.trim() || text.slice(0, MAX_SPEECH_CHARS).replace(/\s+\S*$/, "") + "…";
 }
 
 export async function POST(request: Request) {
@@ -37,27 +34,22 @@ export async function POST(request: Request) {
   }
 
   const burst = await rateLimit(`speech:${userId}`, 20, 10 * 60_000);
-  const daily = burst.ok
-    ? await rateLimit(`speech:daily:${userId}`, 150, 24 * 3600_000)
-    : burst;
+  const daily = burst.ok ? await rateLimit(`speech:daily:${userId}`, 150, 24 * 3600_000) : burst;
   if (!daily.ok) {
     return NextResponse.json(
       { error: "Too many speech requests. Try again later." },
-      { status: 429, headers: { "Retry-After": String(daily.retryAfterSeconds) } }
+      { status: 429, headers: { "Retry-After": String(daily.retryAfterSeconds) } },
     );
   }
 
   if (!process.env.OPENAI_API_KEY) {
-    return NextResponse.json(
-      { error: "AI is not configured" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "AI is not configured" }, { status: 500 });
   }
 
   if (await isOverDailyBudget("speechChars")) {
     return NextResponse.json(
       { error: "Voice replies are temporarily unavailable." },
-      { status: 503 }
+      { status: 503 },
     );
   }
 
@@ -76,8 +68,8 @@ export async function POST(request: Request) {
       and(
         eq(aiMessages.id, messageId),
         eq(aiMessages.userId, userId),
-        eq(aiMessages.role, "assistant")
-      )
+        eq(aiMessages.role, "assistant"),
+      ),
     )
     .limit(1);
   if (!message) {
@@ -103,7 +95,7 @@ export async function POST(request: Request) {
           response_format: "mp3",
         }),
       },
-      { timeoutMs: 45_000, maxRetries: 1 }
+      { timeoutMs: 45_000, maxRetries: 1 },
     );
   } catch (err) {
     console.error("Speech synthesis failed", err);
@@ -112,10 +104,7 @@ export async function POST(request: Request) {
   if (!speechRes?.ok || !speechRes.body) {
     const errorText = speechRes ? await speechRes.text().catch(() => "") : "";
     console.error("Speech synthesis failed", speechRes?.status, errorText);
-    return NextResponse.json(
-      { error: "Speech synthesis failed" },
-      { status: 502 }
-    );
+    return NextResponse.json({ error: "Speech synthesis failed" }, { status: 502 });
   }
 
   await recordUsage("speechChars", text.length);

@@ -65,7 +65,7 @@ export async function recordUsage(metric: UsageMetric, amount: number) {
           `usage:${metric}:${level}`,
           level >= 1
             ? `Daily ${metric} budget reached (${total.toLocaleString()} / ${limit.toLocaleString()}). AI calls of this kind are paused until 00:00 UTC.`
-            : `Daily ${metric} usage at ${level * 100}% of budget (${total.toLocaleString()} / ${limit.toLocaleString()}).`
+            : `Daily ${metric} usage at ${level * 100}% of budget (${total.toLocaleString()} / ${limit.toLocaleString()}).`,
         );
       }
     }

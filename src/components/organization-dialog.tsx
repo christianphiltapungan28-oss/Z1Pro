@@ -25,13 +25,7 @@ type Invite = {
 
 type Tab = "members" | "invites";
 
-export function OrganizationDialog({
-  open,
-  onClose,
-}: {
-  open: boolean;
-  onClose: () => void;
-}) {
+export function OrganizationDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { data: session, update: updateSession } = useSession();
   const orgId = session?.user?.currentOrgId ?? null;
   const orgRole = session?.user?.currentOrgRole ?? null;
@@ -61,13 +55,9 @@ export function OrganizationDialog({
     let ignore = false;
 
     Promise.all([
-      fetch(`/api/orgs/${orgId}/members`).then((res) =>
-        res.ok ? res.json() : null
-      ),
+      fetch(`/api/orgs/${orgId}/members`).then((res) => (res.ok ? res.json() : null)),
       canManage
-        ? fetch(`/api/orgs/${orgId}/invites`).then((res) =>
-            res.ok ? res.json() : null
-          )
+        ? fetch(`/api/orgs/${orgId}/invites`).then((res) => (res.ok ? res.json() : null))
         : Promise.resolve(null),
     ])
       .then(([membersData, invitesData]) => {
@@ -108,7 +98,13 @@ export function OrganizationDialog({
       setNewInviteUrl(invite.url);
       setInviteEmail("");
       setInvites((prev) => [
-        { id: invite.id, role: invite.role, email: invite.email, expiresAt: invite.expiresAt, createdAt: new Date().toISOString() },
+        {
+          id: invite.id,
+          role: invite.role,
+          email: invite.email,
+          expiresAt: invite.expiresAt,
+          createdAt: new Date().toISOString(),
+        },
         ...prev,
       ]);
     } finally {
@@ -137,9 +133,7 @@ export function OrganizationDialog({
       setError(data.error ?? "Could not update role");
       return;
     }
-    setMembers((prev) =>
-      prev.map((m) => (m.userId === userId ? { ...m, role } : m))
-    );
+    setMembers((prev) => prev.map((m) => (m.userId === userId ? { ...m, role } : m)));
   }
 
   async function handleRemoveMember(userId: string) {
@@ -207,9 +201,7 @@ export function OrganizationDialog({
             aria-selected={tab === "members"}
             onClick={() => setTab("members")}
             className={`px-3 py-2 text-sm font-medium ${
-              tab === "members"
-                ? "border-b-2 border-accent text-foreground"
-                : "text-muted"
+              tab === "members" ? "border-b-2 border-accent text-foreground" : "text-muted"
             }`}
           >
             Members
@@ -221,9 +213,7 @@ export function OrganizationDialog({
               aria-selected={tab === "invites"}
               onClick={() => setTab("invites")}
               className={`px-3 py-2 text-sm font-medium ${
-                tab === "invites"
-                  ? "border-b-2 border-accent text-foreground"
-                  : "text-muted"
+                tab === "invites" ? "border-b-2 border-accent text-foreground" : "text-muted"
               }`}
             >
               Invites
@@ -232,9 +222,7 @@ export function OrganizationDialog({
         </div>
 
         {error && (
-          <p
-            role="alert"
-            className="mb-4 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-500">
+          <p role="alert" className="mb-4 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-500">
             {error}
           </p>
         )}
@@ -242,7 +230,10 @@ export function OrganizationDialog({
         {loading && (
           <SkeletonGroup className="flex flex-col gap-2">
             {["w-1/3", "w-2/5", "w-1/4"].map((width) => (
-              <div key={width} className="flex items-center justify-between gap-3 rounded-lg border border-card-border p-3">
+              <div
+                key={width}
+                className="flex items-center justify-between gap-3 rounded-lg border border-card-border p-3"
+              >
                 <div className="flex min-w-0 flex-1 flex-col gap-2">
                   <Skeleton className={`h-3.5 ${width}`} />
                   <Skeleton className="h-3 w-1/2" />
@@ -272,10 +263,7 @@ export function OrganizationDialog({
                       aria-label={`Role for ${member.displayName ?? member.email}`}
                       value={member.role}
                       onChange={(e) =>
-                        handleChangeRole(
-                          member.userId,
-                          e.target.value as Member["role"]
-                        )
+                        handleChangeRole(member.userId, e.target.value as Member["role"])
                       }
                       className="rounded-md border border-input-border bg-background px-2 py-1 text-xs text-foreground"
                     >
@@ -293,9 +281,7 @@ export function OrganizationDialog({
                       type="button"
                       onClick={() => handleRemoveMember(member.userId)}
                       aria-label={
-                        member.userId === session?.user?.id
-                          ? "Leave organization"
-                          : "Remove member"
+                        member.userId === session?.user?.id ? "Leave organization" : "Remove member"
                       }
                       className="flex h-7 w-7 items-center justify-center rounded-full text-muted hover:text-foreground"
                     >
@@ -311,16 +297,12 @@ export function OrganizationDialog({
         {!loading && tab === "invites" && canManage && (
           <div className="flex flex-col gap-5">
             <div className="flex flex-col gap-3 rounded-lg border border-card-border p-4">
-              <p className="text-sm font-semibold text-foreground">
-                Invite a teammate
-              </p>
+              <p className="text-sm font-semibold text-foreground">Invite a teammate</p>
               <div className="flex flex-wrap items-center gap-2">
                 <select
                   aria-label="Invite role"
                   value={inviteRole}
-                  onChange={(e) =>
-                    setInviteRole(e.target.value as "admin" | "member")
-                  }
+                  onChange={(e) => setInviteRole(e.target.value as "admin" | "member")}
                   className="rounded-md border border-input-border bg-background px-2 py-1.5 text-sm text-foreground"
                 >
                   <option value="member">Member</option>
@@ -358,9 +340,7 @@ export function OrganizationDialog({
             </div>
 
             <div className="flex flex-col gap-2">
-              {invites.length === 0 && (
-                <p className="text-sm text-muted">No pending invites.</p>
-              )}
+              {invites.length === 0 && <p className="text-sm text-muted">No pending invites.</p>}
               {invites.map((invite) => (
                 <div
                   key={invite.id}

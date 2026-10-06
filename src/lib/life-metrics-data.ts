@@ -2,12 +2,7 @@ import { eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { aiConversations, journeys, lifeMetrics, userSettings, users } from "@/db/schema";
 import { isMissingTable } from "@/lib/db-errors";
-import {
-  harmonyScore,
-  isStale,
-  MIN_CONVERSATIONS,
-  REFRESH_DAYS,
-} from "@/lib/life-metrics";
+import { harmonyScore, isStale, MIN_CONVERSATIONS, REFRESH_DAYS } from "@/lib/life-metrics";
 
 async function optional<T>(query: Promise<T>, fallback: T) {
   try {
@@ -64,7 +59,7 @@ export async function loadProfile(userId: string) {
       .from(userSettings)
       .where(eq(userSettings.userId, userId))
       .limit(1),
-    []
+    [],
   );
   const metrics = await optional(getLifeMetricsRow(userId), null);
   const row = metrics.value;

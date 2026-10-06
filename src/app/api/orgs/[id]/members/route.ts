@@ -4,10 +4,7 @@ import { auth } from "@/auth";
 import { db } from "@/db";
 import { organizationMembers, users } from "@/db/schema";
 
-export async function GET(
-  _request: Request,
-  ctx: RouteContext<"/api/orgs/[id]/members">
-) {
+export async function GET(_request: Request, ctx: RouteContext<"/api/orgs/[id]/members">) {
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) {
@@ -19,12 +16,7 @@ export async function GET(
   const [membership] = await db
     .select({ role: organizationMembers.role })
     .from(organizationMembers)
-    .where(
-      and(
-        eq(organizationMembers.organizationId, id),
-        eq(organizationMembers.userId, userId)
-      )
-    )
+    .where(and(eq(organizationMembers.organizationId, id), eq(organizationMembers.userId, userId)))
     .limit(1);
   if (!membership) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });

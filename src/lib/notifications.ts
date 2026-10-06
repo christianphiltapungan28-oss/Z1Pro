@@ -70,7 +70,7 @@ async function deliver(userId: string, n: NewNotification, p: NotificationPrefs)
                   body: n.body,
                   button: { label: "Open Z1P", url: emailLink(url) },
                 })
-              : null
+              : null,
           ),
   ]);
 }
@@ -197,7 +197,11 @@ export async function ensureWeeklyReport(userId: string) {
     .onConflictDoNothing()
     .returning({ id: notifications.id });
   if (written.length) {
-    await deliver(userId, { kind: "weekly", title, body, link: { type: "journey", id: journey.id } }, p);
+    await deliver(
+      userId,
+      { kind: "weekly", title, body, link: { type: "journey", id: journey.id } },
+      p,
+    );
   }
 }
 

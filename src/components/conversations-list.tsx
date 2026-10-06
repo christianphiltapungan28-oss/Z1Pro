@@ -71,12 +71,9 @@ export function ConversationsList({
   const pageCount = data ? Math.max(1, Math.ceil(data.total / data.pageSize)) : 1;
   const firstDot = Math.min(
     Math.max(0, page - 1 - Math.floor(MAX_DOTS / 2)),
-    Math.max(0, pageCount - MAX_DOTS)
+    Math.max(0, pageCount - MAX_DOTS),
   );
-  const dots = Array.from(
-    { length: Math.min(MAX_DOTS, pageCount) },
-    (_, i) => firstDot + i + 1
-  );
+  const dots = Array.from({ length: Math.min(MAX_DOTS, pageCount) }, (_, i) => firstDot + i + 1);
 
   return (
     <div className="flex h-full flex-col gap-4 overflow-y-auto pb-4 md:gap-6 md:p-10">
@@ -156,7 +153,13 @@ export function ConversationsList({
               className="flex w-full shrink-0 flex-col items-start gap-3 border-b border-divider bg-background px-4 py-3.5 text-left transition-colors hover:bg-accent/[0.02] md:flex-row md:items-center md:gap-4 md:px-6 md:py-5"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/ui/conversation-tile.svg" alt="" width={40} height={40} className="shrink-0" />
+              <img
+                src="/ui/conversation-tile.svg"
+                alt=""
+                width={40}
+                height={40}
+                className="shrink-0"
+              />
               <span className="flex w-full min-w-0 flex-1 flex-col gap-1">
                 <span className="flex w-full items-center gap-1 md:gap-2">
                   <span className="min-w-0 flex-1 truncate text-sm font-bold text-foreground md:text-base md:font-semibold">

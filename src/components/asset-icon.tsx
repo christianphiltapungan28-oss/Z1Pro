@@ -33,7 +33,9 @@ export function IconSetIcon({
 }) {
   const { w, h, box } = ICON_SET[name];
   const scale = size / box;
-  return <AssetIcon name={`icons/${name}`} width={w * scale} height={h * scale} className={className} />;
+  return (
+    <AssetIcon name={`icons/${name}`} width={w * scale} height={h * scale} className={className} />
+  );
 }
 
 /**

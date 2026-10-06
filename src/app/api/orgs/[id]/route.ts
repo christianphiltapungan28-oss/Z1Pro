@@ -9,19 +9,13 @@ async function getMembership(orgId: string, userId: string) {
     .select({ role: organizationMembers.role })
     .from(organizationMembers)
     .where(
-      and(
-        eq(organizationMembers.organizationId, orgId),
-        eq(organizationMembers.userId, userId)
-      )
+      and(eq(organizationMembers.organizationId, orgId), eq(organizationMembers.userId, userId)),
     )
     .limit(1);
   return membership ?? null;
 }
 
-export async function PATCH(
-  request: Request,
-  ctx: RouteContext<"/api/orgs/[id]">
-) {
+export async function PATCH(request: Request, ctx: RouteContext<"/api/orgs/[id]">) {
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) {
@@ -36,17 +30,14 @@ export async function PATCH(
   if (membership.role !== "owner") {
     return NextResponse.json(
       { error: "Only the organization owner can rename it" },
-      { status: 403 }
+      { status: 403 },
     );
   }
 
   const body = await request.json().catch(() => ({}));
   const name = typeof body?.name === "string" ? body.name.trim() : "";
   if (!name) {
-    return NextResponse.json(
-      { error: "Organization name is required" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Organization name is required" }, { status: 400 });
   }
 
   const [updated] = await db

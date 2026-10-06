@@ -37,7 +37,7 @@ export async function POST(request: Request) {
   if (!limit.ok) {
     return NextResponse.json(
       { error: "Too many attempts. Try again later." },
-      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } }
+      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } },
     );
   }
 
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
   if (confirmEmail.toLowerCase() !== user.email.toLowerCase()) {
     return NextResponse.json(
       { error: "Type your email address exactly to confirm." },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -75,8 +75,8 @@ export async function POST(request: Request) {
       .where(
         and(
           eq(organizationMembers.organizationId, org.orgId),
-          ne(organizationMembers.userId, userId)
-        )
+          ne(organizationMembers.userId, userId),
+        ),
       );
     if (others.length > 0 && !others.some((m) => m.role === "owner")) {
       blocking.push(org.name);
@@ -88,7 +88,7 @@ export async function POST(request: Request) {
         error: `Make someone else an owner of ${blocking.join(", ")} (or remove its other members) before deleting your account.`,
         organizations: blocking,
       },
-      { status: 409 }
+      { status: 409 },
     );
   }
 
@@ -97,7 +97,7 @@ export async function POST(request: Request) {
     hasMetrics: boolean;
   }>(
     sql`select to_regclass('public.user_settings') is not null as "hasSettings",
-               to_regclass('public.life_metrics') is not null as "hasMetrics"`
+               to_regclass('public.life_metrics') is not null as "hasMetrics"`,
   );
 
   const storedPaths = await storedFilePaths({ userId });
@@ -119,8 +119,8 @@ export async function POST(request: Request) {
         and(
           eq(organizationInvites.createdByUserId, userId),
           isNull(organizationInvites.acceptedAt),
-          isNull(organizationInvites.revokedAt)
-        )
+          isNull(organizationInvites.revokedAt),
+        ),
       );
     // Organizations are kept (payments reference them); only this user's
     // memberships go.

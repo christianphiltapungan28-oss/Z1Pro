@@ -12,7 +12,12 @@ function escapeHtml(text: string) {
 }
 
 /** A plain, single-button email in Z1P's colours. */
-function layout(opts: { heading: string; body: string; button?: { label: string; url: string }; footer?: string }) {
+function layout(opts: {
+  heading: string;
+  body: string;
+  button?: { label: string; url: string };
+  footer?: string;
+}) {
   const button = opts.button
     ? `<p style="margin:28px 0"><a href="${escapeHtml(opts.button.url)}" style="background:#ff1da5;color:#fff;text-decoration:none;padding:12px 22px;border-radius:10px;font-weight:600;display:inline-block">${escapeHtml(opts.button.label)}</a></p>`
     : "";
@@ -23,12 +28,16 @@ function layout(opts: { heading: string; body: string; button?: { label: string;
 <h1 style="font-size:20px;margin:0 0 12px">${escapeHtml(opts.heading)}</h1>
 ${opts.body
   .split(/\n\s*\n/)
-  .map((para) => `<p style="font-size:15px;line-height:1.5;color:#3c4043;margin:0 0 12px">${escapeHtml(para.trim()).replace(/\n/g, "<br>")}</p>`)
+  .map(
+    (para) =>
+      `<p style="font-size:15px;line-height:1.5;color:#3c4043;margin:0 0 12px">${escapeHtml(para.trim()).replace(/\n/g, "<br>")}</p>`,
+  )
   .join("\n")}
 ${button}
 </div>
 <p style="font-size:12px;color:#8a8a8a;line-height:1.5;margin:20px 4px 0">${escapeHtml(
-    opts.footer ?? "You get this because email notifications are on in Z1P Settings → Notifications."
+    opts.footer ??
+      "You get this because email notifications are on in Z1P Settings → Notifications.",
   )}</p>
 </div></body></html>`;
 }

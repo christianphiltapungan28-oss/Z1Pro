@@ -9,7 +9,10 @@ import { redeemLoginTicket } from "@/lib/two-factor";
 export async function POST(request: Request) {
   const limit = await rateLimit(`2fa:login:${clientIp(request)}`, 20, 15 * 60_000);
   if (!limit.ok) {
-    return NextResponse.json({ error: "Too many attempts. Wait 15 minutes and log in again." }, { status: 429 });
+    return NextResponse.json(
+      { error: "Too many attempts. Wait 15 minutes and log in again." },
+      { status: 429 },
+    );
   }
   const body = await request.json().catch(() => ({}));
   // After Google/Facebook the ticket is in a cookie (src/lib/oauth-gate.ts).
@@ -17,7 +20,10 @@ export async function POST(request: Request) {
   const ticket = typeof body?.ticket === "string" && body.ticket ? body.ticket : fromCookie;
   const code = typeof body?.code === "string" ? body.code.slice(0, 20) : "";
   if (!code.trim()) {
-    return NextResponse.json({ error: "Enter the code from your authenticator app." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Enter the code from your authenticator app." },
+      { status: 400 },
+    );
   }
 
   const result = await redeemLoginTicket(ticket, code);

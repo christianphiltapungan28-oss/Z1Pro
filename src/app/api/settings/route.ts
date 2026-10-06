@@ -146,7 +146,7 @@ export async function PATCH(request: Request) {
   if (!limit.ok) {
     return NextResponse.json(
       { error: "Too many changes. Try again shortly." },
-      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } }
+      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } },
     );
   }
 
@@ -223,7 +223,7 @@ export async function PATCH(request: Request) {
       if (isMissingTable(err)) {
         return NextResponse.json(
           { error: "These settings aren't available yet. Please try again later." },
-          { status: 503 }
+          { status: 503 },
         );
       }
       throw err;

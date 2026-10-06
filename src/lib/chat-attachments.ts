@@ -17,7 +17,8 @@ export const CHAT_FILE_TYPES: Record<string, "pdf" | "image" | "text"> = {
 };
 
 /** For the file picker. */
-export const CHAT_FILE_ACCEPT = ".pdf,.png,.jpg,.jpeg,.webp,.gif,.txt,.md,application/pdf,image/*,text/plain,text/markdown";
+export const CHAT_FILE_ACCEPT =
+  ".pdf,.png,.jpg,.jpeg,.webp,.gif,.txt,.md,application/pdf,image/*,text/plain,text/markdown";
 
 export const MAX_CHAT_FILES = 3;
 export const MAX_CHAT_FILE_BYTES = 8 * 1024 * 1024;
@@ -46,7 +47,12 @@ const SEPARATOR = " | ";
 export function withAttachedLine(text: string, fileNames: string[]) {
   if (fileNames.length === 0) return text;
   // Names can't contain the characters that end the line or split it.
-  const names = fileNames.map((n) => n.replace(/[\]\n|]/g, " ").trim().slice(0, 120));
+  const names = fileNames.map((n) =>
+    n
+      .replace(/[\]\n|]/g, " ")
+      .trim()
+      .slice(0, 120),
+  );
   const line = `[Attached: ${names.join(SEPARATOR)}]`;
   return text ? `${text}\n\n${line}` : line;
 }
@@ -57,6 +63,9 @@ export function splitAttachedLine(content: string): { text: string; files: strin
   if (!match) return { text: content, files: [] };
   return {
     text: content.slice(0, match.index).trimEnd(),
-    files: match[1].split(SEPARATOR).map((n) => n.trim()).filter(Boolean),
+    files: match[1]
+      .split(SEPARATOR)
+      .map((n) => n.trim())
+      .filter(Boolean),
   };
 }

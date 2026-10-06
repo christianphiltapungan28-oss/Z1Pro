@@ -25,12 +25,15 @@ export async function POST(request: Request) {
   if (!emailConfigured()) {
     return NextResponse.json(
       { error: "Creating an account with email isn't available yet. Use Google or Facebook." },
-      { status: 503 }
+      { status: 503 },
     );
   }
   const limit = await rateLimit(`signup:${clientIp(request)}`, 5, 60 * 60_000);
   if (!limit.ok) {
-    return NextResponse.json({ error: "Too many sign-ups from here. Try again later." }, { status: 429 });
+    return NextResponse.json(
+      { error: "Too many sign-ups from here. Try again later." },
+      { status: 429 },
+    );
   }
 
   const body = await request.json().catch(() => ({}));
@@ -40,7 +43,10 @@ export async function POST(request: Request) {
   const password = typeof body?.password === "string" ? body.password : "";
 
   if (body?.agreed !== true) {
-    return NextResponse.json({ error: "Agree to the Terms of Use and Privacy Policy to continue." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Agree to the Terms of Use and Privacy Policy to continue." },
+      { status: 400 },
+    );
   }
   if (!firstName) {
     return NextResponse.json({ error: "Enter your first name." }, { status: 400 });
@@ -57,7 +63,10 @@ export async function POST(request: Request) {
   }
   const emailLimit = await rateLimit(`signup:email:${email}`, 3, 60 * 60_000);
   if (!emailLimit.ok) {
-    return NextResponse.json({ error: "We already sent a link to that email. Check your inbox." }, { status: 429 });
+    return NextResponse.json(
+      { error: "We already sent a link to that email. Check your inbox." },
+      { status: 429 },
+    );
   }
 
   const [existing] = await db
@@ -91,7 +100,10 @@ export async function POST(request: Request) {
       footer: "If you didn't sign up for Z1P, you can ignore this email.",
     });
     if (!sent) {
-      return NextResponse.json({ error: "Couldn't send the confirmation email. Please try again." }, { status: 502 });
+      return NextResponse.json(
+        { error: "Couldn't send the confirmation email. Please try again." },
+        { status: 502 },
+      );
     }
   }
 

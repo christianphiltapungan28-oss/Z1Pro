@@ -14,10 +14,7 @@ const MAX_CONTEXT_CHARS = 8_000;
  * Builds the step breakdown without a file: from the conversation the
  * journey was converted from, or from what the user types.
  */
-export async function POST(
-  request: Request,
-  ctx: RouteContext<"/api/journeys/[id]/plan">
-) {
+export async function POST(request: Request, ctx: RouteContext<"/api/journeys/[id]/plan">) {
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) {
@@ -28,7 +25,7 @@ export async function POST(
   if (!limit.ok) {
     return NextResponse.json(
       { error: "Too many attempts this hour. Try again later." },
-      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } }
+      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } },
     );
   }
 
@@ -49,7 +46,7 @@ export async function POST(
   if (!process.env.OPENAI_API_KEY || (await isOverDailyBudget("chatTokens"))) {
     return NextResponse.json(
       { error: "Planning is temporarily unavailable. Please try again later." },
-      { status: 503 }
+      { status: 503 },
     );
   }
 
@@ -66,8 +63,8 @@ export async function POST(
       .where(
         and(
           eq(aiMessages.conversationId, journey.sourceConversationId),
-          eq(aiConversations.userId, userId)
-        )
+          eq(aiConversations.userId, userId),
+        ),
       )
       .orderBy(asc(aiMessages.createdAt))
       .limit(20);
@@ -81,7 +78,7 @@ export async function POST(
   if (!context.trim()) {
     return NextResponse.json(
       { error: "Tell me a bit about what you're working on first." },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -90,13 +87,16 @@ export async function POST(
     if (!plan) {
       return NextResponse.json(
         { error: "I couldn't work out the steps from that. Add a little more detail?" },
-        { status: 422 }
+        { status: 422 },
       );
     }
     await savePlan(id, userId, plan);
   } catch (err) {
     console.error("Journey planning failed", err);
-    return NextResponse.json({ error: "Couldn't plan the steps. Please try again." }, { status: 502 });
+    return NextResponse.json(
+      { error: "Couldn't plan the steps. Please try again." },
+      { status: 502 },
+    );
   }
 
   return NextResponse.json({ ready: true, ...(await loadFlow(id)) });

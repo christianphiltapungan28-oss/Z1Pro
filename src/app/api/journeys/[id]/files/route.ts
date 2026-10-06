@@ -27,10 +27,7 @@ function safeName(name: string) {
  * Uploads a file to a journey. The first file is analysed into the step
  * breakdown; later files are summarised and added as coaching context.
  */
-export async function POST(
-  request: Request,
-  ctx: RouteContext<"/api/journeys/[id]/files">
-) {
+export async function POST(request: Request, ctx: RouteContext<"/api/journeys/[id]/files">) {
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) {
@@ -41,7 +38,7 @@ export async function POST(
   if (!limit.ok) {
     return NextResponse.json(
       { error: "You've uploaded a lot of files this hour. Try again later." },
-      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } }
+      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } },
     );
   }
 
@@ -54,7 +51,7 @@ export async function POST(
   if (!process.env.OPENAI_API_KEY || (await isOverDailyBudget("chatTokens"))) {
     return NextResponse.json(
       { error: "File analysis is temporarily unavailable. Please try again later." },
-      { status: 503 }
+      { status: 503 },
     );
   }
 
@@ -73,7 +70,7 @@ export async function POST(
   if (!ACCEPTED_TYPES[mimeType]) {
     return NextResponse.json(
       { error: `That file type isn't supported. Please upload a ${acceptLabel()}.` },
-      { status: 415 }
+      { status: 415 },
     );
   }
   if (file.size === 0 || file.size > MAX_FILE_BYTES) {
@@ -87,7 +84,7 @@ export async function POST(
   if (fileCount >= MAX_FILES_PER_JOURNEY) {
     return NextResponse.json(
       { error: `A journey can have up to ${MAX_FILES_PER_JOURNEY} files.` },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -105,8 +102,11 @@ export async function POST(
       const plan = await planFromContent(journey.title, [content]);
       if (!plan) {
         return NextResponse.json(
-          { error: "I couldn't find a task in that file. Try another file or describe what you need." },
-          { status: 422 }
+          {
+            error:
+              "I couldn't find a task in that file. Try another file or describe what you need.",
+          },
+          { status: 422 },
         );
       }
       const [row] = await db
@@ -146,7 +146,7 @@ export async function POST(
     console.error("Journey file analysis failed", err);
     return NextResponse.json(
       { error: "Couldn't analyse that file. Please try again." },
-      { status: 502 }
+      { status: 502 },
     );
   }
 
@@ -169,9 +169,13 @@ async function attachStoredOriginal(
   journeyId: string,
   name: string,
   bytes: ArrayBuffer,
-  mimeType: string
+  mimeType: string,
 ) {
-  const path = await storeOriginal(`${userId}/${journeyId}/${fileId}-${safeName(name)}`, bytes, mimeType);
+  const path = await storeOriginal(
+    `${userId}/${journeyId}/${fileId}-${safeName(name)}`,
+    bytes,
+    mimeType,
+  );
   if (path) {
     await db.update(journeyFiles).set({ storagePath: path }).where(eq(journeyFiles.id, fileId));
   }

@@ -184,7 +184,10 @@ function Transformed({
   const w = BASE_WIDTH * (1 - left - right);
   const h = BASE_HEIGHT * (1 - top - bottom);
   const size = rotated9
-    ? { width: Math.hypot(0.863271 * w, 0.136729 * h), height: Math.hypot(0.136729 * w, 0.863271 * h) }
+    ? {
+        width: Math.hypot(0.863271 * w, 0.136729 * h),
+        height: Math.hypot(0.136729 * w, 0.863271 * h),
+      }
     : { width: w, height: h };
   return (
     <Box inset={inset} blend={blend} className="flex items-center justify-center">
@@ -272,17 +275,32 @@ export function DesignOrb({
           </Masked>
         </div>
 
-        <Transformed inset="26.51% 10.59% 23.48% 30.88%" blend="screen" transform="rotate(-9deg)" rotated9>
+        <Transformed
+          inset="26.51% 10.59% 23.48% 30.88%"
+          blend="screen"
+          transform="rotate(-9deg)"
+          rotated9
+        >
           <SpinningMasked maskAt={[-225.891, -205.133]} spin={SPIN.orange}>
             <AbsLayer file="ellipse-116.svg" blur={BLUR.orange} />
           </SpinningMasked>
         </Transformed>
-        <Transformed inset="11.59% 30% 38.4% 11.47%" blend="screen" transform="rotate(-9deg)" rotated9>
+        <Transformed
+          inset="11.59% 30% 38.4% 11.47%"
+          blend="screen"
+          transform="rotate(-9deg)"
+          rotated9
+        >
           <SpinningMasked maskAt={[-50.606, -47.502]} spin={SPIN.pink}>
             <AbsLayer file="ellipse-114.svg" blur={BLUR.pink} />
           </SpinningMasked>
         </Transformed>
-        <Transformed inset="29.42% 26.7% 37.9% 35.05%" blend="overlay" transform="rotate(-9deg)" rotated9>
+        <Transformed
+          inset="29.42% 26.7% 37.9% 35.05%"
+          blend="overlay"
+          transform="rotate(-9deg)"
+          rotated9
+        >
           <SpinningMasked maskAt={[-263.542, -235.893]} spin={SPIN.whiteCore}>
             <AbsLayer file="ellipse-115.svg" blur={BLUR.whiteCore} />
           </SpinningMasked>

@@ -281,7 +281,8 @@ body {
   .status-dot-1,
   .status-dot-2 {
     animation: none;
-  }}
+  }
+}
 
 /* Logo intro before Home (src/components/splash-intro.tsx), ~2s: the bracket
    mark swings in, Z·1·P rise in turn, then the screen fades to the app. */
@@ -292,7 +293,11 @@ body {
   animation: splash-exit 450ms ease-in 1.6s forwards;
 }
 .splash-glow {
-  background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 22%, transparent), transparent);
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--accent) 22%, transparent),
+    transparent
+  );
   animation: splash-glow 1.8s ease-out both;
 }
 .splash-logo {
@@ -366,7 +371,6 @@ body {
     animation-delay: 700ms;
   }
 }
-
 
 /* Long-form text on the legal pages (/privacy, /terms, /cookies, /refunds). */
 .legal-prose {

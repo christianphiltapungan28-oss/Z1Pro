@@ -25,11 +25,7 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/?checkout=pending`);
   }
 
-  const [payment] = await db
-    .select()
-    .from(payments)
-    .where(eq(payments.id, paymentId))
-    .limit(1);
+  const [payment] = await db.select().from(payments).where(eq(payments.id, paymentId)).limit(1);
 
   if (!payment || !payment.providerPaymentId || !payment.orgId) {
     return NextResponse.redirect(`${origin}/?checkout=error`);
@@ -45,8 +41,8 @@ export async function GET(request: Request) {
     .where(
       and(
         eq(organizationMembers.organizationId, payment.orgId),
-        eq(organizationMembers.userId, userId)
-      )
+        eq(organizationMembers.userId, userId),
+      ),
     )
     .limit(1);
   if (!membership) {
@@ -70,7 +66,7 @@ export async function GET(request: Request) {
     }
 
     const checkoutSession = await getStripeClient().checkout.sessions.retrieve(
-      payment.providerPaymentId
+      payment.providerPaymentId,
     );
     if (checkoutSession.payment_status !== "paid") {
       return NextResponse.redirect(`${origin}/?checkout=pending`);
@@ -87,7 +83,7 @@ export async function GET(request: Request) {
       {
         headers: { Authorization: `Basic ${auth64}` },
         signal: AbortSignal.timeout(15_000),
-      }
+      },
     );
 
     if (!checkoutRes.ok) {

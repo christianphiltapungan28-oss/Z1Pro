@@ -14,6 +14,6 @@ export function useMediaQuery(query: string, serverValue = false) {
       return () => list.removeEventListener("change", onChange);
     },
     () => window.matchMedia(query).matches,
-    () => serverValue
+    () => serverValue,
   );
 }

@@ -26,10 +26,7 @@ const MAX_CONTENT = 4_000;
  * When the AI judges the current step finished, it marks it done and moves
  * the journey on.
  */
-export async function POST(
-  request: Request,
-  ctx: RouteContext<"/api/journeys/[id]/coach">
-) {
+export async function POST(request: Request, ctx: RouteContext<"/api/journeys/[id]/coach">) {
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) {
@@ -41,7 +38,7 @@ export async function POST(
   if (!limit.ok) {
     return NextResponse.json(
       { error: "Too many messages. Try again shortly." },
-      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } }
+      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } },
     );
   }
 
@@ -56,7 +53,7 @@ export async function POST(
   if (!content || content.length > MAX_CONTENT) {
     return NextResponse.json(
       { error: `Write a reply (up to ${MAX_CONTENT} characters).` },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -68,7 +65,7 @@ export async function POST(
   if (steps.length === 0) {
     return NextResponse.json(
       { error: "Upload a file or describe your task first, so I can plan the steps." },
-      { status: 409 }
+      { status: 409 },
     );
   }
   const activeIndex = steps.findIndex((s) => s.status === "active");
@@ -79,7 +76,7 @@ export async function POST(
   if (!process.env.OPENAI_API_KEY || (await isOverDailyBudget("chatTokens"))) {
     return NextResponse.json(
       { error: "Zip is temporarily unavailable. Please try again later." },
-      { status: 503 }
+      { status: 503 },
     );
   }
 
@@ -92,7 +89,7 @@ export async function POST(
     await adjustDailyCount(userId, usageDate, -1);
     return NextResponse.json(
       { error: "Daily message limit reached", planCode, dailyLimit: planLimit },
-      { status: 429 }
+      { status: 429 },
     );
   }
 
@@ -144,18 +141,22 @@ export async function POST(
           ],
         }),
       },
-      { timeoutMs: 90_000, maxRetries: 1 }
+      { timeoutMs: 90_000, maxRetries: 1 },
     );
   } catch (err) {
     console.error("Journey coaching request failed", err);
   }
 
   if (!res?.ok) {
-    console.error("Journey coaching failed", res?.status, res ? await res.text().catch(() => "") : "");
+    console.error(
+      "Journey coaching failed",
+      res?.status,
+      res ? await res.text().catch(() => "") : "",
+    );
     await adjustDailyCount(userId, usageDate, -1);
     return NextResponse.json(
       { error: "Zip couldn't reply just now. Please try again.", userMessage },
-      { status: 502 }
+      { status: 502 },
     );
   }
 
@@ -184,10 +185,7 @@ export async function POST(
         .set({ status: "done", completedAt: new Date() })
         .where(eq(journeySteps.id, current.id));
       if (next) {
-        await tx
-          .update(journeySteps)
-          .set({ status: "active" })
-          .where(eq(journeySteps.id, next.id));
+        await tx.update(journeySteps).set({ status: "active" }).where(eq(journeySteps.id, next.id));
       }
       await tx
         .update(journeys)
@@ -212,7 +210,7 @@ export async function POST(
             title: `Step ${activeIndex + 1} complete - Keep going!`,
             body: `You finished “${current.title}” in your “${journey.title}” journey. Step ${activeIndex + 2} is ready.`,
             link: { type: "journey", id },
-          }
+          },
     );
   }
 

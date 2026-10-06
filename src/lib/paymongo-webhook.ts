@@ -14,7 +14,7 @@ const MAX_SIGNATURE_AGE_SECONDS = 5 * 60;
 export function verifyPaymongoSignature(
   rawBody: string,
   signatureHeader: string | null,
-  secret: string
+  secret: string,
 ): boolean {
   if (!signatureHeader) return false;
 

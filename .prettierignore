@@ -1,0 +1,10 @@
+.next
+.vercel
+node_modules
+drizzle
+package-lock.json
+next-env.d.ts
+*.log
+.claude
+# Written by `next dev`
+AGENTS.md

@@ -17,11 +17,7 @@ const base = {
 export function LogoIcon({ className }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"
-        fill="url(#logo-grad)"
-        stroke="none"
-      />
+      <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" fill="url(#logo-grad)" stroke="none" />
       <defs>
         <linearGradient id="logo-grad" x1="4" y1="2" x2="20" y2="22">
           <stop offset="0" stopColor="#ff7892" />
@@ -215,8 +211,15 @@ export function SendIcon({ className }: IconProps) {
 export function ChatSparkIcon({ className }: IconProps) {
   return (
     <svg className={className} {...base}>
-      <path d="M4 6a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H9l-4 4v-4a2 2 0 0 1-2-2Z" strokeLinejoin="round" />
-      <path d="M17.5 3.5 18 5l1.5.5L18 6l-.5 1.5L17 6l-1.5-.5L17 5l.5-1.5Z" fill="currentColor" stroke="none" />
+      <path
+        d="M4 6a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H9l-4 4v-4a2 2 0 0 1-2-2Z"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M17.5 3.5 18 5l1.5.5L18 6l-.5 1.5L17 6l-1.5-.5L17 5l.5-1.5Z"
+        fill="currentColor"
+        stroke="none"
+      />
     </svg>
   );
 }

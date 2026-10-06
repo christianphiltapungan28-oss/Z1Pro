@@ -11,9 +11,11 @@ export function useElementSize(ref: RefObject<HTMLElement | null>) {
     const observer = new ResizeObserver(([entry]) => {
       const { width, height } = entry.contentRect;
       setSize((prev) =>
-        prev && Math.round(prev.width) === Math.round(width) && Math.round(prev.height) === Math.round(height)
+        prev &&
+        Math.round(prev.width) === Math.round(width) &&
+        Math.round(prev.height) === Math.round(height)
           ? prev
-          : { width, height }
+          : { width, height },
       );
     });
     observer.observe(el);

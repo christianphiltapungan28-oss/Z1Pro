@@ -47,8 +47,8 @@ export async function getCurrentPlanCode(orgId: string): Promise<string> {
         eq(subscriptions.orgId, orgId),
         eq(subscriptions.status, "active"),
         // A paid period that has run out falls back to free; plans don't renew.
-        gt(subscriptions.currentPeriodEnd, new Date())
-      )
+        gt(subscriptions.currentPeriodEnd, new Date()),
+      ),
     )
     .orderBy(desc(subscriptions.currentPeriodStart))
     .limit(1);

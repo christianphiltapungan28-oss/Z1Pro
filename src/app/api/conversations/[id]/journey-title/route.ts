@@ -15,7 +15,7 @@ const MAX_MESSAGES = 8;
 const MAX_CHARS = 4_000;
 
 const PROMPT =
-  "Name the goal of this conversation as a short journey title the user will work towards: 3 to 6 words, Title Case, starting with a verb where natural (e.g. \"Complete History 101 Assignment\"). Reply with the title only — no quotes or punctuation at the end.";
+  'Name the goal of this conversation as a short journey title the user will work towards: 3 to 6 words, Title Case, starting with a verb where natural (e.g. "Complete History 101 Assignment"). Reply with the title only — no quotes or punctuation at the end.';
 
 function fallbackTitle(firstUserMessage: string | undefined) {
   const text = (firstUserMessage ?? "New Journey").trim().replace(/\s+/g, " ");
@@ -29,7 +29,7 @@ function fallbackTitle(firstUserMessage: string | undefined) {
  */
 export async function POST(
   _request: Request,
-  ctx: RouteContext<"/api/conversations/[id]/journey-title">
+  ctx: RouteContext<"/api/conversations/[id]/journey-title">,
 ) {
   const session = await auth();
   const userId = session?.user?.id;
@@ -91,16 +91,13 @@ export async function POST(
           ],
         }),
       },
-      { timeoutMs: 20_000, maxRetries: 0 }
+      { timeoutMs: 20_000, maxRetries: 0 },
     );
     if (!res.ok) throw new Error(`OpenAI ${res.status}`);
 
     const data = await res.json();
     const usage = data.usage ?? {};
-    await recordUsage(
-      "chatTokens",
-      (usage.prompt_tokens ?? 0) + (usage.completion_tokens ?? 0)
-    );
+    await recordUsage("chatTokens", (usage.prompt_tokens ?? 0) + (usage.completion_tokens ?? 0));
 
     const title = String(data.choices?.[0]?.message?.content ?? "")
       .trim()

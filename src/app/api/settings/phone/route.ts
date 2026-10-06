@@ -24,7 +24,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   if (!smsConfigured()) {
-    return NextResponse.json({ error: "Adding a mobile number isn't available yet." }, { status: 503 });
+    return NextResponse.json(
+      { error: "Adding a mobile number isn't available yet." },
+      { status: 503 },
+    );
   }
 
   const body = await request.json().catch(() => ({}));
@@ -32,7 +35,10 @@ export async function POST(request: Request) {
   if (body?.step === "send") {
     const digits = typeof body.digits === "string" ? body.digits.replace(/\D/g, "") : "";
     if (!/^9\d{9}$/.test(digits)) {
-      return NextResponse.json({ error: "Enter the 10 digits after +63, starting with 9." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Enter the 10 digits after +63, starting with 9." },
+        { status: 400 },
+      );
     }
     const otp = await createOtp("phone", userId, digits);
     if ("error" in otp) {
@@ -40,10 +46,13 @@ export async function POST(request: Request) {
     }
     const sent = await sendSms(
       `0${digits}`,
-      `Your Z1P verification code is ${otp.code}. It expires in 10 minutes. Don't share it with anyone.`
+      `Your Z1P verification code is ${otp.code}. It expires in 10 minutes. Don't share it with anyone.`,
     );
     if (!sent) {
-      return NextResponse.json({ error: "Couldn't send the text. Please try again." }, { status: 502 });
+      return NextResponse.json(
+        { error: "Couldn't send the text. Please try again." },
+        { status: 502 },
+      );
     }
     return NextResponse.json({ ok: true });
   }
@@ -69,7 +78,10 @@ export async function POST(request: Request) {
         });
     } catch (err) {
       if (isMissingTable(err)) {
-        return NextResponse.json({ error: "These settings aren't available yet." }, { status: 503 });
+        return NextResponse.json(
+          { error: "These settings aren't available yet." },
+          { status: 503 },
+        );
       }
       throw err;
     }

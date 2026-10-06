@@ -35,8 +35,8 @@ export async function getCurrentOrg(): Promise<CurrentOrg | null> {
     .where(
       and(
         eq(organizationMembers.organizationId, user.defaultOrgId),
-        eq(organizationMembers.userId, userId)
-      )
+        eq(organizationMembers.userId, userId),
+      ),
     )
     .limit(1);
   if (!membership) return null;

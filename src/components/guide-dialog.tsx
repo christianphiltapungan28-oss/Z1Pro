@@ -89,7 +89,11 @@ export function GuideDialog({
         {onSendFeedback && (
           <p className="rounded-xl bg-surface p-4 text-sm text-foreground">
             Z1P is in beta. Found something broken or confusing?{" "}
-            <button type="button" onClick={onSendFeedback} className="font-semibold text-accent underline">
+            <button
+              type="button"
+              onClick={onSendFeedback}
+              className="font-semibold text-accent underline"
+            >
               Send feedback
             </button>
           </p>

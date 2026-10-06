@@ -13,7 +13,7 @@ import { isOverDailyBudget } from "@/lib/usage-guard";
 function notReady() {
   return NextResponse.json(
     { error: "Life Metrics isn't switched on for this app yet." },
-    { status: 503 }
+    { status: 503 },
   );
 }
 
@@ -52,9 +52,10 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         ...before,
-        error: "Conversation History is off in Settings → Privacy, so Life Metrics can't read your chats.",
+        error:
+          "Conversation History is off in Settings → Privacy, so Life Metrics can't read your chats.",
       },
-      { status: 409 }
+      { status: 409 },
     );
   }
 
@@ -77,13 +78,13 @@ export async function POST(request: Request) {
   if (!limit.ok) {
     return NextResponse.json(
       { ...current, error: "Scores were updated recently. Try again later." },
-      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } }
+      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } },
     );
   }
   if (await isOverDailyBudget("chatTokens")) {
     return NextResponse.json(
       { ...current, error: "Z1p is very busy right now. Your scores will update later." },
-      { status: 503 }
+      { status: 503 },
     );
   }
 
@@ -108,7 +109,7 @@ export async function POST(request: Request) {
     console.error("Life Metrics computation failed", err);
     return NextResponse.json(
       { ...current, error: "Couldn't update your scores right now. Please try again later." },
-      { status: 502 }
+      { status: 502 },
     );
   } finally {
     await redis.del(lockKey);

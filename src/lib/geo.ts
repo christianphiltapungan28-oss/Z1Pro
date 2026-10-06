@@ -43,15 +43,12 @@ export async function getCountryCode(request: Request): Promise<string> {
   try {
     const res = await fetch(
       `https://ipwho.is/${encodeURIComponent(ip)}?fields=success,country_code`,
-      { signal: AbortSignal.timeout(1500) }
+      { signal: AbortSignal.timeout(1500) },
     );
     if (!res.ok) return DEFAULT_COUNTRY;
     const data = await res.json();
     if (data?.success === false) return DEFAULT_COUNTRY;
-    const code =
-      typeof data?.country_code === "string"
-        ? data.country_code.toUpperCase()
-        : null;
+    const code = typeof data?.country_code === "string" ? data.country_code.toUpperCase() : null;
     return code || DEFAULT_COUNTRY;
   } catch {
     return DEFAULT_COUNTRY;

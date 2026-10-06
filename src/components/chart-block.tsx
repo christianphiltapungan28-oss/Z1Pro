@@ -10,14 +10,7 @@ type ChartSpec = {
   datasets: ChartDataset[];
 };
 
-const CHART_COLORS = [
-  "#ff1da5",
-  "#7b6bff",
-  "#34c98a",
-  "#ffb020",
-  "#3aa0ff",
-  "#ff0022",
-];
+const CHART_COLORS = ["#ff1da5", "#7b6bff", "#34c98a", "#ffb020", "#3aa0ff", "#ff0022"];
 
 function normalizeChartSpec(parsed: unknown): ChartSpec | null {
   if (!parsed || typeof parsed !== "object") return null;
@@ -30,7 +23,7 @@ function normalizeChartSpec(parsed: unknown): ChartSpec | null {
     const datasets = obj.datasets
       .filter(
         (d): d is Record<string, unknown> =>
-          !!d && typeof d === "object" && Array.isArray((d as Record<string, unknown>).data)
+          !!d && typeof d === "object" && Array.isArray((d as Record<string, unknown>).data),
       )
       .map((d) => ({
         label: typeof d.label === "string" ? d.label : undefined,
@@ -45,15 +38,11 @@ function normalizeChartSpec(parsed: unknown): ChartSpec | null {
     const datasets = obj.series
       .filter(
         (d): d is Record<string, unknown> =>
-          !!d && typeof d === "object" && Array.isArray((d as Record<string, unknown>).data)
+          !!d && typeof d === "object" && Array.isArray((d as Record<string, unknown>).data),
       )
       .map((d) => ({
         label:
-          typeof d.name === "string"
-            ? d.name
-            : typeof d.label === "string"
-              ? d.label
-              : undefined,
+          typeof d.name === "string" ? d.name : typeof d.label === "string" ? d.label : undefined,
         data: (d.data as unknown[]).map(Number),
       }));
     if (datasets.length === 0) return null;
@@ -66,9 +55,7 @@ function normalizeChartSpec(parsed: unknown): ChartSpec | null {
     obj.data.every((item) => item && typeof item === "object" && !Array.isArray(item))
   ) {
     const items = obj.data as Record<string, unknown>[];
-    const labels = items.map((item) =>
-      String(item.label ?? item.name ?? item.category ?? "")
-    );
+    const labels = items.map((item) => String(item.label ?? item.name ?? item.category ?? ""));
     const values = items.map((item) => Number(item.value ?? item.data ?? item.y ?? 0));
     if (labels.length === 0) return null;
     return { type, title, labels, datasets: [{ data: values }] };
@@ -97,13 +84,7 @@ function niceMax(value: number) {
   return Math.ceil(value / magnitude) * magnitude;
 }
 
-function CartesianChart({
-  spec,
-  type,
-}: {
-  spec: ChartSpec;
-  type: "bar" | "line";
-}) {
+function CartesianChart({ spec, type }: { spec: ChartSpec; type: "bar" | "line" }) {
   const { labels, datasets } = spec;
   const allValues = datasets.flatMap((d) => d.data);
   const max = niceMax(Math.max(1, ...allValues));
@@ -184,9 +165,7 @@ function CartesianChart({
 
       {type === "line" &&
         datasets.map((dataset, dIdx) => {
-          const points = dataset.data
-            .map((v, i) => `${xFor(i)},${yFor(v)}`)
-            .join(" ");
+          const points = dataset.data.map((v, i) => `${xFor(i)},${yFor(v)}`).join(" ");
           return (
             <g key={dIdx}>
               <polyline
@@ -275,16 +254,8 @@ export function ChartBlock({ raw }: { raw: string }) {
 
   return (
     <div className="my-1 rounded-xl border border-card-border bg-card p-3 text-foreground">
-      {spec.title && (
-        <p className="mb-2 text-xs font-semibold text-foreground/80">
-          {spec.title}
-        </p>
-      )}
-      {type === "pie" ? (
-        <PieChart spec={spec} />
-      ) : (
-        <CartesianChart spec={spec} type={type} />
-      )}
+      {spec.title && <p className="mb-2 text-xs font-semibold text-foreground/80">{spec.title}</p>}
+      {type === "pie" ? <PieChart spec={spec} /> : <CartesianChart spec={spec} type={type} />}
       {type !== "pie" && spec.datasets.some((d) => d.label) && (
         <div className="mt-2 flex flex-wrap gap-3">
           {spec.datasets.map((dataset, i) =>
@@ -299,7 +270,7 @@ export function ChartBlock({ raw }: { raw: string }) {
                 />
                 {dataset.label}
               </span>
-            ) : null
+            ) : null,
           )}
         </div>
       )}

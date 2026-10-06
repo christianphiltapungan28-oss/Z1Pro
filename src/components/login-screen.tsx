@@ -25,12 +25,10 @@ export function LoginScreen({
           <Logo height={33.5} className="text-white" />
         </Link>
         <div className="absolute left-10 top-[323px] flex w-[420px] flex-col gap-[23px] text-white">
-          <p className="text-5xl font-bold leading-[1.08]">
-            Turn reflection into forward motion.
-          </p>
+          <p className="text-5xl font-bold leading-[1.08]">Turn reflection into forward motion.</p>
           <p className="text-xl font-medium leading-[1.45]">
-            Your AI life companion helps you find clarity, build meaningful
-            journeys, and grow with intention.
+            Your AI life companion helps you find clarity, build meaningful journeys, and grow with
+            intention.
           </p>
         </div>
       </aside>
@@ -43,7 +41,7 @@ export function LoginScreen({
           <LoginForm
             initialView={view ?? "signin"}
             callbackUrl={callbackUrl ?? "/"}
-error={error ?? null}
+            error={error ?? null}
             twoFactorPending={twoFactorPending ?? false}
           />
         )}

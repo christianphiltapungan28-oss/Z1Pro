@@ -21,10 +21,7 @@ export async function POST(request: Request) {
     .select({ role: organizationMembers.role })
     .from(organizationMembers)
     .where(
-      and(
-        eq(organizationMembers.organizationId, orgId),
-        eq(organizationMembers.userId, userId)
-      )
+      and(eq(organizationMembers.organizationId, orgId), eq(organizationMembers.userId, userId)),
     )
     .limit(1);
   if (!membership) {

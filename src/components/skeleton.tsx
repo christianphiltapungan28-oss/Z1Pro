@@ -9,7 +9,12 @@ export function Skeleton({ className = "" }: { className?: string }) {
   // Default corners only when none are given: two rounded-* classes on one
   // element resolve by stylesheet order, not class order.
   const corners = /\brounded/.test(className) ? "" : "rounded-md";
-  return <span aria-hidden="true" className={`block bg-flow-line motion-safe:animate-pulse ${corners} ${className}`} />;
+  return (
+    <span
+      aria-hidden="true"
+      className={`block bg-flow-line motion-safe:animate-pulse ${corners} ${className}`}
+    />
+  );
 }
 
 /** Wrapper that announces loading once. Pass the layout-shaped blocks as children. */

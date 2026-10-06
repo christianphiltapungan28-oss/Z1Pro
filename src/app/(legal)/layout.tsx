@@ -9,20 +9,18 @@ const LEGAL_LINKS = [
   { href: "/refunds", label: "Refund Policy" },
 ];
 
-export default function LegalLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function LegalLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="h-full overflow-y-auto bg-background text-foreground">
       <header className="border-b border-card-border">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
-          <Link href="/" className="flex items-center gap-3" aria-label={`Back to ${LEGAL.productName}`}>
+          <Link
+            href="/"
+            className="flex items-center gap-3"
+            aria-label={`Back to ${LEGAL.productName}`}
+          >
             <Logo height={26} />
-            <span className="font-display text-sm font-semibold">
-              Back to {LEGAL.productName}
-            </span>
+            <span className="font-display text-sm font-semibold">Back to {LEGAL.productName}</span>
           </Link>
         </div>
       </header>
@@ -47,8 +45,8 @@ export default function LegalLayout({
           ))}
         </nav>
         <p className="mx-auto max-w-3xl px-4 pb-8 text-xs leading-relaxed text-muted sm:px-6">
-          {LEGAL.productName} is operated by {LEGAL.companyName}{" "}
-          ({LEGAL.businessRegistration}), {LEGAL.companyAddress}. Contact:{" "}
+          {LEGAL.productName} is operated by {LEGAL.companyName} ({LEGAL.businessRegistration}),{" "}
+          {LEGAL.companyAddress}. Contact:{" "}
           <a href={`mailto:${LEGAL.contactEmail}`} className="underline">
             {LEGAL.contactEmail}
           </a>

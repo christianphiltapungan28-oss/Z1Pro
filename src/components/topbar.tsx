@@ -64,22 +64,20 @@ export function Topbar({
       {title ? (
         <div className="flex min-w-0 flex-col gap-0.5">
           <h1 className="truncate text-[22px] font-bold text-foreground">{title}</h1>
-          {subtitle && (
-            <p className="truncate text-sm text-tertiary">{subtitle}</p>
-          )}
+          {subtitle && <p className="truncate text-sm text-tertiary">{subtitle}</p>}
         </div>
       ) : (
-      <div className="flex w-full max-w-[408px] items-center gap-2.5 rounded-[10px] border border-input-border p-2.5 focus-within:border-foreground/30">
-        <span className="flex h-6 w-6 shrink-0 items-center justify-center text-search-placeholder">
-          <AssetIcon name="search" width={20.207} height={20.207} />
-        </span>
-        <input
-          type="text"
-          aria-label="Search"
-          placeholder={searchPlaceholder}
-          className="w-full min-w-0 bg-transparent text-lg text-foreground placeholder:text-search-placeholder focus:outline-none"
-        />
-      </div>
+        <div className="flex w-full max-w-[408px] items-center gap-2.5 rounded-[10px] border border-input-border p-2.5 focus-within:border-foreground/30">
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center text-search-placeholder">
+            <AssetIcon name="search" width={20.207} height={20.207} />
+          </span>
+          <input
+            type="text"
+            aria-label="Search"
+            placeholder={searchPlaceholder}
+            className="w-full min-w-0 bg-transparent text-lg text-foreground placeholder:text-search-placeholder focus:outline-none"
+          />
+        </div>
       )}
 
       <div ref={calendarRef} className="relative ml-auto hidden lg:block">

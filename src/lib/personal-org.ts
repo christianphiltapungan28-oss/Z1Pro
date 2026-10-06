@@ -10,7 +10,11 @@ function personalOrgName(user: { name?: string | null; email?: string | null }) 
 }
 
 /** Every new account gets its own organization, owned by it and made default. */
-export async function createPersonalOrg(user: { id: string; name?: string | null; email?: string | null }) {
+export async function createPersonalOrg(user: {
+  id: string;
+  name?: string | null;
+  email?: string | null;
+}) {
   const [org] = await db
     .insert(organizations)
     .values({ name: personalOrgName(user) })

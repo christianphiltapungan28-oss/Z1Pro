@@ -100,8 +100,8 @@ function LegalModal({ version, onAccepted }: { version: string; onAccepted: () =
             Before you continue
           </h2>
           <p id="legal-intro" className="text-sm leading-[22px] text-muted">
-            Please read and accept our policies to use Z1P.pro. Each opens in a
-            new tab. Last updated {version}.
+            Please read and accept our policies to use Z1P.pro. Each opens in a new tab. Last
+            updated {version}.
           </p>
         </div>
 
@@ -114,7 +114,9 @@ function LegalModal({ version, onAccepted }: { version: string; onAccepted: () =
               <input
                 type="checkbox"
                 checked={checked[policy.key]}
-                onChange={(e) => setChecked((prev) => ({ ...prev, [policy.key]: e.target.checked }))}
+                onChange={(e) =>
+                  setChecked((prev) => ({ ...prev, [policy.key]: e.target.checked }))
+                }
                 className="mt-1 size-4 shrink-0 accent-accent"
               />
               <span>

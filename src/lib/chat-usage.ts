@@ -35,7 +35,7 @@ export async function addDailyTokens(
   userId: string,
   usageDate: string,
   inputTokens: number,
-  outputTokens: number
+  outputTokens: number,
 ) {
   await db
     .update(aiUsageDaily)

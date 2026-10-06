@@ -28,15 +28,22 @@ function page(title: string, body: string, status = 200) {
 <p style="font-size:22px;font-weight:800;color:#ff1da5;margin:0 0 16px">Z1P</p>
 <h1 style="font-size:20px;margin:0 0 8px">${title}</h1><p style="color:#5f6368;line-height:1.5;margin:0">${body}</p>
 </div></body></html>`,
-    { status, headers: { "Content-Type": "text/html; charset=utf-8" } }
+    { status, headers: { "Content-Type": "text/html; charset=utf-8" } },
   );
 }
 
 /** The link in marketing emails. */
 export async function GET(request: Request) {
   return (await unsubscribe(request))
-    ? page("You're unsubscribed", "You won't get tips and product updates from Z1P any more. You can turn them back on in Settings → Notifications.")
-    : page("That link doesn't work", "Turn off Marketing & Tips in Settings → Notifications instead.", 400);
+    ? page(
+        "You're unsubscribed",
+        "You won't get tips and product updates from Z1P any more. You can turn them back on in Settings → Notifications.",
+      )
+    : page(
+        "That link doesn't work",
+        "Turn off Marketing & Tips in Settings → Notifications instead.",
+        400,
+      );
 }
 
 /** One-click unsubscribe from the mail app (List-Unsubscribe-Post, RFC 8058). */

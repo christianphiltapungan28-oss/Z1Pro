@@ -16,7 +16,7 @@ export function pushConfigured() {
       webpush.setVapidDetails(
         process.env.VAPID_SUBJECT || "mailto:support@z1p.pro",
         publicKey!,
-        privateKey!
+        privateKey!,
       );
     }
   }
@@ -43,14 +43,14 @@ export async function sendPush(userId: string, message: PushMessage) {
           await webpush.sendNotification(
             { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
             JSON.stringify(message),
-            { TTL: 24 * 60 * 60 }
+            { TTL: 24 * 60 * 60 },
           );
         } catch (err) {
           const status = (err as { statusCode?: number }).statusCode;
           if (status === 404 || status === 410) gone.push(s.id);
           else console.error("Push send failed", status);
         }
-      })
+      }),
     );
     if (gone.length) {
       await db.delete(pushSubscriptions).where(inArray(pushSubscriptions.id, gone));

@@ -48,9 +48,21 @@ function MessageRow({ message }: { message: Message }) {
   return (
     <div className="flex w-full flex-col items-start gap-2 md:flex-row md:gap-3">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/ui/conversation-tile.svg" alt="" width={40} height={40} className="shrink-0 md:hidden" />
+      <img
+        src="/ui/conversation-tile.svg"
+        alt=""
+        width={40}
+        height={40}
+        className="shrink-0 md:hidden"
+      />
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/ui/ai-avatar.svg" alt="" width={32} height={32} className="hidden shrink-0 md:block" />
+      <img
+        src="/ui/ai-avatar.svg"
+        alt=""
+        width={32}
+        height={32}
+        className="hidden shrink-0 md:block"
+      />
       <div className="min-w-0 max-w-[306px] rounded-2xl bg-surface px-3.5 py-[11px] text-[13px] leading-[18px] font-medium text-foreground md:max-w-[700px] md:px-[18px] md:py-3.5 md:text-[15px] md:leading-[22px] md:font-normal">
         <MarkdownMessage content={message.content} />
       </div>
@@ -67,17 +79,19 @@ function BuildStatus({ done }: { done: boolean }) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="flex size-6 items-center justify-center rounded-full bg-background">
-            <span
-              className={`size-2 rounded-full ${done ? "bg-ok" : "status-pulse bg-accent"}`}
-            />
+            <span className={`size-2 rounded-full ${done ? "bg-ok" : "status-pulse bg-accent"}`} />
           </span>
           <span className="text-xs font-semibold text-foreground">
             {done ? "JOURNEY READY" : "BUILDING YOUR JOURNEY"}
           </span>
         </div>
         <span aria-hidden="true" className="flex items-center gap-1">
-          <span className={`size-[5px] rounded-full ${done ? "bg-ok" : "status-dot-1 bg-accent"}`} />
-          <span className={`size-[5px] rounded-full ${done ? "bg-ok" : "status-dot-2 bg-accent"}`} />
+          <span
+            className={`size-[5px] rounded-full ${done ? "bg-ok" : "status-dot-1 bg-accent"}`}
+          />
+          <span
+            className={`size-[5px] rounded-full ${done ? "bg-ok" : "status-dot-2 bg-accent"}`}
+          />
           <span className={`size-[5px] rounded-full ${done ? "bg-ok" : "bg-accent opacity-35"}`} />
         </span>
       </div>
@@ -186,9 +200,8 @@ function ConvertJourneyDialog({
                 Convert to Journey?
               </h2>
               <p className="text-[13px] leading-[19px] text-label md:text-[15px] md:leading-[22px]">
-                Turn this conversation into a guided journey. Zip will break down
-                your goal into actionable steps and guide you through each one with
-                voice assistance.
+                Turn this conversation into a guided journey. Zip will break down your goal into
+                actionable steps and guide you through each one with voice assistance.
               </p>
             </div>
 
@@ -277,9 +290,7 @@ export function ConversationView({
     let ignore = false;
     Promise.all([
       fetch(`/api/conversations/${conversationId}`).then((r) => (r.ok ? r.json() : null)),
-      fetch(`/api/conversations/${conversationId}/messages`).then((r) =>
-        r.ok ? r.json() : null
-      ),
+      fetch(`/api/conversations/${conversationId}/messages`).then((r) => (r.ok ? r.json() : null)),
     ]).then(([metaData, messageData]) => {
       if (ignore) return;
       setMeta(metaData);
@@ -312,7 +323,7 @@ export function ConversationView({
     try {
       const res = await fetch(
         `/api/conversations/${conversationId}/messages`,
-        messageRequest({ content: trimmed, files })
+        messageRequest({ content: trimmed, files }),
       );
       if (!res.ok) {
         setDraft(trimmed);
@@ -320,11 +331,15 @@ export function ConversationView({
         const data = await res.json().catch(() => null);
         if (res.status === 429 && data?.dailyLimit) {
           setError(
-            `You've hit today's ${data.dailyLimit}-message limit on the ${data.planCode} plan. Upgrade for more.`
+            `You've hit today's ${data.dailyLimit}-message limit on the ${data.planCode} plan. Upgrade for more.`,
           );
         } else if (res.status === 429) {
           setError(data?.error ?? "You've hit today's message limit. Try again later.");
-        } else if (res.status === 413 || res.status === 415 || (res.status === 400 && files.length > 0)) {
+        } else if (
+          res.status === 413 ||
+          res.status === 415 ||
+          (res.status === 400 && files.length > 0)
+        ) {
           setError(data?.error ?? "Those files couldn't be attached.");
         } else {
           setError("Something went wrong sending that message. Try again.");
@@ -508,7 +523,7 @@ export function ConversationView({
                     </div>
                   ) : (
                     <Skeleton key={i} className={`ml-auto h-11 rounded-2xl ${width}`} />
-                  )
+                  ),
                 )}
               </SkeletonGroup>
             )}
@@ -568,11 +583,7 @@ export function ConversationView({
           <AssetIcon name="mic" width={18} height={18} />
         </button>
         <div className="flex h-[54px] min-w-0 flex-1 items-center justify-between gap-2 rounded-[10px] border border-field-border bg-background pr-[19px] pl-2 focus-within:border-foreground/30 md:h-11 md:rounded-xl md:border-divider md:bg-surface md:pr-4 md:pl-1.5">
-          <AttachButton
-            onPick={attachments.add}
-            disabled={sending}
-            className="size-9 md:size-8"
-          />
+          <AttachButton onPick={attachments.add} disabled={sending} className="size-9 md:size-8" />
           <input
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
@@ -624,7 +635,9 @@ export function ConversationView({
           disabled={!linked && messages.length === 0}
           aria-label={linked ? "Open linked journey" : "Convert to Journey"}
           className={`flex size-12 shrink-0 items-center justify-center rounded-[10px] border disabled:opacity-50 md:hidden ${
-            linked ? "border-accent bg-accent/[0.08] text-accent" : "border-field-border text-foreground"
+            linked
+              ? "border-accent bg-accent/[0.08] text-accent"
+              : "border-field-border text-foreground"
           }`}
         >
           <IconSetIcon name="stacks" size={21} />
@@ -695,8 +708,8 @@ function ConfirmDeleteDialog({
             Delete this conversation?
           </h2>
           <p className="text-[15px] leading-[22px] text-label">
-            &ldquo;{title}&rdquo; and all its messages will be permanently
-            deleted. This can&rsquo;t be undone.
+            &ldquo;{title}&rdquo; and all its messages will be permanently deleted. This can&rsquo;t
+            be undone.
           </p>
         </div>
         <div className="flex justify-end gap-3">

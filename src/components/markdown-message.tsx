@@ -38,16 +38,10 @@ export function MarkdownMessage({ content }: { content: string }) {
               {children}
             </h3>
           ),
-          ul: ({ children }) => (
-            <ul className="my-1 list-disc space-y-1 pl-5">{children}</ul>
-          ),
-          ol: ({ children }) => (
-            <ol className="my-1 list-decimal space-y-1 pl-5">{children}</ol>
-          ),
+          ul: ({ children }) => <ul className="my-1 list-disc space-y-1 pl-5">{children}</ul>,
+          ol: ({ children }) => <ol className="my-1 list-decimal space-y-1 pl-5">{children}</ol>,
           li: ({ children }) => <li>{children}</li>,
-          strong: ({ children }) => (
-            <strong className="font-semibold">{children}</strong>
-          ),
+          strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
           a: ({ children, href }) => (
             <a
               href={href}
@@ -66,23 +60,17 @@ export function MarkdownMessage({ content }: { content: string }) {
           hr: () => <hr className="my-2 border-card-border" />,
           table: ({ children }) => (
             <div className="my-2 overflow-x-auto rounded-lg border border-card-border">
-              <table className="w-full border-collapse text-xs">
-                {children}
-              </table>
+              <table className="w-full border-collapse text-xs">{children}</table>
             </div>
           ),
-          thead: ({ children }) => (
-            <thead className="bg-foreground/5">{children}</thead>
-          ),
+          thead: ({ children }) => <thead className="bg-foreground/5">{children}</thead>,
           th: ({ children }) => (
             <th className="border-b border-card-border px-2.5 py-1.5 text-left font-semibold">
               {children}
             </th>
           ),
           td: ({ children }) => (
-            <td className="border-b border-card-border px-2.5 py-1.5 align-top">
-              {children}
-            </td>
+            <td className="border-b border-card-border px-2.5 py-1.5 align-top">{children}</td>
           ),
           pre: ({ children }) => <>{children}</>,
           code: ({ className, children }) => {
@@ -103,9 +91,7 @@ export function MarkdownMessage({ content }: { content: string }) {
             }
 
             return (
-              <code className="rounded bg-foreground/10 px-1 py-0.5 text-[0.85em]">
-                {children}
-              </code>
+              <code className="rounded bg-foreground/10 px-1 py-0.5 text-[0.85em]">{children}</code>
             );
           },
         }}

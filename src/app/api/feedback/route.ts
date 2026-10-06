@@ -26,7 +26,7 @@ export async function POST(request: Request) {
   if (!limit.ok) {
     return NextResponse.json(
       { error: "You've sent a lot of feedback this hour. Thank you! Try again a little later." },
-      { status: 429 }
+      { status: 429 },
     );
   }
 
@@ -35,10 +35,16 @@ export async function POST(request: Request) {
   const message = typeof body?.message === "string" ? body.message.trim() : "";
   const page = typeof body?.page === "string" ? body.page.slice(0, 200) : "";
   if (!message) {
-    return NextResponse.json({ error: "Write a little about what happened or what you'd like." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Write a little about what happened or what you'd like." },
+      { status: 400 },
+    );
   }
   if (message.length > MAX_MESSAGE) {
-    return NextResponse.json({ error: `Keep it under ${MAX_MESSAGE} characters.` }, { status: 400 });
+    return NextResponse.json(
+      { error: `Keep it under ${MAX_MESSAGE} characters.` },
+      { status: 400 },
+    );
   }
 
   const reference = `FB-${randomBytes(3).toString("hex").toUpperCase()}`;

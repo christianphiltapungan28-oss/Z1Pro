@@ -16,7 +16,7 @@ export async function POST(request: Request) {
   if (currentOrg.role === "member") {
     return NextResponse.json(
       { error: "Only org owners or admins can manage billing" },
-      { status: 403 }
+      { status: 403 },
     );
   }
   const { userId, orgId } = currentOrg;
@@ -25,18 +25,14 @@ export async function POST(request: Request) {
   if (!limit.ok) {
     return NextResponse.json(
       { error: "Too many checkout attempts. Try again later." },
-      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } }
+      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } },
     );
   }
 
   const body = await request.json().catch(() => ({}));
   const planCode = typeof body?.planCode === "string" ? body.planCode : "";
 
-  const [plan] = await db
-    .select()
-    .from(plans)
-    .where(eq(plans.code, planCode))
-    .limit(1);
+  const [plan] = await db.select().from(plans).where(eq(plans.code, planCode)).limit(1);
 
   if (!plan || !plan.isActive || plan.priceMinorUnits === null) {
     return NextResponse.json({ error: "Plan not available" }, { status: 400 });
@@ -50,33 +46,25 @@ export async function POST(request: Request) {
         eq(subscriptions.orgId, orgId),
         eq(subscriptions.planId, plan.id),
         eq(subscriptions.status, "active"),
-        gt(subscriptions.currentPeriodEnd, new Date())
-      )
+        gt(subscriptions.currentPeriodEnd, new Date()),
+      ),
     )
     .limit(1);
   if (existingActive) {
-    return NextResponse.json(
-      { error: "Already on this plan" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Already on this plan" }, { status: 400 });
   }
 
   // Only look up the visitor's country (which sends their IP to ipwho.is)
   // when it can actually change the provider.
   const useStripe =
-    STRIPE_ENABLED &&
-    plan.priceUsdMinorUnits !== null &&
-    (await getCountryCode(request)) !== "PH";
+    STRIPE_ENABLED && plan.priceUsdMinorUnits !== null && (await getCountryCode(request)) !== "PH";
 
   const origin = getAppOrigin(request);
 
   if (useStripe) {
     const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
     if (!stripeSecretKey) {
-      return NextResponse.json(
-        { error: "Payments are not configured" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Payments are not configured" }, { status: 500 });
     }
 
     const [payment] = await db
@@ -118,10 +106,7 @@ export async function POST(request: Request) {
 
   const secretKey = process.env.PAYMONGO_SECRET_KEY;
   if (!secretKey) {
-    return NextResponse.json(
-      { error: "Payments are not configured" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Payments are not configured" }, { status: 500 });
   }
 
   const [payment] = await db
@@ -141,55 +126,47 @@ export async function POST(request: Request) {
 
   // A timeout or network error becomes null and is handled like a failed
   // response below, so the payment row isn't left stuck as "pending".
-  const checkoutRes = await fetch(
-    "https://api.paymongo.com/v1/checkout_sessions",
-    {
-      method: "POST",
-      signal: AbortSignal.timeout(15_000),
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Basic ${auth64}`,
-      },
-      body: JSON.stringify({
-        data: {
-          attributes: {
-            send_email_receipt: false,
-            show_description: true,
-            show_line_items: true,
-            line_items: [
-              {
-                currency: plan.currency,
-                amount: plan.priceMinorUnits,
-                name: plan.name,
-                quantity: 1,
-              },
-            ],
-            payment_method_types: ["gcash", "card", "paymaya"],
-            description: `${plan.name} plan - Z1P.pro`,
-            success_url: `${origin}/api/checkout/complete?payment=${payment.id}`,
-            cancel_url: `${origin}/?checkout=cancelled`,
-          },
+  const checkoutRes = await fetch("https://api.paymongo.com/v1/checkout_sessions", {
+    method: "POST",
+    signal: AbortSignal.timeout(15_000),
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Basic ${auth64}`,
+    },
+    body: JSON.stringify({
+      data: {
+        attributes: {
+          send_email_receipt: false,
+          show_description: true,
+          show_line_items: true,
+          line_items: [
+            {
+              currency: plan.currency,
+              amount: plan.priceMinorUnits,
+              name: plan.name,
+              quantity: 1,
+            },
+          ],
+          payment_method_types: ["gcash", "card", "paymaya"],
+          description: `${plan.name} plan - Z1P.pro`,
+          success_url: `${origin}/api/checkout/complete?payment=${payment.id}`,
+          cancel_url: `${origin}/?checkout=cancelled`,
         },
-      }),
-    }
-  ).catch((err) => {
+      },
+    }),
+  }).catch((err) => {
     console.error("PayMongo checkout session request failed", err);
     return null;
   });
 
   if (!checkoutRes?.ok) {
-    const errorText = checkoutRes
-      ? await checkoutRes.text().catch(() => "")
-      : "";
+    const errorText = checkoutRes ? await checkoutRes.text().catch(() => "") : "";
     console.error("PayMongo checkout session failed", checkoutRes?.status, errorText);
     await db
       .update(payments)
       .set({ status: "failed", failureReason: "checkout_session_create_failed" })
       .where(eq(payments.id, payment.id));
-    return NextResponse.json(
-      { error: "Could not start checkout" },
-      { status: 502 }
-    );
+    return NextResponse.json({ error: "Could not start checkout" }, { status: 502 });
   }
 
   const checkout = await checkoutRes.json();

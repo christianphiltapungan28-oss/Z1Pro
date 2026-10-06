@@ -76,7 +76,7 @@ export type FlowPayload = Awaited<ReturnType<typeof loadFlow>>;
 export async function savePlan(
   journeyId: string,
   userId: string,
-  plan: { steps: { title: string; tip: string }[]; firstMessage: string }
+  plan: { steps: { title: string; tip: string }[]; firstMessage: string },
 ) {
   await db.transaction(async (tx) => {
     await tx.insert(journeySteps).values(
@@ -86,7 +86,7 @@ export async function savePlan(
         title: s.title,
         tip: s.tip || null,
         status: i === 0 ? ("active" as const) : ("pending" as const),
-      }))
+      })),
     );
     await tx
       .insert(journeyMessages)
@@ -110,7 +110,7 @@ export async function storedFilePaths(where: { journeyId: string } | { userId: s
       .where(
         "journeyId" in where
           ? eq(journeyFiles.journeyId, where.journeyId)
-          : eq(journeyFiles.userId, where.userId)
+          : eq(journeyFiles.userId, where.userId),
       );
     return rows.map((r) => r.path).filter((p): p is string => Boolean(p));
   } catch {

@@ -22,9 +22,7 @@ function sleep(ms: number) {
 function backoffMs(attempt: number, response?: Response) {
   const retryAfter = Number(response?.headers.get("retry-after"));
   const base =
-    Number.isFinite(retryAfter) && retryAfter > 0
-      ? retryAfter * 1000
-      : 500 * 2 ** attempt;
+    Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 500 * 2 ** attempt;
   // Jitter so parallel requests don't retry in lockstep.
   return Math.min(MAX_RETRY_WAIT_MS, base) * (0.75 + Math.random() * 0.5);
 }
@@ -32,7 +30,7 @@ function backoffMs(attempt: number, response?: Response) {
 export async function openaiFetch(
   path: string,
   init: RequestInit,
-  { timeoutMs, maxRetries = 1 }: OpenAIFetchOptions
+  { timeoutMs, maxRetries = 1 }: OpenAIFetchOptions,
 ): Promise<Response> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error("OPENAI_API_KEY is not configured");

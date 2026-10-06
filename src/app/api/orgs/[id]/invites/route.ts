@@ -16,19 +16,13 @@ async function getRole(orgId: string, userId: string) {
     .select({ role: organizationMembers.role })
     .from(organizationMembers)
     .where(
-      and(
-        eq(organizationMembers.organizationId, orgId),
-        eq(organizationMembers.userId, userId)
-      )
+      and(eq(organizationMembers.organizationId, orgId), eq(organizationMembers.userId, userId)),
     )
     .limit(1);
   return row?.role ?? null;
 }
 
-export async function POST(
-  request: Request,
-  ctx: RouteContext<"/api/orgs/[id]/invites">
-) {
+export async function POST(request: Request, ctx: RouteContext<"/api/orgs/[id]/invites">) {
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) {
@@ -43,7 +37,7 @@ export async function POST(
   if (role !== "owner" && role !== "admin") {
     return NextResponse.json(
       { error: "Only org owners or admins can create invites" },
-      { status: 403 }
+      { status: 403 },
     );
   }
 
@@ -51,16 +45,14 @@ export async function POST(
   if (!limit.ok) {
     return NextResponse.json(
       { error: "Too many invites created. Try again later." },
-      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } }
+      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } },
     );
   }
 
   const body = await request.json().catch(() => ({}));
   const inviteRole = body?.role === "admin" ? "admin" : "member";
   const email =
-    typeof body?.email === "string" && body.email.trim()
-      ? body.email.trim().toLowerCase()
-      : null;
+    typeof body?.email === "string" && body.email.trim() ? body.email.trim().toLowerCase() : null;
   const expiresInDays =
     typeof body?.expiresInDays === "number" && body.expiresInDays > 0
       ? Math.min(body.expiresInDays, 30)
@@ -92,14 +84,11 @@ export async function POST(
       token,
       url: `${origin}/invite/${token}`,
     },
-    { status: 201 }
+    { status: 201 },
   );
 }
 
-export async function GET(
-  _request: Request,
-  ctx: RouteContext<"/api/orgs/[id]/invites">
-) {
+export async function GET(_request: Request, ctx: RouteContext<"/api/orgs/[id]/invites">) {
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) {
@@ -114,7 +103,7 @@ export async function GET(
   if (role !== "owner" && role !== "admin") {
     return NextResponse.json(
       { error: "Only org owners or admins can view invites" },
-      { status: 403 }
+      { status: 403 },
     );
   }
 
@@ -133,8 +122,8 @@ export async function GET(
       and(
         eq(organizationInvites.organizationId, orgId),
         isNull(organizationInvites.acceptedAt),
-        isNull(organizationInvites.revokedAt)
-      )
+        isNull(organizationInvites.revokedAt),
+      ),
     );
 
   return NextResponse.json({ invites });

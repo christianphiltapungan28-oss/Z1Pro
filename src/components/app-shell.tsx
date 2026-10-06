@@ -24,13 +24,7 @@ import { withViewTransition } from "@/lib/view-transition";
 import type { Journey } from "@/types/journey";
 
 export type View =
-  | "home"
-  | "journeys"
-  | "conversations"
-  | "conversation"
-  | "settings"
-  | "profile"
-  | "notifications";
+  "home" | "journeys" | "conversations" | "conversation" | "settings" | "profile" | "notifications";
 
 const CHECKOUT_MESSAGES: Record<string, string> = {
   success: "You're upgraded! Your new plan is now active.",
@@ -39,21 +33,13 @@ const CHECKOUT_MESSAGES: Record<string, string> = {
   error: "Something went wrong starting checkout. Please try again.",
 };
 
-function CheckoutBanner({
-  status,
-  onDismiss,
-}: {
-  status: string;
-  onDismiss: () => void;
-}) {
+function CheckoutBanner({ status, onDismiss }: { status: string; onDismiss: () => void }) {
   const message = CHECKOUT_MESSAGES[status] ?? CHECKOUT_MESSAGES.error;
   const isSuccess = status === "success";
   return (
     <div
       className={`mx-4 mt-2 flex items-center justify-between gap-3 rounded-xl px-4 py-2.5 text-sm sm:mx-6 ${
-        isSuccess
-          ? "bg-accent/12 text-foreground"
-          : "bg-foreground/8 text-foreground"
+        isSuccess ? "bg-accent/12 text-foreground" : "bg-foreground/8 text-foreground"
       }`}
     >
       <span>{message}</span>
@@ -75,9 +61,7 @@ export function AppShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [appearanceOpen, setAppearanceOpen] = useState(false);
   const [organizationOpen, setOrganizationOpen] = useState(false);
-  const [activeConversationId, setActiveConversationId] = useState<
-    string | null
-  >(null);
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   // A message typed on Home, handed to the conversation view to send.
   const [pendingMessage, setPendingMessage] = useState<Outgoing | null>(null);
   const [checkoutStatus, setCheckoutStatus] = useState<string | null>(null);
@@ -184,11 +168,7 @@ export function AppShell() {
     params.delete("checkout");
     params.delete("payment");
     const query = params.toString();
-    window.history.replaceState(
-      {},
-      "",
-      window.location.pathname + (query ? `?${query}` : "")
-    );
+    window.history.replaceState({}, "", window.location.pathname + (query ? `?${query}` : ""));
   }, []);
 
   // The conversation, profile and notifications pages draw their own header.
@@ -198,7 +178,10 @@ export function AppShell() {
   // their own headers (mobile design).
   const topbarOnPhone =
     !voiceMode &&
-    view !== "home" && view !== "journeys" && view !== "conversations" && view !== "settings";
+    view !== "home" &&
+    view !== "journeys" &&
+    view !== "conversations" &&
+    view !== "settings";
 
   return (
     <div className="relative flex h-dvh overflow-hidden bg-background">
@@ -223,28 +206,25 @@ export function AppShell() {
         <div className="flex min-w-0 flex-1 flex-col">
           {showTopbar && (
             <div className={topbarOnPhone ? "contents" : "hidden md:contents"}>
-            {view === "conversations" ? (
-              <Topbar
-                onMenuClick={() => setSidebarOpen(true)}
-                title="Conversations"
-                subtitle="Access and manage your ongoing chats and conversations with Z1p"
-              />
-            ) : view === "settings" ? (
-              <Topbar
-                onMenuClick={() => setSidebarOpen(true)}
-                title="Settings"
-                subtitle="Manage your Z1p life-coaching profile, notifications, and security preferences"
-              />
-            ) : (
-              <Topbar onMenuClick={() => setSidebarOpen(true)} />
-            )}
+              {view === "conversations" ? (
+                <Topbar
+                  onMenuClick={() => setSidebarOpen(true)}
+                  title="Conversations"
+                  subtitle="Access and manage your ongoing chats and conversations with Z1p"
+                />
+              ) : view === "settings" ? (
+                <Topbar
+                  onMenuClick={() => setSidebarOpen(true)}
+                  title="Settings"
+                  subtitle="Manage your Z1p life-coaching profile, notifications, and security preferences"
+                />
+              ) : (
+                <Topbar onMenuClick={() => setSidebarOpen(true)} />
+              )}
             </div>
           )}
           {checkoutStatus && (
-            <CheckoutBanner
-              status={checkoutStatus}
-              onDismiss={() => setCheckoutStatus(null)}
-            />
+            <CheckoutBanner status={checkoutStatus} onDismiss={() => setCheckoutStatus(null)} />
           )}
           <main className="min-h-0 flex-1">
             {view === "notifications" ? (
@@ -326,10 +306,7 @@ export function AppShell() {
         onChange={setAppearance}
       />
 
-      <OrganizationDialog
-        open={organizationOpen}
-        onClose={() => setOrganizationOpen(false)}
-      />
+      <OrganizationDialog open={organizationOpen} onClose={() => setOrganizationOpen(false)} />
     </div>
   );
 }

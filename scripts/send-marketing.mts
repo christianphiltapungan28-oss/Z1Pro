@@ -31,7 +31,9 @@ const buttonLabel = arg("button") ?? "Open Z1P";
 const link = arg("link") ?? "/";
 
 if (!subject || !bodyFile) {
-  console.error('Usage: scripts/send-marketing.mts --subject "…" --body file.txt [--send] [--test you@example.com]');
+  console.error(
+    'Usage: scripts/send-marketing.mts --subject "…" --body file.txt [--send] [--test you@example.com]',
+  );
   process.exit(1);
 }
 if (!emailConfigured()) {
@@ -53,11 +55,13 @@ const recipients = test
       .where(
         and(
           isNull(users.deletedAt),
-          sql`(${userSettings.notificationPrefs} ->> 'marketing') = 'true'`
-        )
+          sql`(${userSettings.notificationPrefs} ->> 'marketing') = 'true'`,
+        ),
       );
 
-console.log(`${recipients.length} recipient(s)${test ? " (test)" : " opted in to Marketing & Tips"}.`);
+console.log(
+  `${recipients.length} recipient(s)${test ? " (test)" : " opted in to Marketing & Tips"}.`,
+);
 if (!send) {
   for (const r of recipients.slice(0, 20)) console.log(`  ${r.email}`);
   if (recipients.length > 20) console.log(`  …and ${recipients.length - 20} more`);

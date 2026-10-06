@@ -30,7 +30,7 @@ export async function rateLimit(key: string, limit: number, windowMs: number) {
   const [count, ttlMs] = (await redis.eval(
     INCR_WITH_TTL,
     [`ratelimit:${key}`],
-    [String(windowMs)]
+    [String(windowMs)],
   )) as [number, number];
 
   if (count > limit) {

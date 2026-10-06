@@ -116,23 +116,17 @@ export function AppearanceDialog({
                 onClick={() => onChange(option.id)}
                 aria-pressed={selected}
                 className={`flex items-center gap-3 rounded-xl border p-2.5 text-left transition-colors ${
-                  selected
-                    ? "border-accent"
-                    : "border-card-border hover:border-accent/50"
+                  selected ? "border-accent" : "border-card-border hover:border-accent/50"
                 }`}
               >
                 <div className="w-24 shrink-0">
                   <Swatch option={option} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-foreground">
-                    {option.name}
-                  </p>
+                  <p className="text-sm font-medium text-foreground">{option.name}</p>
                   <p className="text-xs text-muted">{option.description}</p>
                 </div>
-                {selected && (
-                  <CheckCircleIcon className="h-5 w-5 shrink-0 text-accent" />
-                )}
+                {selected && <CheckCircleIcon className="h-5 w-5 shrink-0 text-accent" />}
               </button>
             );
           })}

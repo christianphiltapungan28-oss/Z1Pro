@@ -39,7 +39,7 @@ function storageConfig() {
 export async function storeOriginal(
   path: string,
   bytes: ArrayBuffer,
-  mimeType: string
+  mimeType: string,
 ): Promise<string | null> {
   const config = storageConfig();
   if (!config) return null;
@@ -55,7 +55,11 @@ export async function storeOriginal(
       signal: AbortSignal.timeout(30_000),
     });
     if (!res.ok) {
-      console.error("Journey file upload to storage failed", res.status, await res.text().catch(() => ""));
+      console.error(
+        "Journey file upload to storage failed",
+        res.status,
+        await res.text().catch(() => ""),
+      );
       return null;
     }
     return path;
@@ -104,7 +108,10 @@ export function fileContent(name: string, mimeType: string, bytes: ArrayBuffer):
   const kind = ACCEPTED_TYPES[mimeType];
   const b64 = Buffer.from(bytes).toString("base64");
   if (kind === "pdf") {
-    return { type: "file", file: { filename: name, file_data: `data:application/pdf;base64,${b64}` } };
+    return {
+      type: "file",
+      file: { filename: name, file_data: `data:application/pdf;base64,${b64}` },
+    };
   }
   if (kind === "image") {
     return { type: "image_url", image_url: { url: `data:${mimeType};base64,${b64}` } };
@@ -142,7 +149,7 @@ export async function planFromContent(journeyTitle: string, content: Content[]) 
   const raw = await jsonCompletion(
     PLAN_PROMPT,
     [{ type: "text", text: `Journey: ${journeyTitle}` }, ...content],
-    1500
+    1500,
   );
   return normalisePlan(raw);
 }
@@ -168,7 +175,10 @@ export function coachingPrompt(opts: {
   activeIndex: number;
 }) {
   const stepList = opts.steps
-    .map((s, i) => `${i + 1}. ${s.title} — ${s.status === "done" ? "done" : i === opts.activeIndex ? "CURRENT" : "not started"}`)
+    .map(
+      (s, i) =>
+        `${i + 1}. ${s.title} — ${s.status === "done" ? "done" : i === opts.activeIndex ? "CURRENT" : "not started"}`,
+    )
     .join("\n");
   const active = opts.steps[opts.activeIndex];
   return `You are Zip, a warm, encouraging coach on Z1P.pro guiding a student through a journey called "${opts.journeyTitle}". You guide; you never do the work for them — no writing their essay, solving their problems or giving final answers. Ask questions, give hints, point out gaps, and let them think.

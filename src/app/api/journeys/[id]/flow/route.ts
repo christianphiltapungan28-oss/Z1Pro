@@ -4,10 +4,7 @@ import { isMissingTable } from "@/lib/db-errors";
 import { getOwnedJourney, loadFlow } from "@/lib/journey-flow-data";
 
 /** The journey page's full state: steps, files and coaching messages. */
-export async function GET(
-  _request: Request,
-  ctx: RouteContext<"/api/journeys/[id]/flow">
-) {
+export async function GET(_request: Request, ctx: RouteContext<"/api/journeys/[id]/flow">) {
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) {

@@ -103,7 +103,14 @@ describe("safeCallback", () => {
   });
 
   test("turns anything off-site into /", () => {
-    for (const url of ["https://evil.com", "//evil.com", "/\\evil.com", "javascript:alert(1)", "", undefined]) {
+    for (const url of [
+      "https://evil.com",
+      "//evil.com",
+      "/\\evil.com",
+      "javascript:alert(1)",
+      "",
+      undefined,
+    ]) {
       assert.equal(safeCallback(url), "/", String(url));
     }
   });

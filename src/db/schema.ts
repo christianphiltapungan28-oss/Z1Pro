@@ -16,23 +16,14 @@ import {
 } from "drizzle-orm/pg-core";
 
 export const userRole = pgEnum("user_role", ["member", "moderator", "admin"]);
-export const messageRole = pgEnum("message_role", [
-  "system",
-  "user",
-  "assistant",
-]);
+export const messageRole = pgEnum("message_role", ["system", "user", "assistant"]);
 export const concernStatus = pgEnum("concern_status", [
   "open",
   "in_progress",
   "resolved",
   "closed",
 ]);
-export const concernPriority = pgEnum("concern_priority", [
-  "low",
-  "normal",
-  "high",
-  "urgent",
-]);
+export const concernPriority = pgEnum("concern_priority", ["low", "normal", "high", "urgent"]);
 export const postStatus = pgEnum("post_status", [
   "draft",
   "pending_review",
@@ -53,11 +44,7 @@ export const paymentStatus = pgEnum("payment_status", [
   "failed",
   "refunded",
 ]);
-export const organizationRole = pgEnum("organization_role", [
-  "owner",
-  "admin",
-  "member",
-]);
+export const organizationRole = pgEnum("organization_role", ["owner", "admin", "member"]);
 
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -67,17 +54,12 @@ export const users = pgTable("users", {
   avatarUrl: text("avatar_url"),
   locale: text("locale").notNull().default("en"),
   role: userRole("role").notNull().default("member"),
-  defaultOrgId: uuid("default_org_id").references(
-    (): AnyPgColumn => organizations.id,
-    { onDelete: "set null" }
-  ),
+  defaultOrgId: uuid("default_org_id").references((): AnyPgColumn => organizations.id, {
+    onDelete: "set null",
+  }),
   lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
 });
 
@@ -101,17 +83,12 @@ export const userSettings = pgTable("user_settings", {
   timezone: text("timezone"),
   about: text("about"),
   country: text("country"),
-  notificationPrefs: jsonb("notification_prefs")
-    .$type<NotificationPrefs>()
-    .notNull()
-    .default({}),
+  notificationPrefs: jsonb("notification_prefs").$type<NotificationPrefs>().notNull().default({}),
   /** Settings → Privacy. Off = Life Metrics stops reading the user's chats. */
   useConversationHistory: boolean("use_conversation_history").notNull().default(true),
   /** When the phone number was confirmed with an SMS code. */
   phoneVerifiedAt: timestamp("phone_verified_at", { withTimezone: true }),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 // Email + password sign-in — created by scripts/migrations/add-password-auth.sql. Kept
@@ -121,9 +98,7 @@ export const userPasswords = pgTable("user_passwords", {
     .primaryKey()
     .references(() => users.id, { onDelete: "cascade" }),
   passwordHash: text("password_hash").notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 // Acceptance of the Terms, Privacy Policy and Cookie Policy — created by
@@ -134,9 +109,7 @@ export const legalAcceptances = pgTable("legal_acceptances", {
     .references(() => users.id, { onDelete: "cascade" }),
   /** The policies' "Last updated" date that was accepted (LEGAL.lastUpdated). */
   version: text("version").notNull(),
-  acceptedAt: timestamp("accepted_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
+  acceptedAt: timestamp("accepted_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 // Two-factor login for password accounts — created by
@@ -149,9 +122,7 @@ export const userTwoFactor = pgTable("user_two_factor", {
   secretCiphertext: text("secret_ciphertext").notNull(),
   /** SHA-256 hashes of the unused one-time backup codes. */
   backupCodeHashes: jsonb("backup_code_hashes").$type<string[]>().notNull().default([]),
-  enabledAt: timestamp("enabled_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
+  enabledAt: timestamp("enabled_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const oauthAccounts = pgTable("oauth_accounts", {
@@ -162,9 +133,7 @@ export const oauthAccounts = pgTable("oauth_accounts", {
   provider: text("provider").notNull(),
   providerUserId: text("provider_user_id").notNull(),
   emailAtProvider: text("email_at_provider"),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const sessions = pgTable("sessions", {
@@ -177,20 +146,14 @@ export const sessions = pgTable("sessions", {
   ipAddress: text("ip_address"),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   revokedAt: timestamp("revoked_at", { withTimezone: true }),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const organizations = pgTable("organizations", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const organizationMembers = pgTable(
@@ -203,11 +166,9 @@ export const organizationMembers = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     role: organizationRole("role").notNull().default("member"),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [primaryKey({ columns: [t.organizationId, t.userId] })]
+  (t) => [primaryKey({ columns: [t.organizationId, t.userId] })],
 );
 
 export const organizationInvites = pgTable("organization_invites", {
@@ -227,9 +188,7 @@ export const organizationInvites = pgTable("organization_invites", {
   }),
   acceptedAt: timestamp("accepted_at", { withTimezone: true }),
   revokedAt: timestamp("revoked_at", { withTimezone: true }),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const aiConversations = pgTable("ai_conversations", {
@@ -241,12 +200,8 @@ export const aiConversations = pgTable("ai_conversations", {
   pinned: boolean("pinned").notNull().default(false),
   lastMessageAt: timestamp("last_message_at", { withTimezone: true }),
   archivedAt: timestamp("archived_at", { withTimezone: true }),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const aiMessages = pgTable("ai_messages", {
@@ -260,9 +215,7 @@ export const aiMessages = pgTable("ai_messages", {
   model: text("model"),
   inputTokens: integer("input_tokens"),
   outputTokens: integer("output_tokens"),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const journeys = pgTable("journeys", {
@@ -273,17 +226,12 @@ export const journeys = pgTable("journeys", {
   title: text("title").notNull(),
   description: text("description"),
   progress: smallint("progress").notNull().default(0),
-  sourceConversationId: uuid("source_conversation_id").references(
-    () => aiConversations.id,
-    { onDelete: "set null" }
-  ),
+  sourceConversationId: uuid("source_conversation_id").references(() => aiConversations.id, {
+    onDelete: "set null",
+  }),
   completedAt: timestamp("completed_at", { withTimezone: true }),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 // Journey Interactive Flow — created by scripts/migrations/add-journey-flow.sql.
@@ -300,9 +248,7 @@ export const journeySteps = pgTable("journey_steps", {
   tip: text("tip"),
   status: text("status").$type<JourneyStepStatus>().notNull().default("pending"),
   completedAt: timestamp("completed_at", { withTimezone: true }),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const journeyFiles = pgTable("journey_files", {
@@ -318,9 +264,7 @@ export const journeyFiles = pgTable("journey_files", {
   sizeBytes: integer("size_bytes").notNull(),
   storagePath: text("storage_path"),
   summary: text("summary"),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const journeyMessages = pgTable("journey_messages", {
@@ -333,22 +277,14 @@ export const journeyMessages = pgTable("journey_messages", {
     .references(() => users.id, { onDelete: "cascade" }),
   role: text("role").$type<"user" | "assistant">().notNull(),
   content: text("content").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 // Profile — Life Metrics — created by scripts/migrations/add-life-metrics.sql. A row
 // exists only while the user has Life Metrics turned on.
 
 export type LifeMetricKey =
-  | "purpose"
-  | "finances"
-  | "family"
-  | "health"
-  | "growth"
-  | "faith"
-  | "community";
+  "purpose" | "finances" | "family" | "health" | "growth" | "faith" | "community";
 
 export type LifeMetricCategory = {
   key: LifeMetricKey;
@@ -366,21 +302,14 @@ export const lifeMetrics = pgTable("life_metrics", {
   userId: uuid("user_id")
     .primaryKey()
     .references(() => users.id, { onDelete: "cascade" }),
-  consentedAt: timestamp("consented_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
+  consentedAt: timestamp("consented_at", { withTimezone: true }).notNull().defaultNow(),
   archetype: text("archetype"),
   tagline: text("tagline"),
   summary: text("summary"),
-  categories: jsonb("categories")
-    .$type<LifeMetricCategory[]>()
-    .notNull()
-    .default([]),
+  categories: jsonb("categories").$type<LifeMetricCategory[]>().notNull().default([]),
   conversationsAnalysed: integer("conversations_analysed").notNull().default(0),
   computedAt: timestamp("computed_at", { withTimezone: true }),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 // Web push — created by scripts/migrations/add-account-services.sql.
@@ -393,21 +322,13 @@ export const pushSubscriptions = pgTable("push_subscriptions", {
   endpoint: text("endpoint").notNull().unique(),
   p256dh: text("p256dh").notNull(),
   auth: text("auth").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 // In-app notifications — created by scripts/migrations/add-notifications.sql.
 
 export type NotificationKind =
-  | "step"
-  | "journey"
-  | "metrics"
-  | "file"
-  | "reply"
-  | "weekly"
-  | "reminder";
+  "step" | "journey" | "metrics" | "file" | "reply" | "weekly" | "reminder";
 
 export const notifications = pgTable(
   "notifications",
@@ -425,11 +346,9 @@ export const notifications = pgTable(
     /** One live notification per key, e.g. a weekly report per week. */
     dedupeKey: text("dedupe_key"),
     readAt: timestamp("read_at", { withTimezone: true }),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [uniqueIndex("notifications_user_dedupe_key").on(t.userId, t.dedupeKey)]
+  (t) => [uniqueIndex("notifications_user_dedupe_key").on(t.userId, t.dedupeKey)],
 );
 
 export const aiUsageDaily = pgTable(
@@ -440,14 +359,10 @@ export const aiUsageDaily = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     usageDate: date("usage_date").notNull(),
     messageCount: integer("message_count").notNull().default(0),
-    inputTokens: bigint("input_tokens", { mode: "number" })
-      .notNull()
-      .default(0),
-    outputTokens: bigint("output_tokens", { mode: "number" })
-      .notNull()
-      .default(0),
+    inputTokens: bigint("input_tokens", { mode: "number" }).notNull().default(0),
+    outputTokens: bigint("output_tokens", { mode: "number" }).notNull().default(0),
   },
-  (t) => [primaryKey({ columns: [t.userId, t.usageDate] })]
+  (t) => [primaryKey({ columns: [t.userId, t.usageDate] })],
 );
 
 export const concerns = pgTable("concerns", {
@@ -466,12 +381,8 @@ export const concerns = pgTable("concerns", {
   }),
   firstResponseAt: timestamp("first_response_at", { withTimezone: true }),
   resolvedAt: timestamp("resolved_at", { withTimezone: true }),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const concernMessages = pgTable("concern_messages", {
@@ -484,9 +395,7 @@ export const concernMessages = pgTable("concern_messages", {
   }),
   body: text("body").notNull(),
   isInternal: boolean("is_internal").notNull().default(false),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const posts = pgTable("posts", {
@@ -506,21 +415,15 @@ export const posts = pgTable("posts", {
   moderationNote: text("moderation_note"),
   publishedAt: timestamp("published_at", { withTimezone: true }),
   viewCount: integer("view_count").notNull().default(0),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const tags = pgTable("tags", {
   id: uuid("id").primaryKey().defaultRandom(),
   slug: text("slug").notNull(),
   name: text("name").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const postTags = pgTable(
@@ -533,7 +436,7 @@ export const postTags = pgTable(
       .notNull()
       .references(() => tags.id, { onDelete: "cascade" }),
   },
-  (t) => [primaryKey({ columns: [t.postId, t.tagId] })]
+  (t) => [primaryKey({ columns: [t.postId, t.tagId] })],
 );
 
 export const plans = pgTable("plans", {
@@ -548,12 +451,8 @@ export const plans = pgTable("plans", {
   features: jsonb("features").$type<Record<string, unknown>>().default({}),
   isActive: boolean("is_active").notNull().default(true),
   sortOrder: smallint("sort_order").notNull().default(0),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const subscriptions = pgTable("subscriptions", {
@@ -577,12 +476,8 @@ export const subscriptions = pgTable("subscriptions", {
   currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
   cancelAtPeriodEnd: boolean("cancel_at_period_end").notNull().default(false),
   canceledAt: timestamp("canceled_at", { withTimezone: true }),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const payments = pgTable("payments", {
@@ -604,10 +499,6 @@ export const payments = pgTable("payments", {
   providerPaymentId: text("provider_payment_id"),
   failureReason: text("failure_reason"),
   paidAt: timestamp("paid_at", { withTimezone: true }),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

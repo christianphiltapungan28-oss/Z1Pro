@@ -25,7 +25,10 @@ export async function POST(request: Request) {
   const ipLimit = await rateLimit(`forgot:ip:${clientIp(request)}`, 10, 60 * 60_000);
   const emailLimit = await rateLimit(`forgot:email:${email}`, 3, 60 * 60_000);
   if (!ipLimit.ok || !emailLimit.ok) {
-    return NextResponse.json({ error: "Too many requests. Try again in an hour." }, { status: 429 });
+    return NextResponse.json(
+      { error: "Too many requests. Try again in an hour." },
+      { status: 429 },
+    );
   }
 
   const [user] = await db
@@ -42,7 +45,8 @@ export async function POST(request: Request) {
       heading: "Reset your password",
       body: "Use the button below to choose a new password. The link works once and expires in 1 hour.",
       button: { label: "Choose a new password", url: emailLink(`/reset-password?token=${token}`) },
-      footer: "If you didn't ask to reset your password, you can ignore this email; your password won't change.",
+      footer:
+        "If you didn't ask to reset your password, you can ignore this email; your password won't change.",
     });
   }
 

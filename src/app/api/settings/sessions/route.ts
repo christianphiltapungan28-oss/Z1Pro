@@ -26,8 +26,8 @@ export async function GET() {
       and(
         eq(sessions.userId, userId),
         isNull(sessions.revokedAt),
-        gt(sessions.expiresAt, new Date())
-      )
+        gt(sessions.expiresAt, new Date()),
+      ),
     )
     .orderBy(desc(sessions.createdAt))
     .limit(50);

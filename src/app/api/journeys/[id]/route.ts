@@ -15,10 +15,7 @@ async function getOwnedJourney(id: string, userId: string) {
   return journey ?? null;
 }
 
-export async function PATCH(
-  request: Request,
-  ctx: RouteContext<"/api/journeys/[id]">
-) {
+export async function PATCH(request: Request, ctx: RouteContext<"/api/journeys/[id]">) {
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) {
@@ -46,19 +43,12 @@ export async function PATCH(
     update.completedAt = progress >= 100 ? new Date() : null;
   }
 
-  const [updated] = await db
-    .update(journeys)
-    .set(update)
-    .where(eq(journeys.id, id))
-    .returning();
+  const [updated] = await db.update(journeys).set(update).where(eq(journeys.id, id)).returning();
 
   return NextResponse.json(updated);
 }
 
-export async function DELETE(
-  _request: Request,
-  ctx: RouteContext<"/api/journeys/[id]">
-) {
+export async function DELETE(_request: Request, ctx: RouteContext<"/api/journeys/[id]">) {
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) {

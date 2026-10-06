@@ -6,7 +6,7 @@ import { organizationInvites, organizationMembers } from "@/db/schema";
 
 export async function DELETE(
   _request: Request,
-  ctx: RouteContext<"/api/orgs/[id]/invites/[inviteId]">
+  ctx: RouteContext<"/api/orgs/[id]/invites/[inviteId]">,
 ) {
   const session = await auth();
   const userId = session?.user?.id;
@@ -20,10 +20,7 @@ export async function DELETE(
     .select({ role: organizationMembers.role })
     .from(organizationMembers)
     .where(
-      and(
-        eq(organizationMembers.organizationId, orgId),
-        eq(organizationMembers.userId, userId)
-      )
+      and(eq(organizationMembers.organizationId, orgId), eq(organizationMembers.userId, userId)),
     )
     .limit(1);
   if (!membership) {
@@ -32,19 +29,14 @@ export async function DELETE(
   if (membership.role !== "owner" && membership.role !== "admin") {
     return NextResponse.json(
       { error: "Only org owners or admins can revoke invites" },
-      { status: 403 }
+      { status: 403 },
     );
   }
 
   const [updated] = await db
     .update(organizationInvites)
     .set({ revokedAt: new Date() })
-    .where(
-      and(
-        eq(organizationInvites.id, inviteId),
-        eq(organizationInvites.organizationId, orgId)
-      )
-    )
+    .where(and(eq(organizationInvites.id, inviteId), eq(organizationInvites.organizationId, orgId)))
     .returning();
 
   if (!updated) {

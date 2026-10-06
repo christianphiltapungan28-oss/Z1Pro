@@ -28,7 +28,7 @@ export async function POST(request: Request) {
   if (!ipLimit.ok || !emailLimit.ok) {
     return NextResponse.json(
       { error: "Too many attempts. Wait 15 minutes or reset your password." },
-      { status: 429 }
+      { status: 429 },
     );
   }
 
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
     if (isMissingTable(err)) {
       return NextResponse.json(
         { error: "Signing in with a password isn't available yet. Use Google or Facebook." },
-        { status: 503 }
+        { status: 503 },
       );
     }
     throw err;

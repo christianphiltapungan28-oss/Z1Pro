@@ -28,8 +28,11 @@ export async function startSession(response: NextResponse, request: Request, use
 
   // Auth.js uses the __Secure- cookie on HTTPS.
   const forwarded = request.headers.get("x-forwarded-proto");
-  const secure = (process.env.AUTH_URL ?? "").startsWith("https:") ||
-    (forwarded ? forwarded.split(",")[0].trim() === "https" : new URL(request.url).protocol === "https:");
+  const secure =
+    (process.env.AUTH_URL ?? "").startsWith("https:") ||
+    (forwarded
+      ? forwarded.split(",")[0].trim() === "https"
+      : new URL(request.url).protocol === "https:");
   response.cookies.set(secure ? "__Secure-authjs.session-token" : "authjs.session-token", token, {
     httpOnly: true,
     sameSite: "lax",

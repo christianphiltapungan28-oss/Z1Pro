@@ -9,10 +9,7 @@ async function getRole(orgId: string, userId: string) {
     .select({ role: organizationMembers.role })
     .from(organizationMembers)
     .where(
-      and(
-        eq(organizationMembers.organizationId, orgId),
-        eq(organizationMembers.userId, userId)
-      )
+      and(eq(organizationMembers.organizationId, orgId), eq(organizationMembers.userId, userId)),
     )
     .limit(1);
   return row?.role ?? null;
@@ -26,15 +23,15 @@ async function countOtherOwners(orgId: string, excludingUserId: string) {
       and(
         eq(organizationMembers.organizationId, orgId),
         eq(organizationMembers.role, "owner"),
-        ne(organizationMembers.userId, excludingUserId)
-      )
+        ne(organizationMembers.userId, excludingUserId),
+      ),
     );
   return rows.length;
 }
 
 export async function PATCH(
   request: Request,
-  ctx: RouteContext<"/api/orgs/[id]/members/[userId]">
+  ctx: RouteContext<"/api/orgs/[id]/members/[userId]">,
 ) {
   const session = await auth();
   const callerId = session?.user?.id;
@@ -51,7 +48,7 @@ export async function PATCH(
   if (callerRole !== "owner") {
     return NextResponse.json(
       { error: "Only the organization owner can change roles" },
-      { status: 403 }
+      { status: 403 },
     );
   }
 
@@ -73,7 +70,7 @@ export async function PATCH(
   ) {
     return NextResponse.json(
       { error: "An organization must have at least one owner" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -83,8 +80,8 @@ export async function PATCH(
     .where(
       and(
         eq(organizationMembers.organizationId, orgId),
-        eq(organizationMembers.userId, targetUserId)
-      )
+        eq(organizationMembers.userId, targetUserId),
+      ),
     )
     .returning();
 
@@ -93,7 +90,7 @@ export async function PATCH(
 
 export async function DELETE(
   _request: Request,
-  ctx: RouteContext<"/api/orgs/[id]/members/[userId]">
+  ctx: RouteContext<"/api/orgs/[id]/members/[userId]">,
 ) {
   const session = await auth();
   const callerId = session?.user?.id;
@@ -112,7 +109,7 @@ export async function DELETE(
   if (!isSelf && callerRole !== "owner" && callerRole !== "admin") {
     return NextResponse.json(
       { error: "Only org owners or admins can remove members" },
-      { status: 403 }
+      { status: 403 },
     );
   }
 
@@ -121,13 +118,10 @@ export async function DELETE(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  if (
-    targetRole === "owner" &&
-    (await countOtherOwners(orgId, targetUserId)) === 0
-  ) {
+  if (targetRole === "owner" && (await countOtherOwners(orgId, targetUserId)) === 0) {
     return NextResponse.json(
       { error: "An organization must have at least one owner" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -136,8 +130,8 @@ export async function DELETE(
     .where(
       and(
         eq(organizationMembers.organizationId, orgId),
-        eq(organizationMembers.userId, targetUserId)
-      )
+        eq(organizationMembers.userId, targetUserId),
+      ),
     );
 
   // If the removed member's default org was this one, point them at another

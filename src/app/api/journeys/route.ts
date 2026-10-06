@@ -32,21 +32,18 @@ export async function POST(request: Request) {
   if (!limit.ok) {
     return NextResponse.json(
       { error: "Too many journeys created. Try again shortly." },
-      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } }
+      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } },
     );
   }
 
   const body = await request.json().catch(() => ({}));
-  const title =
-    typeof body?.title === "string" ? body.title.trim().slice(0, 200) : "";
+  const title = typeof body?.title === "string" ? body.title.trim().slice(0, 200) : "";
   if (!title) {
     return NextResponse.json({ error: "Title is required" }, { status: 400 });
   }
 
   const description =
-    typeof body?.description === "string"
-      ? body.description.trim().slice(0, 2000)
-      : null;
+    typeof body?.description === "string" ? body.description.trim().slice(0, 2000) : null;
 
   let sourceConversationId: string | null = null;
   if (typeof body?.sourceConversationId === "string") {
@@ -54,10 +51,7 @@ export async function POST(request: Request) {
       .select({ id: aiConversations.id })
       .from(aiConversations)
       .where(
-        and(
-          eq(aiConversations.id, body.sourceConversationId),
-          eq(aiConversations.userId, userId)
-        )
+        and(eq(aiConversations.id, body.sourceConversationId), eq(aiConversations.userId, userId)),
       )
       .limit(1);
     sourceConversationId = owned?.id ?? null;

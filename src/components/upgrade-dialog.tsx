@@ -28,13 +28,7 @@ function formatPrice(plan: Plan) {
   return plan.billingInterval ? `${amount}/${plan.billingInterval}` : amount;
 }
 
-export function UpgradeDialog({
-  open,
-  onClose,
-}: {
-  open: boolean;
-  onClose: () => void;
-}) {
+export function UpgradeDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { data: session } = useSession();
   const canManageBilling = session?.user?.currentOrgRole !== "member";
 
@@ -118,9 +112,7 @@ export function UpgradeDialog({
             <CloseIcon className="h-4.5 w-4.5" />
           </button>
         </div>
-        <p className="mb-6 text-sm text-muted">
-          Pick the plan that fits how you use Z1P.pro.
-        </p>
+        <p className="mb-6 text-sm text-muted">Pick the plan that fits how you use Z1P.pro.</p>
 
         {!canManageBilling && (
           <p className="mb-4 rounded-lg bg-foreground/5 px-3 py-2 text-sm text-muted">
@@ -131,9 +123,7 @@ export function UpgradeDialog({
         {loading && <PlanCardsSkeleton className="grid grid-cols-1 gap-4 sm:grid-cols-3" />}
 
         {error && (
-          <p
-            role="alert"
-            className="mb-4 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-500">
+          <p role="alert" className="mb-4 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-500">
             {error}
           </p>
         )}
@@ -144,8 +134,7 @@ export function UpgradeDialog({
               const isCurrent = plan.code === currentPlanCode;
               const isFreePlan = plan.priceMinorUnits === 0;
               const price = formatPrice(plan);
-              const canCheckout =
-                !isCurrent && !isFreePlan && price !== null && canManageBilling;
+              const canCheckout = !isCurrent && !isFreePlan && price !== null && canManageBilling;
               const label = isCurrent
                 ? "Current plan"
                 : price === null
@@ -169,9 +158,7 @@ export function UpgradeDialog({
                     {price ?? "Coming soon"}
                   </p>
                   {plan.description && (
-                    <p className="mt-1 text-xs text-muted">
-                      {plan.description}
-                    </p>
+                    <p className="mt-1 text-xs text-muted">{plan.description}</p>
                   )}
 
                   {plan.features.length > 0 && (
@@ -190,9 +177,7 @@ export function UpgradeDialog({
 
                   <button
                     type="button"
-                    onClick={
-                      canCheckout ? () => handleCheckout(plan) : undefined
-                    }
+                    onClick={canCheckout ? () => handleCheckout(plan) : undefined}
                     disabled={!canCheckout || checkingOut !== null}
                     className={`mt-5 w-full rounded-full py-2.5 text-sm font-semibold transition-opacity ${
                       canCheckout
@@ -222,9 +207,8 @@ export function UpgradeDialog({
             <Link href="/refunds" target="_blank" className="underline">
               Refund Policy
             </Link>
-            . If you are under 18, you confirm your parent or guardian has
-            approved this purchase. Payment is handled on our payment
-            provider&rsquo;s secure page.
+            . If you are under 18, you confirm your parent or guardian has approved this purchase.
+            Payment is handled on our payment provider&rsquo;s secure page.
           </p>
         )}
       </div>

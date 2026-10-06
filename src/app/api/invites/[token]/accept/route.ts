@@ -9,10 +9,7 @@ function hashToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
 
-export async function POST(
-  _request: Request,
-  ctx: RouteContext<"/api/invites/[token]/accept">
-) {
+export async function POST(_request: Request, ctx: RouteContext<"/api/invites/[token]/accept">) {
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) {
@@ -36,7 +33,7 @@ export async function POST(
   if (invite.email && invite.email !== session?.user?.email) {
     return NextResponse.json(
       { error: "This invite was sent to a different email address" },
-      { status: 403 }
+      { status: 403 },
     );
   }
 
@@ -46,8 +43,8 @@ export async function POST(
     .where(
       and(
         eq(organizationMembers.organizationId, invite.organizationId),
-        eq(organizationMembers.userId, userId)
-      )
+        eq(organizationMembers.userId, userId),
+      ),
     )
     .limit(1);
 

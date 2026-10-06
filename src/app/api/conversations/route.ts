@@ -35,7 +35,7 @@ export async function GET(request: Request) {
     if (!limit.ok) {
       return NextResponse.json(
         { error: "Too many searches. Try again shortly." },
-        { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } }
+        { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } },
       );
     }
   }
@@ -55,15 +55,12 @@ export async function GET(request: Request) {
           sql`exists (
             select 1 from ai_messages m
             where m.conversation_id = ${outerId} and m.content ilike ${pattern}
-          )`
+          )`,
         )
-      : undefined
+      : undefined,
   );
 
-  const [{ total }] = await db
-    .select({ total: count() })
-    .from(aiConversations)
-    .where(where);
+  const [{ total }] = await db.select({ total: count() }).from(aiConversations).where(where);
 
   const items = await db
     .select({
@@ -83,9 +80,7 @@ export async function GET(request: Request) {
     })
     .from(aiConversations)
     .where(where)
-    .orderBy(
-      desc(sql`coalesce(${aiConversations.lastMessageAt}, ${aiConversations.createdAt})`)
-    )
+    .orderBy(desc(sql`coalesce(${aiConversations.lastMessageAt}, ${aiConversations.createdAt})`))
     .limit(PAGE_SIZE)
     .offset((page - 1) * PAGE_SIZE);
 
@@ -103,7 +98,7 @@ export async function POST(request: Request) {
   if (!limit.ok) {
     return NextResponse.json(
       { error: "Too many conversations created. Try again shortly." },
-      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } }
+      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } },
     );
   }
 

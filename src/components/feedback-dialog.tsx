@@ -80,8 +80,8 @@ export function FeedbackDialog({ open, onClose }: { open: boolean; onClose: () =
               Send feedback
             </h2>
             <p className="text-sm text-muted">
-              You&rsquo;re testing an early version of Z1P. Tell us what broke,
-              what confused you, or what you&rsquo;d love to see.
+              You&rsquo;re testing an early version of Z1P. Tell us what broke, what confused you,
+              or what you&rsquo;d love to see.
             </p>
           </div>
           <button
@@ -150,8 +150,8 @@ export function FeedbackDialog({ open, onClose }: { open: boolean; onClose: () =
               />
             </label>
             <p className="text-xs text-muted">
-              We&rsquo;ll include which screen you&rsquo;re on and your browser, to
-              help us find the problem.
+              We&rsquo;ll include which screen you&rsquo;re on and your browser, to help us find the
+              problem.
             </p>
             {error && (
               <p role="alert" className="text-sm text-red-500">

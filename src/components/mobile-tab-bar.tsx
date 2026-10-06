@@ -33,7 +33,14 @@ const TABS: {
   requiresAuth: boolean;
 }[] = [
   { label: "Home", icon: "home", width: 52, views: ["home"], target: "home", requiresAuth: false },
-  { label: "Journeys", icon: "stacks", width: 61, views: ["journeys"], target: "journeys", requiresAuth: true },
+  {
+    label: "Journeys",
+    icon: "stacks",
+    width: 61,
+    views: ["journeys"],
+    target: "journeys",
+    requiresAuth: true,
+  },
   {
     label: "Convos",
     icon: "chat-spark",
@@ -125,7 +132,7 @@ export function MobileTabBar({
         <Avatar
           key={user?.image ?? "fallback"}
           image={user?.image}
-          name={authenticated ? user?.name ?? "" : ""}
+          name={authenticated ? (user?.name ?? "") : ""}
         />
       </button>
     </nav>

@@ -10,8 +10,7 @@ function GlossyOrb({ size }: { size: number }) {
       <div
         className="absolute inset-[-30%] rounded-full opacity-70 blur-2xl"
         style={{
-          background:
-            "conic-gradient(from 90deg, #ff8fb1, #7b6bff, #5ad1ff, #ff8fb1)",
+          background: "conic-gradient(from 90deg, #ff8fb1, #7b6bff, #5ad1ff, #ff8fb1)",
           animation: "orb-spin 9s linear infinite",
         }}
       />
@@ -21,8 +20,7 @@ function GlossyOrb({ size }: { size: number }) {
           animation: "orb-pulse 4s ease-in-out infinite",
           background:
             "radial-gradient(circle at 35% 30%, #eaf6ff 0%, #8fd3ff 18%, #5a7bff 42%, #3a2fb0 68%, #150c33 100%)",
-          boxShadow:
-            "0 0 40px rgba(122,107,255,0.55), inset 0 0 30px rgba(0,0,0,0.35)",
+          boxShadow: "0 0 40px rgba(122,107,255,0.55), inset 0 0 30px rgba(0,0,0,0.35)",
         }}
       >
         <div className="absolute inset-0 flex items-center justify-center gap-[18%]">
@@ -51,8 +49,7 @@ function SoftOrb({ size }: { size: number }) {
       <div
         className="absolute inset-[-25%] rounded-full opacity-70 blur-2xl"
         style={{
-          background:
-            "conic-gradient(from 45deg, #ff1da5, #7b6bff, #ffb15e, #ff1da5)",
+          background: "conic-gradient(from 45deg, #ff1da5, #7b6bff, #ffb15e, #ff1da5)",
           animation: "orb-drift 6s ease-in-out infinite",
         }}
       />
@@ -61,8 +58,7 @@ function SoftOrb({ size }: { size: number }) {
         style={{
           background:
             "radial-gradient(circle at 38% 30%, #ffb15e 0%, #ff1da5 42%, #c81fb0 68%, #5a3fd6 100%)",
-          boxShadow:
-            "0 8px 30px rgba(255,29,165,0.35), inset 0 0 24px rgba(255,255,255,0.35)",
+          boxShadow: "0 8px 30px rgba(255,29,165,0.35), inset 0 0 24px rgba(255,255,255,0.35)",
         }}
       />
     </div>
@@ -76,8 +72,7 @@ function MeshOrb({ size }: { size: number }) {
       <div
         className="absolute inset-[-35%] rounded-full opacity-80 blur-2xl"
         style={{
-          background:
-            "conic-gradient(from 120deg, #ff2f7e, #3a49ff, #38e0d8, #ff2f7e)",
+          background: "conic-gradient(from 120deg, #ff2f7e, #3a49ff, #38e0d8, #ff2f7e)",
           animation: "orb-spin 8s linear infinite",
         }}
       />

@@ -26,7 +26,7 @@ export async function POST(request: Request) {
   if (!payload) {
     return NextResponse.json(
       { error: "This reset link has expired or was already used. Ask for a new one." },
-      { status: 400 }
+      { status: 400 },
     );
   }
 

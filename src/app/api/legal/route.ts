@@ -49,8 +49,10 @@ export async function POST(request: Request) {
   // gets told to reload rather than recording an old version.
   if (body?.version !== LEGAL.lastUpdated) {
     return NextResponse.json(
-      { error: "The policies have been updated. Please reload the page to see the latest versions." },
-      { status: 409 }
+      {
+        error: "The policies have been updated. Please reload the page to see the latest versions.",
+      },
+      { status: 409 },
     );
   }
   const acceptedAt = new Date();

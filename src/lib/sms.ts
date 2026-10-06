@@ -15,7 +15,8 @@ export async function sendSms(number: string, message: string) {
     number,
     message,
   });
-  if (process.env.SEMAPHORE_SENDER_NAME) params.set("sendername", process.env.SEMAPHORE_SENDER_NAME);
+  if (process.env.SEMAPHORE_SENDER_NAME)
+    params.set("sendername", process.env.SEMAPHORE_SENDER_NAME);
   try {
     const res = await fetch("https://api.semaphore.co/api/v4/messages", {
       method: "POST",

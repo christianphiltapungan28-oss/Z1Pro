@@ -67,15 +67,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             role: organizationMembers.role,
           })
           .from(organizationMembers)
-          .innerJoin(
-            organizations,
-            eq(organizationMembers.organizationId, organizations.id)
-          )
+          .innerJoin(organizations, eq(organizationMembers.organizationId, organizations.id))
           .where(
             and(
               eq(organizationMembers.organizationId, row.defaultOrgId),
-              eq(organizationMembers.userId, user.id)
-            )
+              eq(organizationMembers.userId, user.id),
+            ),
           )
           .limit(1);
 

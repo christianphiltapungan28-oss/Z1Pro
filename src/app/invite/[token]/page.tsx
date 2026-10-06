@@ -105,8 +105,8 @@ export default function InvitePage() {
               </Link>
             ) : !invite.emailMatches ? (
               <p className="mt-6 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-500">
-                This invite was sent to a different email address. Sign in
-                with that account to join.
+                This invite was sent to a different email address. Sign in with that account to
+                join.
               </p>
             ) : (
               <button

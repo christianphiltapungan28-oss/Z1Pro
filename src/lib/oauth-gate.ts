@@ -18,12 +18,18 @@ export const CONNECT_RETURN = "/?view=settings";
 /** The user behind this request's session cookie, if it's a live session. */
 async function signedInUserId() {
   const jar = await cookies();
-  const token = jar.get("__Secure-authjs.session-token")?.value ?? jar.get("authjs.session-token")?.value;
+  const token =
+    jar.get("__Secure-authjs.session-token")?.value ?? jar.get("authjs.session-token")?.value;
   if (!token) return null;
   const [row] = await db
     .select({ userId: sessions.userId, expiresAt: sessions.expiresAt })
     .from(sessions)
-    .where(and(eq(sessions.tokenHash, createHash("sha256").update(token).digest("hex")), isNull(sessions.revokedAt)))
+    .where(
+      and(
+        eq(sessions.tokenHash, createHash("sha256").update(token).digest("hex")),
+        isNull(sessions.revokedAt),
+      ),
+    )
     .limit(1);
   return row && row.expiresAt.getTime() > Date.now() ? row.userId : null;
 }
@@ -40,12 +46,17 @@ async function signedInUserId() {
 export async function checkOAuthSignIn(
   email: string | null | undefined,
   provider: string,
-  providerAccountId: string
+  providerAccountId: string,
 ): Promise<true | string> {
   const [linked] = await db
     .select({ userId: oauthAccounts.userId })
     .from(oauthAccounts)
-    .where(and(eq(oauthAccounts.provider, provider), eq(oauthAccounts.providerUserId, providerAccountId)))
+    .where(
+      and(
+        eq(oauthAccounts.provider, provider),
+        eq(oauthAccounts.providerUserId, providerAccountId),
+      ),
+    )
     .limit(1);
 
   const signedIn = await signedInUserId();
@@ -61,7 +72,9 @@ export async function checkOAuthSignIn(
     const [byEmail] = await db
       .select({ id: users.id })
       .from(users)
-      .where(and(sql`lower(${users.email}) = ${email.trim().toLowerCase()}`, isNull(users.deletedAt)))
+      .where(
+        and(sql`lower(${users.email}) = ${email.trim().toLowerCase()}`, isNull(users.deletedAt)),
+      )
       .limit(1);
     if (!byEmail) return true; // a new account
     if (!LINKS_BY_EMAIL.has(provider)) return `/login?error=${await otherMethod(byEmail.id)}`;
@@ -90,7 +103,12 @@ export async function linkOAuthAccount(userId: string, link: PendingLink) {
   const [existing] = await db
     .select({ userId: oauthAccounts.userId })
     .from(oauthAccounts)
-    .where(and(eq(oauthAccounts.provider, link.provider), eq(oauthAccounts.providerUserId, link.providerAccountId)))
+    .where(
+      and(
+        eq(oauthAccounts.provider, link.provider),
+        eq(oauthAccounts.providerUserId, link.providerAccountId),
+      ),
+    )
     .limit(1);
   if (existing) return existing.userId === userId;
   await db.insert(oauthAccounts).values({
@@ -122,7 +140,8 @@ async function otherMethod(userId: string) {
 /** Where the person was heading, from Auth.js's callback-url cookie, as a same-site path. */
 async function callbackPath() {
   const jar = await cookies();
-  const value = jar.get("__Secure-authjs.callback-url")?.value ?? jar.get("authjs.callback-url")?.value;
+  const value =
+    jar.get("__Secure-authjs.callback-url")?.value ?? jar.get("authjs.callback-url")?.value;
   if (!value) return "/";
   try {
     const url = new URL(value, "http://x");

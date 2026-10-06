@@ -36,26 +36,23 @@ export default function CookiesPage() {
       <p className="updated">Last updated: {LEGAL.lastUpdated}</p>
 
       <p>
-        This policy explains the cookies and similar browser storage that{" "}
-        {LEGAL.productName} uses. Cookies are small text files a website stores
-        in your browser.
+        This policy explains the cookies and similar browser storage that {LEGAL.productName} uses.
+        Cookies are small text files a website stores in your browser.
       </p>
 
       <h2>The short version</h2>
       <p>
-        We only use cookies and storage that the Service needs to work or that
-        remember a choice you made. We do not use advertising, analytics,
-        tracking or social media cookies, and we do not embed third-party
-        content that sets its own cookies. Because of this, we do not show a
-        cookie consent banner: strictly necessary storage does not require
-        consent.
+        We only use cookies and storage that the Service needs to work or that remember a choice you
+        made. We do not use advertising, analytics, tracking or social media cookies, and we do not
+        embed third-party content that sets its own cookies. Because of this, we do not show a
+        cookie consent banner: strictly necessary storage does not require consent.
       </p>
 
       <h2>Cookies we set</h2>
       <p>
-        All of these are first-party, strictly necessary cookies. In production
-        their names start with <code>__Secure-</code> or <code>__Host-</code>,
-        which means browsers only send them over HTTPS.
+        All of these are first-party, strictly necessary cookies. In production their names start
+        with <code>__Secure-</code> or <code>__Host-</code>, which means browsers only send them
+        over HTTPS.
       </p>
       <div className="table-scroll">
         <table>
@@ -104,22 +101,21 @@ export default function CookiesPage() {
 
       <h2>Third-party sites</h2>
       <p>
-        When you sign in, you are sent to Google or Facebook, and when you pay,
-        you are sent to our payment provider. Those sites set their own cookies
-        under their own policies. Your profile photo is loaded from Google or
-        Facebook&rsquo;s servers.
+        When you sign in, you are sent to Google or Facebook, and when you pay, you are sent to our
+        payment provider. Those sites set their own cookies under their own policies. Your profile
+        photo is loaded from Google or Facebook&rsquo;s servers.
       </p>
 
       <h2>Managing cookies</h2>
       <p>
-        You can block or delete cookies in your browser settings. If you block
-        the cookies above, you will not be able to sign in.
+        You can block or delete cookies in your browser settings. If you block the cookies above,
+        you will not be able to sign in.
       </p>
 
       <h2>Changes</h2>
       <p>
-        If we ever add analytics or other non-essential cookies, we will update
-        this policy and ask for your consent before setting them.
+        If we ever add analytics or other non-essential cookies, we will update this policy and ask
+        for your consent before setting them.
       </p>
 
       <p>

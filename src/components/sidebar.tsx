@@ -20,7 +20,6 @@ type OrgSummary = {
   isDefault: boolean;
 };
 
-
 const navItems: {
   label: string;
   icon: IconSetName;
@@ -217,9 +216,7 @@ export function Sidebar({
                 type="button"
                 aria-current={view === itemView ? "page" : undefined}
                 onClick={
-                  requiresAuth && !authenticated
-                    ? onRequireAuth
-                    : () => onChangeView(itemView)
+                  requiresAuth && !authenticated ? onRequireAuth : () => onChangeView(itemView)
                 }
                 className={navItemClass(view === itemView)}
               >
@@ -248,9 +245,7 @@ export function Sidebar({
             </button>
           </nav>
 
-          <p className="mt-6 py-2.5 pr-2.5 pl-2.5 text-base font-medium text-sidebar-fg">
-            Recent
-          </p>
+          <p className="mt-6 py-2.5 pr-2.5 pl-2.5 text-base font-medium text-sidebar-fg">Recent</p>
 
           {journeys.length > 0 ? (
             <div className="flex flex-col">
@@ -364,9 +359,7 @@ export function Sidebar({
                     >
                       <span className="truncate">{org.name}</span>
                       {switchingOrgId === org.id && (
-                        <span className="shrink-0 text-xs text-sidebar-muted">
-                          …
-                        </span>
+                        <span className="shrink-0 text-xs text-sidebar-muted">…</span>
                       )}
                     </button>
                   ))}
@@ -405,15 +398,11 @@ export function Sidebar({
                       ? `Switch organization (current: ${currentOrgName ?? "loading"})`
                       : undefined
                   }
-                  onClick={
-                    authenticated
-                      ? () => setOrgMenuOpen((v) => !v)
-                      : onRequireAuth
-                  }
+                  onClick={authenticated ? () => setOrgMenuOpen((v) => !v) : onRequireAuth}
                   className="flex min-w-0 items-center gap-1 text-left text-sm text-sidebar-fg hover:text-accent"
                 >
                   <span className="truncate">
-                    {authenticated ? currentOrgName ?? "…" : "Sign in"}
+                    {authenticated ? (currentOrgName ?? "…") : "Sign in"}
                   </span>
                   {authenticated && (
                     <ChevronRightIcon
@@ -427,9 +416,7 @@ export function Sidebar({
             </div>
             <button
               type="button"
-              onClick={
-                status === "authenticated" ? () => signOut() : onRequireAuth
-              }
+              onClick={status === "authenticated" ? () => signOut() : onRequireAuth}
               aria-label={status === "authenticated" ? "Log out" : "Sign in"}
               className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sidebar-fg hover:text-accent"
             >

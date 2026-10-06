@@ -26,7 +26,10 @@ export async function POST(request: Request) {
   }
   const limit = await rateLimit(`2fa:settings:${userId}`, 20, 15 * 60_000);
   if (!limit.ok) {
-    return NextResponse.json({ error: "Too many attempts. Try again in 15 minutes." }, { status: 429 });
+    return NextResponse.json(
+      { error: "Too many attempts. Try again in 15 minutes." },
+      { status: 429 },
+    );
   }
 
   const status = await getTwoFactor(userId);
@@ -49,14 +52,21 @@ export async function POST(request: Request) {
   if (body?.step === "start") {
     if (!hasPassword) {
       return NextResponse.json(
-        { error: "Two-factor login protects password log-ins. Set a password first (Forgot Password on the log-in page)." },
-        { status: 409 }
+        {
+          error:
+            "Two-factor login protects password log-ins. Set a password first (Forgot Password on the log-in page).",
+        },
+        { status: 409 },
       );
     }
     if (status.row) {
       return NextResponse.json({ error: "Two-factor login is already on." }, { status: 409 });
     }
-    const [user] = await db.select({ email: users.email }).from(users).where(eq(users.id, userId)).limit(1);
+    const [user] = await db
+      .select({ email: users.email })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
     const secret = newTotpSecret();
     await redis.set(pendingKey(userId), secret, { ex: 10 * 60 });
     const uri = totpUri(secret, user?.email ?? "account");
@@ -71,8 +81,11 @@ export async function POST(request: Request) {
     }
     if (verifyTotp(secret, code) === null) {
       return NextResponse.json(
-        { error: "That code isn't right. Check the time on your phone is set automatically, then try the newest code." },
-        { status: 400 }
+        {
+          error:
+            "That code isn't right. Check the time on your phone is set automatically, then try the newest code.",
+        },
+        { status: 400 },
       );
     }
     const backup = newBackupCodes();

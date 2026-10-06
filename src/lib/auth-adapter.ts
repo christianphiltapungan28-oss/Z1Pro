@@ -35,20 +35,12 @@ export function createDbAdapter(): Adapter {
     },
 
     async getUser(id) {
-      const [row] = await db
-        .select()
-        .from(users)
-        .where(eq(users.id, id))
-        .limit(1);
+      const [row] = await db.select().from(users).where(eq(users.id, id)).limit(1);
       return row ? toAdapterUser(row) : null;
     },
 
     async getUserByEmail(email) {
-      const [row] = await db
-        .select()
-        .from(users)
-        .where(eq(users.email, email))
-        .limit(1);
+      const [row] = await db.select().from(users).where(eq(users.email, email)).limit(1);
       return row ? toAdapterUser(row) : null;
     },
 
@@ -60,8 +52,8 @@ export function createDbAdapter(): Adapter {
         .where(
           and(
             eq(oauthAccounts.provider, provider),
-            eq(oauthAccounts.providerUserId, providerAccountId)
-          )
+            eq(oauthAccounts.providerUserId, providerAccountId),
+          ),
         )
         .limit(1);
       return row ? toAdapterUser(row.user) : null;
@@ -100,8 +92,8 @@ export function createDbAdapter(): Adapter {
         .where(
           and(
             eq(oauthAccounts.provider, provider),
-            eq(oauthAccounts.providerUserId, providerAccountId)
-          )
+            eq(oauthAccounts.providerUserId, providerAccountId),
+          ),
         );
     },
 
@@ -120,9 +112,7 @@ export function createDbAdapter(): Adapter {
         .select({ session: sessions, user: users })
         .from(sessions)
         .innerJoin(users, eq(sessions.userId, users.id))
-        .where(
-          and(eq(sessions.tokenHash, tokenHash), isNull(sessions.revokedAt))
-        )
+        .where(and(eq(sessions.tokenHash, tokenHash), isNull(sessions.revokedAt)))
         .limit(1);
       if (!row) return null;
       if (row.session.expiresAt.getTime() < Date.now()) return null;

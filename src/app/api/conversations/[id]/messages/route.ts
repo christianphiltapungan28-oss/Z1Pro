@@ -12,11 +12,7 @@ import {
 } from "@/lib/plan";
 import { notify } from "@/lib/notifications";
 import { openaiFetch } from "@/lib/openai";
-import {
-  adjustDailyCount,
-  FAIR_USE_DAILY_MESSAGES,
-  todayUtc,
-} from "@/lib/chat-usage";
+import { adjustDailyCount, FAIR_USE_DAILY_MESSAGES, todayUtc } from "@/lib/chat-usage";
 import {
   chatFileProblem,
   chatFileType,
@@ -73,7 +69,7 @@ async function getOwnedConversation(id: string, userId: string) {
 
 export async function GET(
   _request: Request,
-  ctx: RouteContext<"/api/conversations/[id]/messages">
+  ctx: RouteContext<"/api/conversations/[id]/messages">,
 ) {
   const session = await auth();
   const userId = session?.user?.id;
@@ -126,7 +122,7 @@ function trimHistory<T extends { content: string }>(newestFirst: T[]) {
 
 export async function POST(
   request: Request,
-  ctx: RouteContext<"/api/conversations/[id]/messages">
+  ctx: RouteContext<"/api/conversations/[id]/messages">,
 ) {
   const session = await auth();
   const userId = session?.user?.id;
@@ -138,7 +134,7 @@ export async function POST(
   if (!limit.ok) {
     return NextResponse.json(
       { error: "Too many messages sent. Try again shortly." },
-      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } }
+      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } },
     );
   }
 
@@ -156,7 +152,10 @@ export async function POST(
     // Reject oversized uploads before reading the body.
     const declared = Number(request.headers.get("content-length"));
     if (declared > MAX_CHAT_FILES * MAX_CHAT_FILE_BYTES + 256 * 1024) {
-      return NextResponse.json({ error: `Attach up to ${MAX_CHAT_FILES} files of 8 MB or less.` }, { status: 413 });
+      return NextResponse.json(
+        { error: `Attach up to ${MAX_CHAT_FILES} files of 8 MB or less.` },
+        { status: 413 },
+      );
     }
     const form = await request.formData().catch(() => null);
     if (!form) {
@@ -172,13 +171,13 @@ export async function POST(
   }
 
   if (!text && files.length === 0) {
-    return NextResponse.json(
-      { error: "Message content is required" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Message content is required" }, { status: 400 });
   }
   if (files.length > MAX_CHAT_FILES) {
-    return NextResponse.json({ error: `Attach up to ${MAX_CHAT_FILES} files at a time.` }, { status: 400 });
+    return NextResponse.json(
+      { error: `Attach up to ${MAX_CHAT_FILES} files at a time.` },
+      { status: 400 },
+    );
   }
   for (const file of files) {
     const problem = chatFileProblem(file);
@@ -190,37 +189,35 @@ export async function POST(
     if (!fileLimit.ok) {
       return NextResponse.json(
         { error: "You've attached a lot of files this hour. Try again later." },
-        { status: 429, headers: { "Retry-After": String(fileLimit.retryAfterSeconds) } }
+        { status: 429, headers: { "Retry-After": String(fileLimit.retryAfterSeconds) } },
       );
     }
   }
-  const content = withAttachedLine(text, files.map((f) => f.name));
+  const content = withAttachedLine(
+    text,
+    files.map((f) => f.name),
+  );
   if (text.length > 8000) {
     return NextResponse.json(
       { error: "Message is too long (max 8000 characters)" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
   if (!process.env.OPENAI_API_KEY) {
-    return NextResponse.json(
-      { error: "AI is not configured" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "AI is not configured" }, { status: 500 });
   }
 
   if (await isOverDailyBudget("chatTokens")) {
     return NextResponse.json(
       { error: "The assistant is temporarily unavailable. Please try again later." },
-      { status: 503 }
+      { status: 503 },
     );
   }
 
   const usageDate = todayUtc();
   const currentOrg = await getCurrentOrg();
-  const planCode = currentOrg
-    ? await getCurrentPlanCode(currentOrg.orgId)
-    : "free";
+  const planCode = currentOrg ? await getCurrentPlanCode(currentOrg.orgId) : "free";
   const planDailyLimit = getDailyMessageLimit(planCode);
   const dailyLimit = planDailyLimit ?? FAIR_USE_DAILY_MESSAGES;
   const model = getModelForPlan(planCode);
@@ -234,12 +231,12 @@ export async function POST(
     if (planDailyLimit === null) {
       await sendAlert(
         `fair-use:${userId}`,
-        `User ${userId} (${planCode} plan) hit the ${FAIR_USE_DAILY_MESSAGES}-message fair-use cap today.`
+        `User ${userId} (${planCode} plan) hit the ${FAIR_USE_DAILY_MESSAGES}-message fair-use cap today.`,
       );
     }
     return NextResponse.json(
       { error: "Daily message limit reached", planCode, dailyLimit },
-      { status: 429 }
+      { status: 429 },
     );
   }
 
@@ -259,12 +256,12 @@ export async function POST(
   // The attached files go with the newest message only (the one being
   // answered); earlier turns just carry the "[Attached: …]" line.
   const attachedParts = await Promise.all(
-    files.map(async (f) => fileContent(f.name, chatFileType(f), await f.arrayBuffer()))
+    files.map(async (f) => fileContent(f.name, chatFileType(f), await f.arrayBuffer())),
   );
   const turns = history.map((m, i) =>
     i === history.length - 1 && attachedParts.length > 0
       ? { role: m.role, content: [{ type: "text", text: m.content }, ...attachedParts] }
-      : { role: m.role, content: m.content }
+      : { role: m.role, content: m.content },
   );
 
   let completionRes: Response | null = null;
@@ -285,35 +282,28 @@ export async function POST(
             // varies per request, like the voice instruction, goes last.
             { role: "system", content: systemPrompt(modelLabel) },
             ...turns,
-            ...(mode === "voice"
-              ? [{ role: "system", content: VOICE_INSTRUCTIONS }]
-              : []),
+            ...(mode === "voice" ? [{ role: "system", content: VOICE_INSTRUCTIONS }] : []),
           ],
         }),
       },
-      { timeoutMs: 90_000, maxRetries: 1 }
+      { timeoutMs: 90_000, maxRetries: 1 },
     );
   } catch (err) {
     console.error("OpenAI request failed", err);
   }
 
   if (!completionRes?.ok) {
-    const errorText = completionRes
-      ? await completionRes.text().catch(() => "")
-      : "";
+    const errorText = completionRes ? await completionRes.text().catch(() => "") : "";
     console.error("OpenAI request failed", completionRes?.status, errorText);
     if (errorText.includes("insufficient_quota")) {
       await sendAlert(
         "openai-quota",
-        "OpenAI returned insufficient_quota: the account is out of credit or hit its budget limit."
+        "OpenAI returned insufficient_quota: the account is out of credit or hit its budget limit.",
       );
     }
     // Failed replies don't count against the user's daily limit.
     await adjustDailyCount(userId, usageDate, -1);
-    return NextResponse.json(
-      { error: "AI request failed", userMessage },
-      { status: 502 }
-    );
+    return NextResponse.json({ error: "AI request failed", userMessage }, { status: 502 });
   }
 
   const completion = await completionRes.json();
@@ -348,12 +338,7 @@ export async function POST(
       inputTokens: sql`${aiUsageDaily.inputTokens} + ${inputTokens}`,
       outputTokens: sql`${aiUsageDaily.outputTokens} + ${outputTokens}`,
     })
-    .where(
-      and(
-        eq(aiUsageDaily.userId, userId),
-        eq(aiUsageDaily.usageDate, usageDate)
-      )
-    );
+    .where(and(eq(aiUsageDaily.userId, userId), eq(aiUsageDaily.usageDate, usageDate)));
 
   await db
     .update(aiConversations)

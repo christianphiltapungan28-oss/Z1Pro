@@ -18,7 +18,8 @@ export function useChatAttachments() {
     for (const file of Array.from(picked)) {
       const why = chatFileProblem(file);
       if (why) issue = why;
-      else if (next.length >= MAX_CHAT_FILES) issue = `You can attach up to ${MAX_CHAT_FILES} files to a message.`;
+      else if (next.length >= MAX_CHAT_FILES)
+        issue = `You can attach up to ${MAX_CHAT_FILES} files to a message.`;
       else next.push(file);
     }
     setFiles(next);

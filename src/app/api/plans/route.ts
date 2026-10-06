@@ -22,17 +22,14 @@ export async function GET(request: Request) {
     .orderBy(asc(plans.sortOrder));
 
   const currentOrg = await getCurrentOrg();
-  const currentPlanCode = currentOrg
-    ? await getCurrentPlanCode(currentOrg.orgId)
-    : "free";
+  const currentPlanCode = currentOrg ? await getCurrentPlanCode(currentOrg.orgId) : "free";
 
   // Skip the IP-based country lookup (sent to ipwho.is) while Stripe is off.
   const country = STRIPE_ENABLED ? await getCountryCode(request) : "PH";
 
   return NextResponse.json({
     plans: activePlans.map((plan) => {
-      const useUsd =
-        STRIPE_ENABLED && country !== "PH" && plan.priceUsdMinorUnits !== null;
+      const useUsd = STRIPE_ENABLED && country !== "PH" && plan.priceUsdMinorUnits !== null;
       return {
         code: plan.code,
         name: plan.name,

@@ -25,10 +25,7 @@ export async function GET() {
       role: organizationMembers.role,
     })
     .from(organizationMembers)
-    .innerJoin(
-      organizations,
-      eq(organizationMembers.organizationId, organizations.id)
-    )
+    .innerJoin(organizations, eq(organizationMembers.organizationId, organizations.id))
     .where(eq(organizationMembers.userId, userId));
 
   return NextResponse.json({
@@ -50,17 +47,14 @@ export async function POST(request: Request) {
   if (!limit.ok) {
     return NextResponse.json(
       { error: "Too many organizations created. Try again later." },
-      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } }
+      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } },
     );
   }
 
   const body = await request.json().catch(() => ({}));
   const name = typeof body?.name === "string" ? body.name.trim() : "";
   if (!name) {
-    return NextResponse.json(
-      { error: "Organization name is required" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Organization name is required" }, { status: 400 });
   }
 
   const [org] = await db.insert(organizations).values({ name }).returning();
@@ -71,10 +65,7 @@ export async function POST(request: Request) {
     role: "owner",
   });
 
-  await db
-    .update(users)
-    .set({ defaultOrgId: org.id })
-    .where(eq(users.id, userId));
+  await db.update(users).set({ defaultOrgId: org.id }).where(eq(users.id, userId));
 
   return NextResponse.json(org, { status: 201 });
 }

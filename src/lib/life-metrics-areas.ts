@@ -12,11 +12,53 @@ export const LIFE_AREAS: {
   mobileIcon: string;
   covers: string;
 }[] = [
-  { key: "purpose", name: "Purpose", icon: "profile/target", mobileIcon: "profile/target", covers: "meaning, direction, career and long-term goals" },
-  { key: "finances", name: "Finances", icon: "profile/wallet", mobileIcon: "profile/wallet", covers: "money, budgeting, debt, income and spending" },
-  { key: "family", name: "Family", icon: "profile/heart-handshake", mobileIcon: "profile/heart-handshake", covers: "parents, siblings, partner, children and home life" },
-  { key: "health", name: "Health", icon: "profile/shield-check", mobileIcon: "profile/user-round-check", covers: "sleep, energy, exercise, stress and wellbeing" },
-  { key: "growth", name: "Personal Growth", icon: "profile/mountain", mobileIcon: "profile/mountain", covers: "learning, habits, skills and self-reflection" },
-  { key: "faith", name: "Faith", icon: "profile/circle", mobileIcon: "profile/circle", covers: "spirituality, beliefs, values and inner peace" },
-  { key: "community", name: "Community", icon: "profile/hand-helping", mobileIcon: "profile/hand-helping", covers: "friends, social life, volunteering and belonging" },
+  {
+    key: "purpose",
+    name: "Purpose",
+    icon: "profile/target",
+    mobileIcon: "profile/target",
+    covers: "meaning, direction, career and long-term goals",
+  },
+  {
+    key: "finances",
+    name: "Finances",
+    icon: "profile/wallet",
+    mobileIcon: "profile/wallet",
+    covers: "money, budgeting, debt, income and spending",
+  },
+  {
+    key: "family",
+    name: "Family",
+    icon: "profile/heart-handshake",
+    mobileIcon: "profile/heart-handshake",
+    covers: "parents, siblings, partner, children and home life",
+  },
+  {
+    key: "health",
+    name: "Health",
+    icon: "profile/shield-check",
+    mobileIcon: "profile/user-round-check",
+    covers: "sleep, energy, exercise, stress and wellbeing",
+  },
+  {
+    key: "growth",
+    name: "Personal Growth",
+    icon: "profile/mountain",
+    mobileIcon: "profile/mountain",
+    covers: "learning, habits, skills and self-reflection",
+  },
+  {
+    key: "faith",
+    name: "Faith",
+    icon: "profile/circle",
+    mobileIcon: "profile/circle",
+    covers: "spirituality, beliefs, values and inner peace",
+  },
+  {
+    key: "community",
+    name: "Community",
+    icon: "profile/hand-helping",
+    mobileIcon: "profile/hand-helping",
+    covers: "friends, social life, volunteering and belonging",
+  },
 ];

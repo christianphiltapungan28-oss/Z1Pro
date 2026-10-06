@@ -71,10 +71,14 @@ function NotificationRow({
       </span>
       <span className="flex min-w-0 flex-1 flex-col gap-1">
         <span className="flex items-center justify-between gap-2">
-          <span className={`truncate text-[15px] text-foreground ${unread ? "font-bold" : "font-medium"}`}>
+          <span
+            className={`truncate text-[15px] text-foreground ${unread ? "font-bold" : "font-medium"}`}
+          >
             {item.title}
           </span>
-          <span className="shrink-0 text-xs font-medium text-tertiary">{formatTime(item.createdAt, now)}</span>
+          <span className="shrink-0 text-xs font-medium text-tertiary">
+            {formatTime(item.createdAt, now)}
+          </span>
         </span>
         <span className="text-[13px] leading-[1.35] text-secondary">{item.body}</span>
       </span>
@@ -119,8 +123,11 @@ export function NotificationsPage({
 
   function markRead(body: { id: string } | { all: true }) {
     const stamp = new Date().toISOString();
-    setItems((prev) =>
-      prev?.map((n) => (!n.readAt && ("all" in body || n.id === body.id) ? { ...n, readAt: stamp } : n)) ?? null
+    setItems(
+      (prev) =>
+        prev?.map((n) =>
+          !n.readAt && ("all" in body || n.id === body.id) ? { ...n, readAt: stamp } : n,
+        ) ?? null,
     );
     void fetch("/api/notifications", {
       method: "PATCH",
@@ -176,7 +183,10 @@ export function NotificationsPage({
           <SkeletonGroup label="Loading notifications" className="flex flex-col gap-2">
             <Skeleton className="mb-1 h-4 w-20" />
             {["w-1/2", "w-2/3", "w-2/5", "w-3/5"].map((width) => (
-              <div key={width} className="flex items-center gap-3 rounded-[14px] border border-foreground/[0.06] px-3.5 py-[13px]">
+              <div
+                key={width}
+                className="flex items-center gap-3 rounded-[14px] border border-foreground/[0.06] px-3.5 py-[13px]"
+              >
                 <Skeleton className="size-[42px] shrink-0 rounded-full" />
                 <div className="flex min-w-0 flex-1 flex-col gap-2">
                   <div className="flex items-center justify-between gap-2">
@@ -208,7 +218,7 @@ export function NotificationsPage({
                   <NotificationRow key={item.id} item={item} now={now} onOpen={open} />
                 ))}
               </section>
-            )
+            ),
         )}
       </div>
     </div>
