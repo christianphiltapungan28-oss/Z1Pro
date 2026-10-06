@@ -1,5 +1,5 @@
 import { createHash, randomBytes, randomInt } from "node:crypto";
-import { eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { userTwoFactor } from "@/db/schema";
 import { isMissingTable } from "@/lib/db-errors";
@@ -62,13 +62,20 @@ export async function checkSecondFactor(userId: string, code: string) {
     return !!fresh;
   }
 
+  // Removing the code only if it's still there, in one statement, so the
+  // same backup code sent twice at once is accepted once.
   const hash = sha256(normaliseBackup(code));
-  if (!row.backupCodeHashes.includes(hash)) return false;
-  await db
+  const used = await db
     .update(userTwoFactor)
-    .set({ backupCodeHashes: row.backupCodeHashes.filter((h) => h !== hash) })
-    .where(eq(userTwoFactor.userId, userId));
-  return true;
+    .set({ backupCodeHashes: sql`${userTwoFactor.backupCodeHashes} - ${hash}::text` })
+    .where(
+      and(
+        eq(userTwoFactor.userId, userId),
+        sql`${userTwoFactor.backupCodeHashes} @> jsonb_build_array(${hash}::text)`,
+      ),
+    )
+    .returning({ userId: userTwoFactor.userId });
+  return used.length > 0;
 }
 
 // Between "password correct" and "code correct": a short-lived ticket, so

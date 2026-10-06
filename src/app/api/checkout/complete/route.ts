@@ -65,10 +65,14 @@ export async function GET(request: Request) {
       return NextResponse.redirect(`${origin}/?checkout=error`);
     }
 
-    const checkoutSession = await getStripeClient().checkout.sessions.retrieve(
-      payment.providerPaymentId,
-    );
-    if (checkoutSession.payment_status !== "paid") {
+    // A provider outage shows "pending"; the webhook still activates the plan.
+    const checkoutSession = await getStripeClient()
+      .checkout.sessions.retrieve(payment.providerPaymentId)
+      .catch((err) => {
+        console.error("Stripe checkout session lookup failed", err);
+        return null;
+      });
+    if (checkoutSession?.payment_status !== "paid") {
       return NextResponse.redirect(`${origin}/?checkout=pending`);
     }
   } else {
@@ -84,13 +88,16 @@ export async function GET(request: Request) {
         headers: { Authorization: `Basic ${auth64}` },
         signal: AbortSignal.timeout(15_000),
       },
-    );
+    ).catch((err) => {
+      console.error("PayMongo checkout session lookup failed", err);
+      return null;
+    });
 
-    if (!checkoutRes.ok) {
-      return NextResponse.redirect(`${origin}/?checkout=error`);
+    if (!checkoutRes?.ok) {
+      return NextResponse.redirect(`${origin}/?checkout=pending`);
     }
 
-    const checkout = await checkoutRes.json();
+    const checkout = await checkoutRes.json().catch(() => null);
     const paymentIntentStatus: string | undefined =
       checkout.data?.attributes?.payment_intent?.attributes?.status;
 

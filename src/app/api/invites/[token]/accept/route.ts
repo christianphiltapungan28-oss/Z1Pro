@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/db";
 import { organizationInvites, organizationMembers, users } from "@/db/schema";
@@ -30,41 +30,37 @@ export async function POST(_request: Request, ctx: RouteContext<"/api/invites/[t
   if (invite.revokedAt || invite.acceptedAt || invite.expiresAt < new Date()) {
     return NextResponse.json({ error: "Invite is no longer valid" }, { status: 410 });
   }
-  if (invite.email && invite.email !== session?.user?.email) {
+  // Invite emails are stored lowercased; a provider's email may not be.
+  if (invite.email && invite.email !== session?.user?.email?.toLowerCase()) {
     return NextResponse.json(
       { error: "This invite was sent to a different email address" },
       { status: 403 },
     );
   }
 
-  const [existingMembership] = await db
-    .select({ userId: organizationMembers.userId })
-    .from(organizationMembers)
-    .where(
-      and(
-        eq(organizationMembers.organizationId, invite.organizationId),
-        eq(organizationMembers.userId, userId),
-      ),
-    )
-    .limit(1);
+  const accepted = await db.transaction(async (tx) => {
+    // Claim the invite first so two accepts at once can't both use it.
+    const [claimed] = await tx
+      .update(organizationInvites)
+      .set({ acceptedByUserId: userId, acceptedAt: new Date() })
+      .where(and(eq(organizationInvites.id, invite.id), isNull(organizationInvites.acceptedAt)))
+      .returning({ id: organizationInvites.id });
+    if (!claimed) return false;
 
-  if (!existingMembership) {
-    await db.insert(organizationMembers).values({
-      organizationId: invite.organizationId,
-      userId,
-      role: invite.role,
-    });
+    await tx
+      .insert(organizationMembers)
+      .values({ organizationId: invite.organizationId, userId, role: invite.role })
+      .onConflictDoNothing();
+
+    await tx
+      .update(users)
+      .set({ defaultOrgId: invite.organizationId, updatedAt: new Date() })
+      .where(eq(users.id, userId));
+    return true;
+  });
+  if (!accepted) {
+    return NextResponse.json({ error: "Invite is no longer valid" }, { status: 410 });
   }
-
-  await db
-    .update(organizationInvites)
-    .set({ acceptedByUserId: userId, acceptedAt: new Date() })
-    .where(eq(organizationInvites.id, invite.id));
-
-  await db
-    .update(users)
-    .set({ defaultOrgId: invite.organizationId, updatedAt: new Date() })
-    .where(eq(users.id, userId));
 
   return NextResponse.json({ ok: true, orgId: invite.organizationId });
 }

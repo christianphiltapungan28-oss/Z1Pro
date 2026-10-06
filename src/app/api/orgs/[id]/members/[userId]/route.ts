@@ -118,6 +118,10 @@ export async function DELETE(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
+  if (targetRole === "owner" && !isSelf && callerRole !== "owner") {
+    return NextResponse.json({ error: "Only an owner can remove another owner" }, { status: 403 });
+  }
+
   if (targetRole === "owner" && (await countOtherOwners(orgId, targetUserId)) === 0) {
     return NextResponse.json(
       { error: "An organization must have at least one owner" },
