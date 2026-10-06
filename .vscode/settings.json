@@ -1,0 +1,4 @@
+{
+  // Tailwind v4 at-rules (@theme, @custom-variant) aren't known to the built-in CSS linter.
+  "css.lint.unknownAtRules": "ignore"
+}
